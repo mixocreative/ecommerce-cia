@@ -10,6 +10,28 @@ A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce 
 >
 > 為台灣電商而生：綠界 ECPay、藍新 NewebPay、ATM 虛擬帳號、超商代碼／條碼、超商取貨付款、統一發票、消保法七天猶豫期，都有專章。
 
+## How this is different from a code review｜這跟一般的程式碼審查差在哪
+
+**Ordinary code review, linters and AI "review my code" tools find coding errors**: a typo, a null that was not checked, a function that returns the wrong type, a style violation, a bug inside one function. They read the code and ask *is this line written correctly?*
+
+**This skill checks whether the logic actually works as a whole, in the path money takes.** It asks *when a customer pays, does the system do what you think it does?* It follows the payment deadline from where it is set to every place it is later read. It follows the "ATM transfer on/off" switch from the admin screen to the checkout line that is supposed to obey it. It reads the gateway's own spec, not the code's belief about it. It checks whether "tests passed" means the database and gateway tests actually ran.
+
+| | Ordinary code review / linter｜一般審查、linter | This skill｜這個技能 |
+|---|---|---|
+| Question asked｜問的問題 | Is each line written correctly?｜每一行有沒有寫對？ | When money moves, does the whole thing behave the way you think?｜錢流過去的時候，整體是不是你以為的那樣？ |
+| Unit of inspection｜檢查單位 | one file, one function｜一個檔案、一個函式 | one deadline across time, one switch across layers, one callback against the vendor spec｜一個期限跨時間、一個開關跨層、一個回呼對照廠商規格 |
+| Finds｜找得到 | syntax, types, null checks, style, a bug inside a function｜語法、型別、空值、風格、函式內的 bug | a payment switch nobody reads, stock released on a live order, a gateway field read wrong, a green report that skipped the DB tests｜沒人讀的付款開關、活訂單被退庫存、讀錯的金流欄位、跳過資料庫測試的綠燈報告 |
+| Cannot find｜找不到 | anything that lives *between* two correct functions｜任何住在兩個正確函式*之間*的問題 | (it starts there)｜（它就從這裡開始） |
+| Proof it accepts｜接受的證據 | "tests pass"｜「測試通過」 | the exact run line with counts, plus one real sandbox checkout per gateway with the callback verified｜真正跑過的那行數字，加上每家金流商各一筆沙盒結帳並驗過回呼 |
+
+Both are needed. Run the linter for the lines. Run this for the money.
+
+> **一般的程式碼審查、linter、還有各種「幫我看程式碼」的 AI 工具，找的是寫錯的地方**：打錯字、沒檢查空值、回傳型別不對、風格不符、某個函式裡的 bug。它們讀程式碼，問的是「這一行有沒有寫對？」
+>
+> **這個技能查的是整套邏輯在金流路徑上到底有沒有真的在運作。** 它問的是「顧客付錢的時候，系統做的事是不是你以為的那樣？」它追付款期限：從設定的地方追到後面每一個讀它的地方。它追「ATM 轉帳開／關」這個開關：從後台畫面追到應該聽它的那一行結帳程式碼。它讀金流商自己的規格書，不信程式碼對規格的想像。它查「測試通過」是不是資料庫跟金流的測試真的有跑。
+>
+> 兩種都需要。linter 管每一行，這個技能管錢。
+
 ## In plain words｜白話版（給非工程師）
 
 Think of your shop's software as a small company. There is a **cashier** (takes the order and the money), a **warehouse** (holds stock), a **manager's settings panel** (which payment methods are on, what shipping costs), an **accountant** (checks the books), someone who **reads the bank's rulebook**, and the **owner** who sets policy.
