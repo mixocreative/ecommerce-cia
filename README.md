@@ -12,6 +12,24 @@ It was built after a production shop passed static analysis, linting and a green
 
 A second auditor found all of them by tracing behaviour, not by reading functions. This skill makes that the default.
 
+## The defect classes it hunts
+
+These are **cross-boundary invariant violations**: integration-level, emergent defects where every function is correct and the bug lives between them. Each sweep in section 0.9 names one:
+
+| Term | Meaning |
+|---|---|
+| **TOCTOU race** | a predicate checked at one step, dropped at the step that acts |
+| **Temporal coupling / stale snapshot** | a value frozen at one moment, re-read live by a later reader |
+| **Semantic drift** | code's reading of an external field diverges from the vendor spec |
+| **Dead control** | an admin toggle or flag no runtime path consumes |
+| **Fail-open default** | an error path that proceeds as if the read succeeded |
+| **Vacuous pass** | a suite that says OK because the meaningful tests skipped or never ran |
+| **Deferred-work residue** | a "follow-up commit" comment that never landed |
+| **Rename residue** | a consumer still bound to the old name |
+| **Diagnosis without probe** | a cause concluded from an error message, not a direct check |
+
+Prompt with any of those terms, or "audit the wiring and runtime behaviour, not the code", and the sweeps run first.
+
 ## What it does
 
 1. **Discovers the project's runtime bindings itself** (test runner, canonical environment, sandbox credentials file, preview URL, admin route) and announces them.
