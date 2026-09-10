@@ -1,9 +1,22 @@
 ---
 name: ecommerce-cia
-description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
+description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
+
+> **PRIMARY TARGET: CROSS-BOUNDARY INVARIANT VIOLATIONS.**
+> Also called **integration-level defects** or **emergent defects**. These are bugs where every
+> function is individually correct and the failure exists only in the relationship between two
+> correct pieces: across time (a value frozen at step A, re-read live at step B), across a layer
+> (an admin control with no runtime consumer), across a process boundary (a predicate checked at
+> SELECT and dropped at UPDATE), or across an organisation boundary (code that reads a vendor field
+> the vendor's spec defines differently). Static analysis, linters and a green unit suite cannot
+> see them by construction, because each of those tools inspects one piece at a time. This skill
+> exists to find them. Reading functions is not auditing; tracing one value from every writer to
+> every reader, and one control from the screen to the line that obeys it, is. Section 0.9 is the
+> mandatory sweep list for this class and runs before any other doctrine.
+
 
 ## 0. Skill Identity and Routing — HARD RULES
 
@@ -147,7 +160,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the ten mandatory sweeps in §0.9 (S1–S10), each with its own report line; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the ten mandatory sweeps in §0.9 (S1–S10) for cross-boundary invariant violations (integration-level / emergent defects), each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -168,7 +181,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 1. Fast lint + scope tests: ✅ N tests / M assertions green  (or ❌ finding at path:line)
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
-3a. §0.9 sweeps S1–S10: one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
+3a. §0.9 cross-boundary invariant sweeps S1–S10 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
@@ -223,7 +236,7 @@ Rungs 1–4 require no owner input. Only rung 5 asks, and it asks with the answe
 
 **On a fresh machine with nothing installed,** the expected shape is: rung 1 brings up compose → rung 2 installs deps + browsers from lockfiles → rung 4 copies documented sandbox creds → all seven steps run → Step 7 lists zero rung-5 escalations. If that shape isn't reachable, the Step 7 report says exactly which rung stopped and what one thing the owner must do.
 
-### 0.9 Mandatory Sweeps — Failure Classes a Green Suite Does Not Catch
+### 0.9 Mandatory Sweeps — Cross-Boundary Invariant Violations (Integration-Level / Emergent Defects) a Green Suite Does Not Catch
 
 Every item below was a real commerce gap that sat under a green fast suite, a clean static analyser and a clean linter, and was found only by a second auditor tracing the code by hand. None is optional. Each sweep produces either a numbered finding or an explicit "swept, 0 findings, N sites inspected" line in the Step 7 report. A sweep with no line in the report was not done.
 

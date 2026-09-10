@@ -1,6 +1,6 @@
 # ecommerce-cia — Commerce Integrity Auditor
 
-A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce system the way money actually moves through it: across time, across callbacks, across admin controls and the code that is supposed to consume them.
+A skill for Claude Code and OpenAI Codex that hunts **cross-boundary invariant violations**, also called **integration-level defects** or **emergent defects**, in a transactional e-commerce system: bugs where every function is correct and the failure lives between them. It audits the way money actually moves: across time, across callbacks, across admin controls and the code that is supposed to consume them.
 
 It was built after a production shop passed static analysis, linting and a green unit suite while carrying these defects in its payment path:
 
@@ -12,7 +12,7 @@ It was built after a production shop passed static analysis, linting and a green
 
 A second auditor found all of them by tracing behaviour, not by reading functions. This skill makes that the default.
 
-## The defect classes it hunts
+## The defect classes it hunts: cross-boundary invariant violations
 
 These are **cross-boundary invariant violations**: integration-level, emergent defects where every function is correct and the bug lives between them. Each sweep in section 0.9 names one:
 
