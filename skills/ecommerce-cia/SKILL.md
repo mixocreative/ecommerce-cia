@@ -499,6 +499,43 @@ Components may participate in more than one VSM system.
 
 Assign a primary role while documenting cross-system dependencies.
 
+### 1.4 Vendor documents are fetched fresh, and their location is recorded
+
+Before any decision that depends on a gateway, logistics provider or invoice service — a
+field's meaning, an amount cap, a fee, a settlement day, a sandbox capability — the auditor
+**looks for the vendor's latest official document and rate card first**, on disk and then
+online, and cites the version and the date read. A rate or field taken from memory, from a
+mapper comment, from a screenshot older than the vendor's newest manual, or from a third-party
+rendering when the original is reachable, is unverified.
+
+**Where to look, and what to write down.** The project keeps one file (`docs/integrations/
+vendor-doc-locations.md` or the equivalent) with, per vendor: the official developer-portal URL,
+the manual name + version on disk under the gitignored vendor folder, the rate-card URL, the
+console page a contract rate is read from, the date each was last seen, and any fetch quirk
+(a portal that returns 403 to a bare client and needs a browser User-Agent + Referer, a PDF
+behind a login, a page that must be read in a real browser). The auditor updates that file
+whenever it fetches something newer, and the report line for S4 names the version it read.
+
+**Taiwan gateways — known locations (verify they still resolve; update the file if moved):**
+
+| Vendor | Developer docs | Rate card | Contract rate |
+|---|---|---|---|
+| 藍新 NewebPay | `https://www.newebpay.com/website/Page/content/download_api` — MPG (NDNF-x.y.z), 物流 (NDNS), 定期定額 (NDNP) PDFs; bare `curl` gets 403, send a browser UA + Referer | `https://www.newebpay.com/website/Page/content/service_fare` (list price, 含稅) | merchant console 會員專區, per service; hidden until the service is activated |
+| 綠界 ECPay | `https://developers.ecpay.com.tw/` (AIO 全方位金流, 物流, 電子發票 pages by id) | `https://www.ecpay.com.tw/` 費率 pages per product | merchant backoffice 特店 費率 |
+| LINE Pay | `https://developers.line.biz/` (LINE Pay Online API) | LINE Pay merchant site | merchant center |
+| 台灣Pay / TWQR | via the acquiring gateway's manual (NewebPay / ECPay) | gateway rate card | gateway console |
+
+**Any other vendor:** search for the vendor's official developer portal and published pricing
+(the vendor's own domain first, then its GitHub organisation, then a regulator or scheme page);
+never a blog, a forum or an AI summary as the citation. Record the URL, version and date in
+the locations file before using a single field or number from it. If the document is not
+public, say "contract-only, not verifiable here" rather than inferring from a competitor's.
+
+**Version drift is a finding.** When a newer manual exists than the one the code was audited
+against, diff the changelog against what the shop sends and parses, record the result, and
+keep both versions on disk. A shop coded against v1.2.3 with v1.2.5 published is not wrong by
+itself; not knowing what changed is.
+
 ## System 1 — Primary Operations
 
 Autonomous customer-facing and transaction execution.
