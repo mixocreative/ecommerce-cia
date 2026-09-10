@@ -1,5 +1,7 @@
 # ecommerce-cia — Commerce Integrity Auditor
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-D97757)](#install) [![Codex skill](https://img.shields.io/badge/OpenAI_Codex-skill-000000)](#install) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
+
 A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce system as a **viable system** in Stafford Beer's sense, and hunts the defect class that only such a view can see: **cross-boundary invariant violations**, also called **integration-level** or **emergent defects**, in the paths money and stock actually take.
 
 ## The theory
@@ -92,18 +94,27 @@ The agent runs every step itself: starts containers, installs from lockfiles, co
 
 ## Install
 
-Claude Code:
+**Claude Code, as a plugin (recommended):**
+
+```
+claude plugin marketplace add mixocreative/ecommerce-cia
+claude plugin install ecommerce-cia@mixocreative
+```
+
+Or inside a session: `/plugin` → marketplaces → add `mixocreative/ecommerce-cia` → install `ecommerce-cia`.
+
+**Claude Code, as a bare skill file:**
 
 ```
 mkdir -p ~/.claude/skills/ecommerce-cia
-curl -o ~/.claude/skills/ecommerce-cia/SKILL.md https://raw.githubusercontent.com/mixocreative/ecommerce-cia/main/SKILL.md
+curl -o ~/.claude/skills/ecommerce-cia/SKILL.md https://raw.githubusercontent.com/mixocreative/ecommerce-cia/main/skills/ecommerce-cia/SKILL.md
 ```
 
-Codex:
+**OpenAI Codex:**
 
 ```
 mkdir -p ~/.codex/skills/ecommerce-cia
-curl -o ~/.codex/skills/ecommerce-cia/SKILL.md https://raw.githubusercontent.com/mixocreative/ecommerce-cia/main/SKILL.md
+curl -o ~/.codex/skills/ecommerce-cia/SKILL.md https://raw.githubusercontent.com/mixocreative/ecommerce-cia/main/skills/ecommerce-cia/SKILL.md
 ```
 
 Install the companion [cia](https://github.com/mixocreative/cia) alongside it; the protocol invokes both, separately.
@@ -116,7 +127,7 @@ Install the companion [cia](https://github.com/mixocreative/cia) alongside it; t
 
 Auto-selects on "run the tests", "prepare for handoff", "green-light", "audit", "ready for launch" **only when the project is a transactional commerce system** (payment-gateway integration code, orders/cart/product schema, checkout routes, or a commerce framework dependency). On a non-commerce project those words route to `/cia` instead.
 
-## Structure of SKILL.md
+## Structure of skills/ecommerce-cia/SKILL.md
 
 | Section | Purpose |
 |---|---|
