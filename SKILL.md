@@ -1,6 +1,6 @@
 ---
 name: ecommerce-cia
-description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
+description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant', 'VSM map', 'Viable System Model', 'map the codebase onto VSM' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
@@ -15,7 +15,10 @@ description: "Commerce Integrity Auditor for transactional e-commerce systems. U
 > see them by construction, because each of those tools inspects one piece at a time. This skill
 > exists to find them. Reading functions is not auditing; tracing one value from every writer to
 > every reader, and one control from the screen to the line that obeys it, is. Section 0.9 is the
-> mandatory sweep list for this class and runs before any other doctrine.
+> mandatory sweep list for this class and runs before any other doctrine. In Stafford Beer's terms
+> every one of them is a broken or missing channel between Systems 1–5 of the Viable System
+> Model: the audit first maps this codebase's components onto those systems (§0.9 step 0), then
+> walks the channels of that map. Structure first, then wiring, then code.
 
 
 ## 0. Skill Identity and Routing — HARD RULES
@@ -160,7 +163,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the twelve mandatory sweeps in §0.9 (S1–S12) for cross-boundary invariant violations (integration-level / emergent defects), each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the twelve mandatory sweeps in §0.9 (S1–S12) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -181,6 +184,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 1. Fast lint + scope tests: ✅ N tests / M assertions green  (or ❌ finding at path:line)
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
+3b. VSM map (§0.9 step 0): N components → Systems 1–5 / 3*, M channels (table in report). Missing = sweeps had no site list.
 3a. §0.9 cross-boundary invariant sweeps S1–S12 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
@@ -240,21 +244,40 @@ Rungs 1–4 require no owner input. Only rung 5 asks, and it asks with the answe
 
 Every item below was a real commerce gap that sat under a green fast suite, a clean static analyser and a clean linter, and was found only by a second auditor tracing the code by hand. None is optional. Each sweep produces either a numbered finding or an explicit "swept, 0 findings, N sites inspected" line in the Step 7 report. A sweep with no line in the report was not done.
 
+
+**Step 0 of the sweeps — map the codebase onto Stafford Beer's Viable System Model before sweeping.** The sweeps are not a grep list; they walk the channels of a VSM map of *this* codebase. Before S1 runs, produce and report a table with one row per module, directory, service, cron job, config surface and test suite:
+
+| Component (path) | Primary VSM system | Channels (`producer → consumer`, with the system on each side) |
+|---|---|---|
+
+Systems: **1** primary operations (the code that does the work: checkout, order, fulfilment, request handlers); **2** coordination / anti-oscillation (locks, queues, idempotency keys, deadlines, ordering); **3** control (settings, feature flags, admin pages, config files, the values that tell System 1 what to do); **3\*** independent audit (test suites, verification scripts, reconciliation, probes); **4** intelligence / environment (vendor specs, external APIs, webhooks, callbacks, imports); **5** policy / identity / emergency (defaults, catch-block posture, kill switches, fail-closed rules). Report the map as line 2b / 3b of the Step 6 report: "VSM map: N components, M channels". Missing map = the sweeps had no site list and are not done.
+
+Every sweep then enumerates its sites from the map's channels, and each defect class is a broken channel between two systems (column four of the taxonomy table below):
+
+- every **System 3 → System 1** channel (a setting, flag, admin control or config value → the runtime code that must obey it) is a site for S5 and S6;
+- every **System 1 → System 1 across time** handoff (value frozen at one step, read at a later step; SELECT then UPDATE) is a site for S1 and S2, and its missing System 2 coordinator is the finding;
+- every **System 4 ↔ environment** boundary (vendor field, external payload, model output) is a site for S4 and S11;
+- every **System 3\* → System 3** channel (what the suite or probe actually verifies about the control state) is a site for S7, S8 and S10;
+- every **System 5 default** (catch block, fallback, absent kill switch) is a site for S3 and S12;
+- every rename or refactor is a **System 1 ↔ System 1 binding** and a site for S9.
+
+A channel on the map with no sweep site named against it is unswept; say so in the report line rather than omitting it.
+
 **These are cross-boundary invariant violations (integration-level, emergent defects).** No single function is wrong; the defect lives in the relationship between two correct pieces, across time or across a layer. Code review sees functions and misses them by construction. Finding them requires behavioural tracing: follow one value from where it is written to every place it is later read, and follow one control from the admin screen or config file to the line of code that obeys it. Name the class in every finding:
 
-| Term | Meaning | Sweep |
-|---|---|---|
-| **TOCTOU race** (time-of-check to time-of-use) | a predicate checked at one step and silently dropped at the step that acts | S2 |
-| **Temporal coupling / stale snapshot** | a value frozen at one moment while a later reader re-reads live state | S1 |
-| **Semantic drift** | code's understanding of an external field diverges from the vendor's source of truth | S4 |
-| **Dead control / broken control-to-consumer wiring** | an admin toggle, flag or setting that no runtime path reads | S5 |
-| **Fail-open default** | an error path that proceeds as if the failed read had succeeded | S3 |
-| **Vacuous pass** | a suite that reports OK because the meaningful tests skipped or never ran | S7, S8 |
-| **Deferred-work residue** | a comment promising a follow-up that never landed | S6 |
-| **Rename residue** | a consumer still bound to the old name after a rename | S9 |
-| **Diagnosis without probe** | concluding a cause from an error message instead of a direct check | S10 |
-| **Boundary schema drift** | a payload crossing a boundary is acted on before its shape and type are validated | S11 |
-| **Cascade / retry storm** | one step's failure or retry propagates as crash, duplicate write, or orphaned side effect | S12 |
+| Term | Meaning | Sweep | VSM channel that is broken |
+|---|---|---|---|
+| **TOCTOU race** (time-of-check to time-of-use) | a predicate checked at one step and silently dropped at the step that acts | S2 | System 1 → System 1 across time, no System 2 coordinator | System 1 → System 1 across time, no System 2 coordinator |
+| **Temporal coupling / stale snapshot** | a value frozen at one moment while a later reader re-reads live state | S1 | System 3 → System 1 read at two different times | System 3 → System 1 read at two different times |
+| **Semantic drift** | code's understanding of an external field diverges from the vendor's source of truth | S4 | System 4 ↔ environment (vendor) | System 4 ↔ environment (vendor) |
+| **Dead control / broken control-to-consumer wiring** | an admin toggle, flag or setting that no runtime path reads | S5 | System 3 → System 1 command channel absent | System 3 → System 1 command channel absent |
+| **Fail-open default** | an error path that proceeds as if the failed read had succeeded | S3 | System 5 policy default missing or wrong | System 5 policy default missing or wrong |
+| **Vacuous pass** | a suite that reports OK because the meaningful tests skipped or never ran | S7, S8 | System 3\* reading System 3's own conclusion | System 3\* reading System 3's own conclusion |
+| **Deferred-work residue** | a comment promising a follow-up that never landed | S6 | System 3 → System 1 channel promised, never built | System 3 → System 1 channel promised, never built |
+| **Rename residue** | a consumer still bound to the old name after a rename | S9 | System 1 ↔ System 1 binding broken | System 1 ↔ System 1 binding broken |
+| **Diagnosis without probe** | concluding a cause from an error message instead of a direct check | S10 | System 3\* without an independent channel | System 3\* without an independent channel |
+| **Boundary schema drift** | a payload crossing a boundary is acted on before its shape and type are validated | S11 | System 4 ingress unvalidated | System 4 ingress unvalidated |
+| **Cascade / retry storm** | one step's failure or retry propagates as crash, duplicate write, or orphaned side effect | S12 | System 2 anti-oscillation absent, System 5 no circuit breaker | System 2 anti-oscillation absent, System 5 no circuit breaker |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -2651,7 +2674,7 @@ Payment / Inventory / Logistics / Digital / Free Acquisition / Invoice / Securit
 The §0.9 taxonomy term (TOCTOU race, temporal coupling / stale snapshot, semantic drift, dead control, fail-open default, vacuous pass, deferred-work residue, rename residue, boundary schema drift, cascade / retry storm, or "single-component" when the defect is not cross-boundary).
 
 ## Boundary Location
-The two sides the defect lives between, as `producer → consumer` or `Step N (what) → Step N+1 (what)`. Examples: `Checkout::placeOrder (deadline frozen) → OrderDesk::offeredMethods (settings re-read)`, `gateway callback parser → SelfHealDecision`. "None" is acceptable only when Defect Class is single-component.
+The two sides the defect lives between, as `producer → consumer` or `Step N (what) → Step N+1 (what)`. Examples: `Checkout::placeOrder (deadline frozen) → OrderDesk::offeredMethods (settings re-read)`, `gateway callback parser → SelfHealDecision`. Add the VSM channel the defect sits on, e.g. `System 3 → System 1`, `System 3* → System 3`, `System 4 ↔ vendor`. "None" is acceptable only when Defect Class is single-component.
 
 ## Invariant
 
