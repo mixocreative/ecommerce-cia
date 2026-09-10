@@ -5,20 +5,44 @@ description: "Commerce Integrity Auditor for transactional e-commerce systems. U
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
 
-> **PRIMARY TARGET: CROSS-BOUNDARY INVARIANT VIOLATIONS.**
-> Also called **integration-level defects** or **emergent defects**. These are bugs where every
-> function is individually correct and the failure exists only in the relationship between two
-> correct pieces: across time (a value frozen at step A, re-read live at step B), across a layer
-> (an admin control with no runtime consumer), across a process boundary (a predicate checked at
-> SELECT and dropped at UPDATE), or across an organisation boundary (code that reads a vendor field
-> the vendor's spec defines differently). Static analysis, linters and a green unit suite cannot
-> see them by construction, because each of those tools inspects one piece at a time. This skill
-> exists to find them. Reading functions is not auditing; tracing one value from every writer to
-> every reader, and one control from the screen to the line that obeys it, is. Section 0.9 is the
-> mandatory sweep list for this class and runs before any other doctrine. In Stafford Beer's terms
-> every one of them is a broken or missing channel between Systems 1–5 of the Viable System
-> Model: the audit first maps this codebase's components onto those systems (§0.9 step 0), then
-> walks the channels of that map. Structure first, then wiring, then code.
+> **THEORY: STAFFORD BEER'S VIABLE SYSTEM MODEL, APPLIED TO A CODEBASE.**
+> Beer's claim (*Brain of the Firm*, 1972; *The Heart of Enterprise*, 1979) is that any system
+> which survives in a changing environment has the same five-part structure, at every level of
+> recursion: **System 1** does the work; **System 2** damps oscillation between the parts of
+> System 1; **System 3** commands and allocates resources to System 1 and hears back through
+> **System 3\***, an audit channel that bypasses System 1's own reporting; **System 4** faces the
+> environment and the future; **System 5** holds identity and policy and receives the
+> **algedonic** signal (pain/pleasure) that jumps every level when viability is threatened. The
+> systems are connected by **channels**, and Ashby's Law of Requisite Variety says each channel
+> must carry as much variety as the thing it regulates, or control is fictional.
+>
+> A codebase is such a system. Handlers, checkout, fulfilment are System 1. Locks, queues,
+> deadlines, idempotency keys are System 2. Settings, flags, admin pages, config are System 3.
+> Test suites, probes, reconciliation are System 3\*. Vendor specs, external APIs, callbacks are
+> System 4. Defaults, catch-block posture, kill switches are System 5.
+>
+> **PRIMARY TARGET: CROSS-BOUNDARY INVARIANT VIOLATIONS**, also called **integration-level
+> defects** or **emergent defects**. In Beer's terms every one of them is a broken, missing, or
+> under-variety channel between two of those systems: a System 3 setting no System 1 code reads
+> (dead control); a value System 1 froze at one moment while a later System 1 step re-reads System
+> 3 live (stale snapshot); a predicate checked at SELECT and dropped at UPDATE with no System 2
+> coordinator (TOCTOU); a System 4 field read against the code's belief rather than the vendor's
+> definition (semantic drift); a System 3\* suite that reports OK because it never ran the tests
+> that touch the store (vacuous pass: System 3\* reading System 3's own conclusion); a catch block
+> with no System 5 policy behind it (fail-open). Each function is individually correct. Static
+> analysis, linters and a green unit suite inspect one piece at a time and therefore cannot see a
+> channel. This skill exists to see channels. Reading functions is not auditing; mapping the
+> codebase onto Systems 1–5 (§0.9 step 0) and then tracing every channel of that map, one value
+> from every writer to every reader, one control from the screen to the line that obeys it, is.
+> Section 0.9 is the mandatory sweep list and runs before any other doctrine. Structure first,
+> then wiring, then code.
+>
+> Stance, from Beer: the purpose of a system is what it does, not what its docs say (POSIWID);
+> every System 1 unit is itself viable and gets the same five questions one recursion down;
+> every guard is a variety attenuator and every default an amplifier, and each must match what
+> it faces; System 1 must act without asking System 3 each step, yet System 3 must still be
+> obeyed; the auditor *is* System 3\*, the channel that bypasses the system's own green report;
+> and a pain signal that stops in a log file has not reached System 5.
 
 
 ## 0. Skill Identity and Routing — HARD RULES
