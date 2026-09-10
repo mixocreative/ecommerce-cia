@@ -4,6 +4,12 @@
 
 A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce system as a **viable system** in Stafford Beer's sense, and hunts the defect class that only such a view can see: **cross-boundary invariant violations**, also called **integration-level** or **emergent defects**, in the paths money and stock actually take.
 
+## Watch it run
+
+![/cia demo](docs/demo.gif)
+
+Real, unedited output of the companion `/cia` in demo mode on the shop this skill was built for: runtime discovery, the codebase mapped onto VSM Systems 1–5 with its channels, then two sweeps and a finding with file:line evidence. `/ecommerce-cia` runs the same map-then-walk protocol over the money path (payments, stock, orders, entitlements). Replayed as a typed terminal for the recording; the text is the model's.
+
 ## The theory
 
 Beer's Viable System Model (*Brain of the Firm*, 1972; *The Heart of Enterprise*, 1979) states that anything which stays alive in a changing environment has the same five-part structure, repeated at every level of recursion:
