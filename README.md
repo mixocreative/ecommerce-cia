@@ -14,7 +14,7 @@ A second auditor found all of them by tracing behaviour, not by reading function
 
 ## The defect classes it hunts: cross-boundary invariant violations
 
-These are **cross-boundary invariant violations**: integration-level, emergent defects where every function is correct and the bug lives between them. Each sweep in section 0.9 names one:
+These are **cross-boundary invariant violations**: integration-level, emergent defects where every function is correct and the bug lives between them. Each sweep in section 0.9 names one; every finding states its defect class and its boundary location as `producer → consumer`:
 
 | Term | Meaning |
 |---|---|
@@ -27,13 +27,15 @@ These are **cross-boundary invariant violations**: integration-level, emergent d
 | **Deferred-work residue** | a "follow-up commit" comment that never landed |
 | **Rename residue** | a consumer still bound to the old name |
 | **Diagnosis without probe** | a cause concluded from an error message, not a direct check |
+| **Boundary schema drift** | a payload acted on before its shape and type are validated |
+| **Cascade / retry storm** | one step's failure or retry becomes a crash, duplicate write, or orphaned side effect |
 
 Prompt with any of those terms, or "audit the wiring and runtime behaviour, not the code", and the sweeps run first.
 
 ## What it does
 
 1. **Discovers the project's runtime bindings itself** (test runner, canonical environment, sandbox credentials file, preview URL, admin route) and announces them.
-2. **Runs ten mandatory sweeps (§0.9)** before any doctrine: snapshot-vs-live reread, select-then-act predicate loss, catch-block failure posture, vendor field semantics from the spec page, admin control to runtime consumer, deferred-work comments, skipped tests as unverified, written-but-unrun tests, rename residue, environment truth before diagnosis. Each produces its own report line; a missing line means the sweep was not done.
+2. **Runs twelve mandatory sweeps (§0.9)** before any doctrine: snapshot-vs-live reread, select-then-act predicate loss, catch-block failure posture, vendor field semantics from the spec page, admin control to runtime consumer, deferred-work comments, skipped tests as unverified, written-but-unrun tests, rename residue, environment truth before diagnosis. Each produces its own report line; a missing line means the sweep was not done.
 3. **Applies commerce doctrine**: critical business invariants for payment, inventory, orders, digital goods, discounts and financial integrity; one state machine per concern rather than one `order.status`; purchase-flow symmetry; free and zero-value order abuse; payment gateway integrity (authenticity, correlation, idempotency, browser vs server channels, async methods); refunds; entitlements; reconciliation.
 4. **Carries a Taiwan chapter (TW-1 to TW-13)**: ECPay and NewebPay callback models, asynchronous ATM / CVS / barcode methods, convenience-store logistics and store reselection, pickup with and without payment, TWD handling, electronic uniform invoice, consumer-protection flow.
 5. **Executes the seven-step pre-launch protocol (§0.6) autonomously**: fast lint and scope tests, `/cia`, commerce audit, full suite in the canonical environment, browser walk of every locale and route, one sandbox checkout per gateway with callback verified, numbered report with explicit deferrals.

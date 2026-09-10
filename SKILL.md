@@ -160,7 +160,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the ten mandatory sweeps in §0.9 (S1–S10) for cross-boundary invariant violations (integration-level / emergent defects), each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the twelve mandatory sweeps in §0.9 (S1–S12) for cross-boundary invariant violations (integration-level / emergent defects), each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -181,7 +181,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 1. Fast lint + scope tests: ✅ N tests / M assertions green  (or ❌ finding at path:line)
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
-3a. §0.9 cross-boundary invariant sweeps S1–S10 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
+3a. §0.9 cross-boundary invariant sweeps S1–S12 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
@@ -253,6 +253,8 @@ Every item below was a real commerce gap that sat under a green fast suite, a cl
 | **Deferred-work residue** | a comment promising a follow-up that never landed | S6 |
 | **Rename residue** | a consumer still bound to the old name after a rename | S9 |
 | **Diagnosis without probe** | concluding a cause from an error message instead of a direct check | S10 |
+| **Boundary schema drift** | a payload crossing a boundary is acted on before its shape and type are validated | S11 |
+| **Cascade / retry storm** | one step's failure or retry propagates as crash, duplicate write, or orphaned side effect | S12 |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -275,6 +277,14 @@ When the user asks for "code integrity", "audit", "review the wiring", "trace st
 **S9 — Rename residue.** For every class, CSS selector, template, route or config key renamed in the git log since the last audit, grep both sides of the rename in every consumer (PHP, templates, CSS, JS, tests, docs). A selector left in the stylesheet after the markup moved on silently removes styling; a route left in a doc sends the owner to a 404. Architecture guard tests that enforce parity are to be kept red-visible, never excluded or whitelisted to make the suite pass.
 
 **S10 — Environment truth before diagnosis (diagnosis without probe).** Before concluding "site not installed", "DB missing", "sandbox blocked", run the cheapest direct probe (container list, TCP connect, health endpoint) and record the result. A 503 from the app and a timeout on the DB port are consistent with a stopped container; they are not evidence of missing schema or lost data. Never provision, reset, or reinstall on the strength of an application error message alone.
+
+**S11 — Boundary contract / schema drift.** For every payload that crosses a boundary into this system (gateway callback, webhook, logistics status push, import file, admin form, any JSON from an external API or a model), find the point where it is parsed and the point where it is first acted on. Between those two points there must be explicit validation of shape and type: required fields present, unexpected fields ignored or rejected deliberately, numeric amounts not accepted as strings without conversion, null where a list or object is expected refused, encoding and escape handling defined. A parser that hands a raw decoded array straight to business logic is a finding. Name the boundary in the finding as `producer → consumer`.
+
+**S12 — Cascade, partial failure and retry storm.** For every outbound call (gateway query, logistics API, mail, storage, queue) and every inbound retry source (provider re-sends a notification, cron re-runs, customer refreshes), answer: what happens when the call fails half-way, times out, or succeeds after the caller gave up? Is there a per-step timeout? Is retry bounded with backoff, and is the retried action idempotent? Is there a circuit breaker or a degrade path (offer fewer methods, queue for later) rather than a crash or an unbounded loop? A retry that repeats a non-idempotent write, or a failure in one step that silently leaves an earlier step's side effect in place, is a finding. Trace the chain end to end and state which downstream effect the upstream failure produces.
+
+
+
+**AI components in a shop** (chat assistant, recommendation, generated descriptions, agentic order handling): run `/cia` §0.10 for the model-boundary modes; this skill adds only the commerce consequence: no model output may create, modify, refund, or fulfil an order without passing the same validation, idempotency and owner-intent checks as a human-initiated action.
 
 ## Role & Mission
 
@@ -2637,6 +2647,12 @@ System 1 / 2 / 3 / 3* / 4 / 5
 
 Payment / Inventory / Logistics / Digital / Free Acquisition / Invoice / Security / UI / i18n / Admin / etc.
 
+## Defect Class
+The §0.9 taxonomy term (TOCTOU race, temporal coupling / stale snapshot, semantic drift, dead control, fail-open default, vacuous pass, deferred-work residue, rename residue, boundary schema drift, cascade / retry storm, or "single-component" when the defect is not cross-boundary).
+
+## Boundary Location
+The two sides the defect lives between, as `producer → consumer` or `Step N (what) → Step N+1 (what)`. Examples: `Checkout::placeOrder (deadline frozen) → OrderDesk::offeredMethods (settings re-read)`, `gateway callback parser → SelfHealDecision`. "None" is acceptable only when Defect Class is single-component.
+
 ## Invariant
 
 What must remain true.
@@ -2666,9 +2682,9 @@ What the system currently does.
 
 Concrete reproducible or logically demonstrated sequence.
 
-## Impact
+## Impact (emergent)
 
-Customer, financial, security or operational consequence.
+What fails downstream as a result, then customer, financial, security or operational consequence.
 
 ## Recommended Fix
 
