@@ -187,7 +187,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the twelve mandatory sweeps in §0.9 (S1–S12) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the fourteen mandatory sweeps in §0.9 (S1–S14) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-13 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -209,7 +209,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
 3b. VSM map (§0.9 step 0): N components → Systems 1–5 / 3*, M channels (table in report). Missing = sweeps had no site list.
-3a. §0.9 cross-boundary invariant sweeps S1–S12 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
+3a. §0.9 cross-boundary invariant sweeps S1–S14 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
@@ -284,6 +284,8 @@ Every sweep then enumerates its sites from the map's channels, and each defect c
 - every **System 3\* → System 3** channel (what the suite or probe actually verifies about the control state) is a site for S7, S8 and S10;
 - every **System 5 default** (catch block, fallback, absent kill switch) is a site for S3 and S12;
 - every rename or refactor is a **System 1 ↔ System 1 binding** and a site for S9.
+- every **design document, master plan, handoff note or migration** that names a component, table or control is a **System 3 → System 1 promise** and a site for S13;
+- every audit whose scope is narrower than the map (one diff, one module) is a **System 3\* channel narrower than the system** and a site for S14.
 
 A channel on the map with no sweep site named against it is unswept; say so in the report line rather than omitting it.
 
@@ -302,6 +304,8 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Diagnosis without probe** | concluding a cause from an error message instead of a direct check | S10 | System 3\* without an independent channel | System 3\* without an independent channel |
 | **Boundary schema drift** | a payload crossing a boundary is acted on before its shape and type are validated | S11 | System 4 ingress unvalidated | System 4 ingress unvalidated |
 | **Cascade / retry storm** | one step's failure or retry propagates as crash, duplicate write, or orphaned side effect | S12 | System 2 anti-oscillation absent, System 5 no circuit breaker | System 2 anti-oscillation absent, System 5 no circuit breaker |
+| **Orphan capability / designed-but-unbuilt** | a class, table, column, admin control or design document that exists with no caller, no writer, no page and no gap-register row — capability promised, channel never built | S13 | System 3 capability with no System 1 consumer and no System 3\* register entry |
+| **Scope shadow** | an audit run on one diff or subsystem whose report reads as whole-system green | S14 | System 3\* channel narrower than the map it reports on |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -328,6 +332,10 @@ When the user asks for "code integrity", "audit", "review the wiring", "trace st
 **S11 — Boundary contract / schema drift.** For every payload that crosses a boundary into this system (gateway callback, webhook, logistics status push, import file, admin form, any JSON from an external API or a model), find the point where it is parsed and the point where it is first acted on. Between those two points there must be explicit validation of shape and type: required fields present, unexpected fields ignored or rejected deliberately, numeric amounts not accepted as strings without conversion, null where a list or object is expected refused, encoding and escape handling defined. A parser that hands a raw decoded array straight to business logic is a finding. Name the boundary in the finding as `producer → consumer`.
 
 **S12 — Cascade, partial failure and retry storm.** For every outbound call (gateway query, logistics API, mail, storage, queue) and every inbound retry source (provider re-sends a notification, cron re-runs, customer refreshes), answer: what happens when the call fails half-way, times out, or succeeds after the caller gave up? Is there a per-step timeout? Is retry bounded with backoff, and is the retried action idempotent? Is there a circuit breaker or a degrade path (offer fewer methods, queue for later) rather than a crash or an unbounded loop? A retry that repeats a non-idempotent write, or a failure in one step that silently leaves an earlier step's side effect in place, is a finding. Trace the chain end to end and state which downstream effect the upstream failure produces.
+
+**S13 — Orphan capability / designed-but-unbuilt.** Three greps, one table. (a) For every class under the admin, control, settings or catalogue roots (payment-method matrix, carrier catalogue, shipping chains, fee tables), grep for a caller outside its own file and its tests; a control class with no page, controller or module that renders it is an orphan. (b) For every table column and enum added by a migration (`shipping_method`, `pickup_store_*`, `cod_*`, fee columns), grep for a writer in runtime code — checkout, admin, worker — not only a test; a column nobody writes is scaffolding, and scaffolding that a later reader treats as data is a finding. (c) For every design document, master plan or handoff note under `docs/` that names a component (a checkout method picker, a carrier admin page, an eligibility engine), check that the component exists on disk **or** that the gap register carries one row naming it as unbuilt with its blocker (vendor account family, 測標 approval, owner decision). Report each orphan with its three states — designed / coded / wired — and the owner-side blocker if any. A capability that is designed and coded but not wired, and whose absence the register does not record, is the most expensive shape of commerce gap: every document says shipping is handled and the customer has no way to choose how.
+
+**S14 — Scope shadow.** State the scope of this run in the first line of the report: whole shop, one subsystem, or one diff. When it is narrower than the VSM map, list the commerce domains on the map that were **not** walked this run — checkout, payment, shipping / fulfilment, refund, invoice, entitlement — and the date of the last run that did walk each (from the handoff or the register). A narrow-scope report that omits this list reads as shop-wide green and is itself a finding against the audit. Never let "0 findings" stand without the scope beside it.
 
 
 
@@ -692,6 +700,17 @@ Examples:
 
 Determine the exact integration product/version where possible.
 
+## Fulfillment — shipping-method choice, carrier control, collection on pickup (doctrine)
+
+Four invariants, each a channel on the map; each is a site for S5, S13 and the COD state model below.
+
+1. **Method choice is a System 1 surface, not a column.** If the shop promises more than one way to receive goods (courier, postal, convenience-store pickup), checkout must let the customer choose, and the choice must be written to the order at placement. A `shipping_method` column with no checkout writer, or a method enum with no picker, is S13. Price and fee follow the *chosen* method, not a region average.
+2. **Every offered method traces to an admin toggle and a fee row.** Each carrier / chain / method the customer can pick has one owner-facing row: enabled, approval or activation status with the vendor (測標, contract, account family), the vendor's fee to the shop (flat, banded or percentage, plus settlement days) and the charge to the customer — typed data from a catalogue, never prose baked into a label. Same rule for payment methods: the toggle grid shows the gateway fee next to every switch. A toggle with no consumer is S5; a fee that exists only in a sentence is S13(b).
+3. **Pay-on-arrival is a collection contract, and the shop names which carriers hold one.** Where the policy is *convenience-store 取貨付款 only* (the store collects, the logistics provider settles), verify that a home-delivery COD path is not reachable from checkout at all — the control is absent, not merely hidden — and that the CVS path's money state is modelled separately from the parcel state (see COD / Collection). An order collected on pickup is not paid when the parcel is created, not when it is handed over, and not when the customer walks out with it; it is paid when the provider's settlement evidence says so. Stock stays held for the pickup window; 逾期未取 returns the parcel, restocks, cancels, and must not leave an invoice obligation behind.
+4. **Vendor cost is not customer price, and both are visible.** The carrier's cost to the shop and the charge to the customer are two numbers; the markup rule between them is an owner decision recorded in settings or an ADR, and the admin page shows both so an operator can see a method that loses money. A quote path that reads only one of the two is a finding.
+
+Release gates that follow: no method offered without its toggle, approval and fee row; no COD offered on a carrier the policy excludes; no COD order marked paid on any signal short of provider settlement; no carrier enabled while its pricing axis in code differs from the vendor's (weight bands where the vendor bills by size).
+
 ## Fulfillment
 
 - courier
@@ -940,6 +959,8 @@ Where payment is collected by a carrier or convenience store, distinguish where 
 - returned_uncollected
 
 "Customer picked up parcel" and "money has settled into merchant account" are not necessarily the same financial state.
+
+When the shop's policy restricts pay-on-arrival to one channel (typically convenience-store pickup), the audit proves the restriction structurally: the other channels have no COD option in checkout, no COD branch in the order state machine, and no admin toggle that could enable one. Then trace the allowed channel end to end: which callback or report is the settlement evidence, what the order status is before it arrives, what happens on `failed_collection` / `returned_uncollected` (restock, cancel, invoice duty), and what the customer is told at each step.
 
 ## Refund
 

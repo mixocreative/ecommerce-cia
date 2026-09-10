@@ -7,7 +7,7 @@
       "name": "ecommerce-cia",
       "source": "./",
       "description": "Audits an e-commerce system as a Viable System (Stafford Beer VSM): payments, stock, orders and entitlements traced as channels; finds cross-boundary invariant violations in the money path. ECPay/NewebPay Taiwan chapter.",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

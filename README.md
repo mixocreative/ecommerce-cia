@@ -118,7 +118,7 @@ A second auditor found all of them by tracing channels, not by reading functions
 ## How the theory becomes procedure｜如何將理論落地為實作流程
 
 1. **Map the shop onto Systems 1–5 first** (§0.9 step 0) and report the table: every component, its primary system, its channels as `producer → consumer`.
-2. **Walk the channels** with twelve mandatory sweeps (§0.9); each defect class below is a named kind of broken channel, and each sweep enumerates its sites from the map rather than from grep.
+2. **Walk the channels** with fourteen mandatory sweeps (§0.9); each defect class below is a named kind of broken channel, and each sweep enumerates its sites from the map rather than from grep.
 3. **Grade viability, not just correctness**: §2 asks whether each of the five systems exists for money, stock, orders and entitlements, whether System 3\* is independent of System 3, whether an algedonic path (amount mismatch, callback auth failure, self-heal) reaches System 5.
 4. **Report structurally**: every finding names its defect class and the VSM channel it sits on.
 
@@ -172,14 +172,14 @@ A channel on the map with no sweep site named against it is reported as unswept.
 ## What it does｜這個 Skill 能幫你做到什麼
 
 1. **Discovers the project's runtime bindings itself** (test runner, canonical environment, sandbox credentials file, preview URL, admin route) and announces them.
-2. **Maps the codebase onto the VSM (§0.9 step 0), then runs twelve mandatory sweeps (§0.9)** along that map's channels. Each produces its own report line; a missing line means the sweep was not done.
+2. **Maps the codebase onto the VSM (§0.9 step 0), then runs fourteen mandatory sweeps (§0.9)** along that map's channels. Each produces its own report line; a missing line means the sweep was not done.
 3. **Applies commerce doctrine**: critical business invariants for payment, inventory, orders, digital goods, discounts and financial integrity; one state machine per concern rather than one `order.status`; purchase-flow symmetry; free and zero-value order abuse; payment gateway integrity (authenticity, correlation, idempotency, browser vs server channels, async methods); refunds; entitlements; reconciliation.
 4. **Carries a Taiwan chapter (TW-1 to TW-13)**: ECPay and NewebPay callback models, asynchronous ATM / CVS / barcode methods, convenience-store logistics and store reselection, pickup with and without payment, TWD handling, electronic uniform invoice, consumer-protection flow.
 5. **Executes the seven-step pre-launch protocol (§0.6) autonomously**: fast lint and scope tests, `/cia`, commerce audit, full suite in the canonical environment, browser walk of every locale and route, one sandbox checkout per gateway with callback verified, numbered report with explicit deferrals.
 6. **Never green-lights on partial evidence.** Skipped DB or gateway tests are "N unverified", never green. A test written this session must show its real run line.
 
 > 1. **自動摸清專案運行環境**（包含找出測試指令、正式環境配置、Sandbox 密鑰檔、Preview 網址、Admin 路徑）並在第一時間向你回報。
-> 2. **先畫出 VSM 架構圖（§0.9 第 0 步），再順著通道發動十二項強制掃描（§0.9）**。每一項掃描都會獨立輸出一行進度；只要少一行就視同任務未完成。
+> 2. **先畫出 VSM 架構圖（§0.9 第 0 步），再順著通道發動十四項強制掃描（§0.9）**。每一項掃描都會獨立輸出一行進度；只要少一行就視同任務未完成。
 > 3. **貫徹電商硬核教條**：嚴格檢查付款、庫存、訂單、數位商品、折扣邏輯與財務一致性的核心不變量；每個業務關心點都必須有獨立狀態機，而不是只靠一個粗暴的 `order.status` 處理；確保購買與退訂流程完全對稱；防範免費與 0 元訂單被 Abuse；確保金流 Gateway 完整性（防偽、關聯性、冪等性、Browser 與 Server 雙通道驗證、非同步付款機制）；涵蓋退款、權限與財務對帳。
 > 4. **內建台灣在地化專章（TW-1 至 TW-13）**：包含綠界 ECPay 與藍新 NewebPay 的 Callback 處理機制、ATM 虛擬帳號／超商代碼／超商條碼等非同步金流、超商物流與重新選擇門市流程、超商取貨付款與純取貨驗證、新台幣無小數點特性處理、電子發票串接，以及消保法七天鑑賞期退貨處置。
 > 5. **全自動執行七步上線前檢查（§0.6）**：包含快速跑 Lint 與範疇測試、執行 `/cia`、電商專屬稽核、正式環境完整測試、針對每個語系與 Route 進行瀏覽器模擬實走、每家金流商各在 Sandbox 跑一筆真實結帳並驗證 Callback，最後產出帶有明確未決事項的編號報告。
@@ -236,7 +236,7 @@ Auto-selects on "run the tests", "prepare for handoff", "green-light", "audit", 
 
 | Section｜檔案章節 | Purpose｜主要用途 |
 |---|---|
-| 0 | Routing hard rules, commerce trigger gate, runtime discovery, seven-step protocol, overrides, autonomy contract, mandatory sweeps｜路由硬性規則、電商觸發條件門檻、執行環境自動探索、七步稽核流程、專案自訂覆寫設定、自主執行公約、十二項強制掃描清單 |
+| 0 | Routing hard rules, commerce trigger gate, runtime discovery, seven-step protocol, overrides, autonomy contract, mandatory sweeps｜路由硬性規則、電商觸發條件門檻、執行環境自動探索、七步稽核流程、專案自訂覆寫設定、自主執行公約、十四項強制掃描清單 |
 | 1 | Fundamental audit doctrine｜稽核核心教條 |
 | 2 | Viable System Model governance pass｜VSM 治理架構檢查 |
 | 3 | Context discovery: commerce model, jurisdictions, providers, fulfillment, tax, currency, digital access｜業務情境探索：包含商業模式、法規轄區、金流商、出貨管道、稅務計算、交易幣別、數位商品存取 |
