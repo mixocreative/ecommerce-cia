@@ -1,6 +1,6 @@
 ---
 name: ecommerce-cia
-description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant', 'VSM map', 'Viable System Model', 'map the codebase onto VSM' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
+description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant', 'four-corner walk', 'customer admin shipment gateway', 'end-to-end data interaction', 'VSM map', 'Viable System Model', 'map the codebase onto VSM' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
@@ -187,7 +187,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the fourteen mandatory sweeps in §0.9 (S1–S14) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the fifteen mandatory sweeps in §0.9 (S1–S15, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -209,7 +209,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
 3b. VSM map (§0.9 step 0): N components → Systems 1–5 / 3*, M channels (table in report). Missing = sweeps had no site list.
-3a. §0.9 cross-boundary invariant sweeps S1–S14 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done.
+3a. §0.9 cross-boundary invariant sweeps S1–S15 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
@@ -285,7 +285,8 @@ Every sweep then enumerates its sites from the map's channels, and each defect c
 - every **System 5 default** (catch block, fallback, absent kill switch) is a site for S3 and S12;
 - every rename or refactor is a **System 1 ↔ System 1 binding** and a site for S9.
 - every **design document, master plan, handoff note or migration** that names a component, table or control is a **System 3 → System 1 promise** and a site for S13;
-- every audit whose scope is narrower than the map (one diff, one module) is a **System 3\* channel narrower than the system** and a site for S14.
+- every audit whose scope is narrower than the map (one diff, one module) is a **System 3\* channel narrower than the system** and a site for S14;
+- every order, shipment, refund and invoice that crosses **customer → operator → logistics provider → payment gateway** is the site for S15, the sweep this skill exists for: four parties hold four partial truths about one order, and the shop's row claims to speak for all of them.
 
 A channel on the map with no sweep site named against it is unswept; say so in the report line rather than omitting it.
 
@@ -306,6 +307,7 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Cascade / retry storm** | one step's failure or retry propagates as crash, duplicate write, or orphaned side effect | S12 | System 2 anti-oscillation absent, System 5 no circuit breaker | System 2 anti-oscillation absent, System 5 no circuit breaker |
 | **Orphan capability / designed-but-unbuilt** | a class, table, column, admin control or design document that exists with no caller, no writer, no page and no gap-register row — capability promised, channel never built | S13 | System 3 capability with no System 1 consumer and no System 3\* register entry |
 | **Scope shadow** | an audit run on one diff or subsystem whose report reads as whole-system green | S14 | System 3\* channel narrower than the map it reports on |
+| **Corner disagreement / unreachable capability** | customer, operator, logistics provider and payment gateway describe one order differently, or a built payment or delivery method is not offerable under the shipped seed | S15 | System 1 ↔ System 3 ↔ System 4, all four corners of one order |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -337,7 +339,41 @@ When the user asks for "code integrity", "audit", "review the wiring", "trace st
 
 **S14 — Scope shadow.** State the scope of this run in the first line of the report: whole shop, one subsystem, or one diff. When it is narrower than the VSM map, list the commerce domains on the map that were **not** walked this run — checkout, payment, shipping / fulfilment, refund, invoice, entitlement — and the date of the last run that did walk each (from the handoff or the register). A narrow-scope report that omits this list reads as shop-wide green and is itself a finding against the audit. Never let "0 findings" stand without the scope beside it.
 
+**S15 — The four-corner end-to-end walk: customer × admin × shipment × payment gateway. THIS IS THE MOST IMPORTANT DATA INTERACTION IN A SHOP AND IT OUTRANKS EVERY OTHER SWEEP WHEN TIME IS SHORT.** One order is described at the same instant by four parties — the **customer** on their order page and in their mail, the **operator** in the admin, the **logistics provider** holding the parcel, and the **payment gateway** holding the money — and by the shop's own database, which claims to be the system of record for all four. Commerce defects of consequence live in the disagreements between those five, not inside any one of them. Walk the object, not the module.
 
+Method, per money-or-goods flow (checkout → payment → fulfilment → collection/delivery → invoice → refund/return; run it for **each** payment family and **each** delivery method the shop offers, because the families differ):
+
+1. **Enumerate the states** the order can occupy end to end, including the ones only a provider can cause (instruction issued, parcel at store, collected, uncollected, returned, settled, charged back).
+2. **Fill the four-corner table.** For every state, one row, four cells plus the database:
+
+   | State | Customer sees | Operator sees / can do | Logistics provider believes | Payment provider believes | Row of record |
+
+   Cite `file:line` for the customer and operator cells and the vendor field, callback or report for the provider cells. A cell you cannot fill from code and vendor document is itself the finding.
+3. **Disagreements are findings.** Customer copy that contradicts the badge above it; an admin queue whose predicate excludes a state the order legitimately occupies; a shipment the provider has moved and the shop has not; money the gateway has settled that the order does not show. Name the class (status-symmetry gap, stale snapshot, dead control, TOCTOU) and the two corners.
+4. **Unanswerable states are findings.** Any state with no operator control, no queue row, no instruction and no ceiling: the shop can enter it and no human can get it out. Say which desk should own it.
+5. **Reachability under the shipped configuration is a CRITICAL check.** Walk the flow against the seed, migration defaults and feature flags as they will ship, not a fixture. A payment method, delivery method or refund path that is built, tested and *not offerable* under the shipped configuration is CRITICAL: the register says shipped, the customer cannot use it, and no unit test can see it. Report it above every other finding.
+6. **Money evidence, per state.** For each state claiming money moved, name the single artefact that proves it (verified server callback, reconciliation query, operator-recorded settlement reference) and confirm nothing weaker (a browser return, a parcel event, a shipping status) is allowed to set it.
+7. **Both directions.** Also walk backwards: refund, return, cancellation, chargeback and invoice correction cross the same four corners in reverse and are where the corners most often part company.
+
+**Test consequence — binding on every test written for this shop.** Any test touching a flow that crosses corners states which corners it covers, and **every money path carries at least one four-corner end-to-end test**: customer action → gateway request → signed provider callback → local state → operator surface, with the provider faked at its own boundary (a real-shaped signed callback body, a real-shaped query response) and never by calling the local handler directly. Single-corner tests are allowed but never sufficient, and a suite of them can be wholly green while the four corners disagree. The project's end-to-end walk matrix (headless scripts, browser walks, scenario list) belongs to this sweep: its written coverage **and the scenarios it has not written yet** go in this sweep's report line, so "the suite is green" can never be said over a matrix that is mostly unwritten.
+
+Report line format: `S15 — walked N flows × M states across customer/admin/logistics/gateway; four-corner table in the report; K disagreements, J unanswerable states, R reachability findings; E2E matrix: W written / U unwritten.`
+
+
+
+## 0.11 Escalation — a finding that reaches a file and not a person has not been escalated
+
+Beer's algedonic rule, applied to the auditor itself: **a pain signal that stops in a log has not reached System 5.** A register row, a report section and a commit are storage, not escalation. The owner reads the conversation.
+
+Binding, for every run of this skill:
+
+1. **Say CRITICAL and HIGH findings in the conversation at the moment they are confirmed**, in one or two sentences each, before continuing the sweep. Not at the end of the audit, not only in the report, not only in the register.
+2. **Say the blocked thing.** Escalate the consequence, not the classification: "the pickup feature cannot be reached in production under the shipped seed" beats "S1-02, HIGH, dead control".
+3. **Say what the owner must decide**, with the options, when the fix is a decision rather than a patch.
+4. **If the audit discovers that something the user asked for cannot be done** — a suite that does not exist, a walk matrix that is mostly unwritten, an environment that cannot reach the provider — say so **first, in the opening message of the session**, not after the work around it is finished.
+5. **Keep a single owner-facing block at the top of the project's register or handoff** ("open owner decisions"), listing every unanswered HIGH with what it blocks, and point every session at it. Written escalation is the backup of the spoken one, never its replacement.
+
+A run that ends with the owner learning a HIGH finding by asking "what is left?" has failed step 5 of §0.6 regardless of how complete the report is.
 
 **AI components in a shop** (chat assistant, recommendation, generated descriptions, agentic order handling): run `/cia` §0.10 for the model-boundary modes; this skill adds only the commerce consequence: no model output may create, modify, refund, or fulfil an order without passing the same validation, idempotency and owner-intent checks as a human-initiated action.
 
