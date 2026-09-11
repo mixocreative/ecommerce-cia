@@ -1,0 +1,3 @@
+# Markdown only, and it is read by two agents on two platforms. Pin LF so a checkout on
+# Windows does not rewrite every line and make the next diff unreadable.
+* text=auto eol=lf
