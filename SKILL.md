@@ -352,6 +352,7 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Hosted-surface control** | a shop setting claims to restrict a choice the buyer makes on the gateway's or carrier's own page, where the request cannot express it and the provider's back-office decides | S17 | System 3 control whose System 1 is on somebody else's server |
 | **Sampled where it should have been enumerated** | one payment or delivery cell read and the conclusion generalised to the grid; a later finding in that class proves the method wrong, not just the answer | S18 | System 3\* measuring a subset and reporting on the whole |
 | **Environment constraint never crossed** | a gateway's or carrier's requirement on the host — fixed egress IP, cron, persistent disk, inbound reachability — and the launch host's capabilities are both written down and never multiplied; usually because the requirement was filed as an owner checklist task | S19 | System 4 reading the environment, never compared with System 3's plan for it |
+| **Service-variant confusion** | 取貨付款 vs 取貨不付款, platform vs direct, B2C vs C2C — same carrier, different caps, fees, templates and payout rules, audited as if one | S18 | System 4 read at brand resolution when the environment distinguishes services |
 | **Blind instrument / dead watchdog** | the settlement reconcile, the capture sweep, the parcel trace or the retention purge stopped running or verified nothing, and the report looked identical to a clean one | S20 | System 3\* with no liveness signal — the channel that reports on the others, unmonitored itself |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
@@ -464,6 +465,42 @@ A shop is a grid, and defects live in the cells nobody visited. Payment method �
 6. **Report the matrix itself.**
 
 **Grading.** A cell contradicting the manual: on its own consequence, and money-moving cells start at HIGH. A class re-walked after a confirmed finding and turning up more: each on its own consequence, and the original is raised one level for being systemic. Unverified cells: not a finding — but calling the integration clean while they exist is.
+
+### S18 addendum, 2026-09-12 — run the carrier's validator, and trust its artefacts over its FAQ
+
+From one afternoon of actually posting parcels through a Taiwanese convenience-store service,
+after its manuals had already been read:
+
+1. **The carrier's import validator states rules no manual does.** Its wizard rejected a row with
+   「寄件人姓名不可超過五個中文字」 — a five-character cap on both the sender's and the collector's
+   name. Nothing in the service pages says it, and it decides which customers can use the delivery
+   method at all: a 證件姓名 of six characters means checkout must not offer it. **Where a carrier
+   or gateway gives you a preview, a validator, a sandbox or a dry run, run it and read its
+   refusals into the matrix.**
+
+2. **The printed label beats the FAQ.** The label said 繳費期限 four days; the FAQ said seven days
+   to ship. The label is what the store obeys, so it is what the clock in our state machine obeys.
+   **Rank the authorities: emitted artefact (label, receipt, callback, generated file) > integration
+   manual > help centre > our own wrapper's docblock.**
+
+3. **One carrier is several services.** 取貨付款 and 取貨不付款 under the same brand had different
+   pages, different upload templates, different value caps (10,000 vs 5,000 vs a platform's 20,000)
+   and different freight tables (flat 65 vs a 60/70/80/90/100 band). The right file on the wrong
+   page failed with a format error that named none of this. **Every variant is its own matrix row,
+   with its own cap, fee, page and payout rule** — and a shop that offers "超商取貨付款" without
+   naming which variant has not decided anything yet.
+
+And two rules with teeth for any shop:
+
+- **A store picker is a promise.** The carrier's own store directory returns branches that do not
+  offer the service — 台鐵/高鐵 stores in this case. Filter the list by service availability, not
+  existence, or the failure lands on a customer at a counter.
+- **The fee table belongs in the product, not in a document.** Freight, collection fee, cross-bank
+  transfer fee, return-handling fee, payout day and the value caps each go beside the switch that
+  turns the method on, each with the URL it was read from and the date it was read, and a staleness
+  prompt when that date ages. `fee_kind` / `fee_source` / `fee_read_on` already exist for exactly
+  this; a rate a shopkeeper cannot see is a rate nobody re-checks, and carriers change them with
+  thirty days' notice on a page nobody has bookmarked.
 
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
