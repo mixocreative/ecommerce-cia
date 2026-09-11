@@ -187,7 +187,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the eighteen mandatory sweeps in §0.9 (S1–S18, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the nineteen mandatory sweeps in §0.9 (S1–S19, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -202,6 +202,12 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 6 — Sandbox gateway walk (10–30 min). THE AGENT RUNS THIS.** One checkout per gateway using the project's sandbox credentials (never ask the owner for creds — file discovered in 0.5; if the `.env` lacks them, copy the documented block in yourself per §0.8). Drive the checkout through the browser automation from Step 5, or through the project's headless walk scripts if it ships them (e.g. `tools/dev/walk-*-headless.php`). Test card numbers come from the vendor's public sandbox page, read fresh each run — never stored in the repo. For every gateway: place one order, verify callback lands (poll the notification endpoint / inbox table, don't wait for a human to click), order flips `pending → paid`, digital goods grant entitlement + issue download token, physical goods flip to `processing`, refund path fires (if the sandbox supports refund; some don't — that's expected, not a bug). Capture DB rows / callback logs / screenshots as artefacts referenced from Step 7 report.
 
+**Step 6b — Host-capability reconciliation (10 min). THE AGENT PRODUCES THE TABLE.** Run S19: every precondition the gateways and carriers impose on the *host* (fixed or allowlisted egress IP, inbound webhook reachability, TLS floor, cron granularity, background processes, persistent disk, clock window, timezone, non-443 outbound), cited to its manual page, crossed against **the host the shop actually launches on and its plan** — and against any host it is planning to move to, since a requirement satisfied on one and not the other is a migration that silently breaks fulfilment.
+
+**This step exists because a shop owner found what the audit had not.** A carrier's IP-allowlist requirement sat in the deploy prerequisites; "shared hosting" sat in the section above it; nobody multiplied them. The requirement had been written as *a task for the owner*, and **a requirement that becomes a checklist item leaves the audit** — everyone tracks whether the box is ticked, nobody asks whether it *can* be ticked on this host.
+
+An `unknown` verdict is a finding, not a blank cell: a launch planned around a capability nobody confirmed is the thing this step prevents. State every consequence in the shop's own terms — "parcels cannot be booked and the refusal is logged rather than badged", not "IP allowlisting may be required".
+
 **Step 7 — Numbered report + explicit deferral (5 min).** Every step gets one line in the report:
 
 ```
@@ -209,10 +215,11 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
 3b. VSM map (§0.9 step 0): N components → Systems 1–5 / 3*, M channels (table in report). Missing = sweeps had no site list.
-3a. §0.9 cross-boundary invariant sweeps S1–S18 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
+3a. §0.9 cross-boundary invariant sweeps S1–S19 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
+6b. Host-capability reconciliation (S19): ✅ R provider requirements × E environments, all satisfied  (or ❌ B not satisfied / C unknown — table in report). **Missing line = the launch host was never checked against what the providers require.**
 7. Fixes applied autonomously this run: N (list path:line + one-line why)  |  Fixes escalated to owner: M (list + why the §0.8 boundary blocked them)
 8. Elapsed: N minutes (budget: 90–225 min)
 ```
@@ -310,6 +317,7 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Corner disagreement / unreachable capability** | customer, operator, logistics provider and payment gateway describe one order differently, or a built payment or delivery method is not offerable under the shipped seed | S15 | System 1 ↔ System 3 ↔ System 4, all four corners of one order |
 | **Hosted-surface control** | a shop setting claims to restrict a choice the buyer makes on the gateway's or carrier's own page, where the request cannot express it and the provider's back-office decides | S17 | System 3 control whose System 1 is on somebody else's server |
 | **Sampled where it should have been enumerated** | one payment or delivery cell read and the conclusion generalised to the grid; a later finding in that class proves the method wrong, not just the answer | S18 | System 3\* measuring a subset and reporting on the whole |
+| **Environment constraint never crossed** | a gateway's or carrier's requirement on the host — fixed egress IP, cron, persistent disk, inbound reachability — and the launch host's capabilities are both written down and never multiplied; usually because the requirement was filed as an owner checklist task | S19 | System 4 reading the environment, never compared with System 3's plan for it |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -423,6 +431,41 @@ A shop is a grid, and defects live in the cells nobody visited. Payment method �
 **Grading.** A cell contradicting the manual: on its own consequence, and money-moving cells start at HIGH. A class re-walked after a confirmed finding and turning up more: each on its own consequence, and the original is raised one level for being systemic. Unverified cells: not a finding — but calling the integration clean while they exist is.
 
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
+
+**S19 — Can the host this shop is launching on actually meet what the gateways and carriers require? A REQUIREMENT THE HOST MUST SATISFY, NEVER CHECKED AGAINST THE HOST THAT WAS CHOSEN.** Added 2026-09-12, after a shop owner asked what the audit had not: *"does [this] also need whitelist IP…? If so our shared hosting launch won't make it."* Both facts were already written down, **in the same document** — the carrier's IP-allowlist requirement in the deploy prerequisites, the shared-hosting launch target in the section above it. Nobody multiplied them.
+
+**Why it hid, and the mechanism is nearly universal in commerce work:** the requirement had been written as *a task for the owner*. "Register the outbound IP in the carrier's console" became a tidy row in a deploy checklist — and **a requirement that becomes a checklist item leaves the audit.** Everyone tracks whether the box is ticked; nobody asks whether the box *can* be ticked on this host.
+
+**The commerce-specific list. Ask every one of these of every provider, cite the page, then ask it of the host:**
+
+| Requirement | Who typically imposes it | What a shared or ephemeral host does to it |
+|---|---|---|
+| **Fixed or allowlisted egress IP** | logistics and label APIs, refund and query APIs, some acquirers | shared hosting may rotate it or share it; serverless and container platforms usually rotate it. **Refusals are per-call and often logged, not badged** |
+| **Inbound webhook reachable on 443, public, with a valid chain** | every gateway's callback | fine on most hosts; broken behind basic auth, an IP allowlist of your own, or a staging password |
+| **Minimum TLS version / cipher / SNI** | acquirers, 3-D Secure | old shared stacks still ship TLS 1.0-1.1 |
+| **Cron granularity and reliability** | settlement, capture windows, parcel tracing, retry drains | shared hosts cap frequency; some have no cron at all, only a pseudo-cron on page hits |
+| **Long-running or background processes** | queue drains, batch label printing | forbidden on most shared plans |
+| **Persistent local filesystem** | invoice PDFs, label files, export spools | ephemeral on containers and serverless |
+| **Clock accuracy** | request signatures with a timestamp window (±N seconds) | usually fine; catastrophic and baffling when not |
+| **Fixed timezone** | settlement cut-offs, invoice periods, statutory day boundaries | host default is rarely the shop's jurisdiction |
+| **Outbound ports other than 443** | SMTP, some bank or carrier endpoints | commonly blocked on shared hosting |
+
+Method:
+
+1. **Extract the preconditions from the manuals, not from your own notes**, with page citations, exactly as S18 requires.
+2. **Name the target environments** — the launch host and its plan, plus any host the shop is planning to move to. Both get a column, because a requirement satisfied on one and not the other is a migration that silently breaks fulfilment.
+3. **Cross them, one row per requirement per environment**, verdict **satisfied / not satisfied / unknown**, with how it is known.
+4. **Unknown is a finding.** "The host may or may not keep a stable egress IP" is the state in which a launch gets planned around a capability nobody confirmed.
+5. **State the consequence in the shop's terms**: not "IP allowlisting may be required" but "parcels cannot be booked, the provider refuses per call, and today that refusal is logged rather than badged — so the shop keeps selling pickup orders it cannot ship."
+6. **Re-run on any host change.** A migration invalidates every row, because every row described an environment that no longer exists.
+
+**Then feed it back into S18**, where the environment is a dimension and not a footnote: **a payment or delivery cell verified against the manual, on a host that cannot meet the manual's precondition, is a verified cell about nothing.**
+
+**Grading.** A requirement the launch host provably cannot meet, on a money or fulfilment path: **CRITICAL**. One it can meet only unreliably — a shared egress IP that may rotate: **HIGH**, because intermittent failures are the ones nobody reproduces and the shop keeps taking orders through them. An unknown on a money path: **HIGH** until answered. Satisfied but undocumented, so the next host move loses it: **MEDIUM**.
+
+**The rule this leaves behind:** when an audit hands the owner a task, it must also record *what makes the task possible* and check that. Otherwise the deploy checklist reaches 100% on a host where one of its boxes was never tickable.
+
+Report line format: `S19 — R provider requirements extracted and cited; E environments crossed (launch + planned); satisfied/not-satisfied/unknown = A/B/C; table in the report.`
 
 
 
