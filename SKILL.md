@@ -385,6 +385,28 @@ When the user asks for "code integrity", "audit", "review the wiring", "trace st
 
 **S14 — Scope shadow.** State the scope of this run in the first line of the report: whole shop, one subsystem, or one diff. When it is narrower than the VSM map, list the commerce domains on the map that were **not** walked this run — checkout, payment, shipping / fulfilment, refund, invoice, entitlement — and the date of the last run that did walk each (from the handoff or the register). A narrow-scope report that omits this list reads as shop-wide green and is itself a finding against the audit. Never let "0 findings" stand without the scope beside it.
 
+**S14 addendum, 2026-09-12 — the launch plan is a scope claim, and an unmarked plan is a false one.**
+S14 governs the audit's scope; the same failure lives in the launch plan, and costs more because
+that document is trusted without re-reading.
+
+1. **Enumerate tracks, not phases.** A shop's launch plan covered correctness, gateways and
+   deploy — and omitted the catalogue migration (products, images, editorial copy from the old
+   site) and the theming that **gated every end-to-end walk in a later phase**. Neither is code, so
+   neither appeared in a plan written from the repository. For a shop, ask specifically: **is the
+   catalogue actually migrated; are prices, stock and tax verified against the old system; are the
+   provider accounts activated rather than merely created; who signs off the design; what physical
+   or manual step (invoice books, packaging, carrier paperwork) has to exist on day one?**
+2. **Three marks only** — done with evidence, open, or waiting on a named party with what it
+   blocks. An item with no test and no citation is open, whatever it feels like.
+3. **A dated external wait is not a task.** Gateway activation, carrier approval (測標), a
+   support-desk reply, a bank's confirmation: record who, when, what it blocks and where the answer
+   lands. An unrecorded wait looks exactly like work nobody did.
+
+**Drift check:** a prerequisite outlives the decision that reversed it. One plan gated work on
+pruning an asset tree; a later owner decision forbade deleting anything in it. Both were live, in
+different files, and the stale gate was still stopping work. When a decision reverses an
+assumption, grep the plans for the gate it created.
+
 **S15 — The four-corner end-to-end walk: customer × admin × shipment × payment gateway. THIS IS THE MOST IMPORTANT DATA INTERACTION IN A SHOP AND IT OUTRANKS EVERY OTHER SWEEP WHEN TIME IS SHORT.** One order is described at the same instant by four parties — the **customer** on their order page and in their mail, the **operator** in the admin, the **logistics provider** holding the parcel, and the **payment gateway** holding the money — and by the shop's own database, which claims to be the system of record for all four. Commerce defects of consequence live in the disagreements between those five, not inside any one of them. Walk the object, not the module.
 
 Method, per money-or-goods flow (checkout → payment → fulfilment → collection/delivery → invoice → refund/return; run it for **each** payment family and **each** delivery method the shop offers, because the families differ):
