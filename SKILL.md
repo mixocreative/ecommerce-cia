@@ -187,7 +187,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the seventeen mandatory sweeps in §0.9 (S1–S17, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the eighteen mandatory sweeps in §0.9 (S1–S18, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -209,7 +209,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
 3b. VSM map (§0.9 step 0): N components → Systems 1–5 / 3*, M channels (table in report). Missing = sweeps had no site list.
-3a. §0.9 cross-boundary invariant sweeps S1–S17 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
+3a. §0.9 cross-boundary invariant sweeps S1–S18 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
@@ -309,6 +309,7 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Scope shadow** | an audit run on one diff or subsystem whose report reads as whole-system green | S14 | System 3\* channel narrower than the map it reports on |
 | **Corner disagreement / unreachable capability** | customer, operator, logistics provider and payment gateway describe one order differently, or a built payment or delivery method is not offerable under the shipped seed | S15 | System 1 ↔ System 3 ↔ System 4, all four corners of one order |
 | **Hosted-surface control** | a shop setting claims to restrict a choice the buyer makes on the gateway's or carrier's own page, where the request cannot express it and the provider's back-office decides | S17 | System 3 control whose System 1 is on somebody else's server |
+| **Sampled where it should have been enumerated** | one payment or delivery cell read and the conclusion generalised to the grid; a later finding in that class proves the method wrong, not just the answer | S18 | System 3\* measuring a subset and reporting on the whole |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -401,6 +402,27 @@ Method, for every hand-off to a hosted surface:
 **The reading rule.** When the provider's manual is on disk — and in this domain it usually is, as a PDF nobody has opened — **read the field table for every field the shop sends, before describing what any of them do.** A docblock in your own integration describing a gateway field is your summary of their document and carries none of its authority; three of the defects behind this sweep were confident summaries written by the same hands that later audited them.
 
 Report line format: `S17 — N hosted surfaces; K shop settings tested against the provider's field table; findings by shape (enforceable / lie / console-mirror); return-path walk: done/not done.`
+
+**S18 — The provider-contract matrix: every payment × delivery combination, every field, cited to the manual. A SPOT CHECK THAT FINDS A HOLE HAS DISPROVED THE METHOD, NOT JUST THE ANSWER.** Added 2026-09-11, in the words of the shop owner who had just found one: *"One hole of that shape means the method that found it was wrong, not just the answer — so the fix is to walk every combination against the manuals rather than spot-check."*
+
+A shop is a grid, and defects live in the cells nobody visited. Payment method × delivery method × destination × cart shape × pay-now-or-pay-later, each cell sending different fields to a different gateway and coming back by a different route. Reading one cell and generalising is how an auditor concludes that a per-carrier toggle works when it cannot work for any carrier.
+
+**Two rules, and the first is the one that gets skipped.**
+
+**Rule 1 — a confirmed finding invalidates the sweep that missed it.** One control that does not reach the gateway means re-walking **every** control of that shape; one state with no badge means re-walking **every** state; one field misread from a manual means re-reading **every** field that manual governs. Fix the instance, then report the count you re-walked. The instance was found by a user; the rest of the class is still shipping.
+
+**Rule 2 — build the matrix, and cite the manual per cell.**
+
+1. **Name the authority per provider.** The gateway's integration manual, the carrier's logistics manual, the tax authority's text. **If a PDF is in the repository, that PDF is the authority** — not your integration's docblocks, which are a summary written by somebody who may also have been wrong.
+2. **Enumerate what the shipped seed can actually produce.** Read the payment-method matrix, the delivery-method offer rows and the feature flags as they ship, and list the combinations a real buyer can reach — not the theoretical product. A method seeded off is one row of the matrix ("not offerable, seed"), not an excuse to skip its column.
+3. **For every reachable cell, answer six questions with citations:** which request field carries this choice and what values may it take (manual, page); what the buyer sees on whose page; what comes back, by which route — callback, redirect, query, push; where it lands in our code; what order and shipment state results; **what the operator sees when it goes wrong.** The last one is where S16 and this sweep meet.
+4. **A cell with no page citation is `UNVERIFIED`, never `OK`.** Report the count. Nine unverified cells stated plainly is a better result than a paragraph concluding the integration looks correct.
+5. **Include the money variants as separate cells.** Pay-now and pay-on-collection are frequently one hosted flow with one different integer, and the fee, the settlement date, the refund route and the invoice timing all differ. They are two cells, not one.
+6. **Report the matrix itself.**
+
+**Grading.** A cell contradicting the manual: on its own consequence, and money-moving cells start at HIGH. A class re-walked after a confirmed finding and turning up more: each on its own consequence, and the original is raised one level for being systemic. Unverified cells: not a finding — but calling the integration clean while they exist is.
+
+Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
 
 
