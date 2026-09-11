@@ -1,6 +1,6 @@
 ---
 name: ecommerce-cia
-description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant', 'four-corner walk', 'customer admin shipment gateway', 'end-to-end data interaction', 'VSM map', 'Viable System Model', 'map the codebase onto VSM' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
+description: "Commerce Integrity Auditor for transactional e-commerce systems. Use for commerce-domain audits involving checkout, orders, payments, inventory, fulfillment, refunds, promotions, tax or invoices, digital entitlements, settlement, and provider reconciliation. ALSO auto-selects on the pre-launch vocabulary 'run test', 'run the tests', 'test suite', 'pre-launch', 'prepare for handoff', 'handoff', 'green-light', 'ready for launch', 'audit', 'security audit', 'wiring audit', 'cross-boundary invariant violation', 'integration-level defect', 'emergent defect', 'trace state across time', 'control to consumer', 'TOCTOU', 'temporal coupling', 'dead control', 'fail-open', 'vacuous pass', 'cross-boundary invariant', 'four-corner walk', 'customer admin shipment gateway', 'end-to-end data interaction', 'VSM map', 'Viable System Model', 'map the codebase onto VSM', 'nothing dies silently', 'silent failure', 'dead watchdog', 'blind monitor', 'liveness', 'stopped cron', 'heartbeat' — BUT ONLY when the project is a transactional commerce system (evidence: payment-gateway integration code, orders/cart/product schema, checkout/cart routes, or a commerce framework dependency; see section 0.3a). On a non-commerce project those same words route to /cia or the project's own test protocol, never here. Explicit /ecommerce-cia or $ecommerce-cia selects this skill only. Do not use for a general code-integrity audit or an explicit /cia or $cia request; those belong exclusively to the separate cia Code Integrity Auditor skill."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
@@ -43,6 +43,33 @@ description: "Commerce Integrity Auditor for transactional e-commerce systems. U
 > it faces; System 1 must act without asking System 3 each step, yet System 3 must still be
 > obeyed; the auditor *is* System 3\*, the channel that bypasses the system's own green report;
 > and a pain signal that stops in a log file has not reached System 5.
+
+
+> **THE FIRST LAW OF THIS AUDIT: NOTHING DIES SILENTLY.**
+> Added 2026-09-12, in the four words of a shop owner who had watched this skill grow nineteen
+> sweeps and then named what all of them were special cases of: *"Nothing should die silently!!"*
+>
+> Every sweep below answers one question — **when this goes wrong, who finds out, and how?** In a
+> shop the answer has a fixed address, given by the same owner: *"anything system cannot handle
+> must hv badge or flag in admin panel of order management page."* Silence has four storeys, and an
+> audit that checks one and not the others has checked the easy one:
+>
+> | Storey | What dies quietly | Sweeps |
+> |---|---|---|
+> | **The work** | an order, a payment, a parcel, a refund stops in a non-terminal state and nothing chases it | S16 |
+> | **The control** | a payment-method toggle, a carrier limit, a retention window that no code reads, so the shopkeeper believes something is true | S5, S13, S17 |
+> | **The detector** | the settlement reconcile, capture sweep or parcel trace examined nothing — or stopped running — and printed the same clean line either way | **S20** |
+> | **The report** | the discrepancy reached a log, an alert table, an exit code: anywhere but the order list and the order page | §0.11, S16 step 5 |
+>
+> The test, applied to anything: **describe the failure, then describe what an operator would see.
+> If those two descriptions are the same on a good day and a bad day, that is a finding — grade it,
+> do not note it.** Exit 0, an empty result set, an untouched log and a tidy summary line are the
+> normal output of a healthy system; they must never also be the normal output of a broken one.
+>
+> In Beer's terms this is the algedonic channel, and it is the one channel that may not be
+> under-variety: **pain that cannot reach System 5 is pain the system does not have.** A catch block
+> that swallows, a job that stops, a monitor that goes blind and a finding filed in a log are one
+> defect at four different heights.
 
 
 ## 0. Skill Identity and Routing — HARD RULES
@@ -187,7 +214,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Step 2 — Universal integrity audit (invoke `/cia` separately).** The sibling `cia` skill covers language-level hygiene the commerce doctrine here doesn't own: output-buffer safety, type drift, unused code, concurrency primitives, migration lifecycle, error-recovery scope. **Do NOT auto-import or merge `/cia` into this skill's flow** — the routing rules in both skills' identity sections forbid it. Instead, explicitly instruct the user in the Step 7 report: "run `/cia` before or after this skill; findings feed into the same report". Skill authors kept them separate on purpose.
 
-**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the nineteen mandatory sweeps in §0.9 (S1–S19, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
+**Step 3 — Commerce integrity audit (this skill's doctrine).** Execute the sections that follow in this file: FIRST the VSM map of the codebase (§0.9 step 0: every component to Systems 1–5 / 3\* and its channels, reported as a table), THEN the twenty mandatory sweeps in §0.9 (S1–S20, of which **S15 — the four-corner customer × admin × shipment × gateway walk — is the most important sweep in this skill and runs first when time is short**) for cross-boundary invariant violations (integration-level / emergent defects), each enumerated along the map's channels and each with its own report line — this is the audit's primary target and it runs before any function-level reading; THEN VSM Systems 1–5, Commerce Model, Payment, Inventory, Orders, Digital Goods & Entitlements, Discounts, Financial Integrity, jurisdiction-specific chapters (TW-1 through TW-14 for Taiwan projects). Every finding grade against the invariants stated in-line, not against generic "what if" reasoning.
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
@@ -208,6 +235,12 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 An `unknown` verdict is a finding, not a blank cell: a launch planned around a capability nobody confirmed is the thing this step prevents. State every consequence in the shop's own terms — "parcels cannot be booked and the refusal is logged rather than badged", not "IP allowlisting may be required".
 
+**Step 6c — Detector roll call (10 min). THE AGENT PRODUCES THE TABLE.** Run S20 on the shop's own safety net. List every scheduled or reactive job whose purpose is to notice — settlement reconcile, authorisation capture, callback and queue drains, refund and chargeback polls, parcel and pickup-expiry traces, stock re-count, entitlement expiry, statutory retention purge — and for each give four answers: **does it report coverage as well as findings** (can a run that examined nothing be told apart from a clean one), **does something read its heartbeat** and escalate a stopped job, **which screen its output reaches**, and **what watches it from outside the application**.
+
+**This step exists because the audit built a watchdog that could go blind and did not notice for an hour.** A nightly settlement audit whose every gateway answer was "unreachable" exited 0 with a tidy summary, indistinguishable from a night when the books balanced. In the same codebase, every worker wrote a heartbeat and nothing read one, so a crontab lost in a host migration would have stopped the capture sweep silently while the shop kept taking authorisations it never collected.
+
+A detector with no coverage number, no liveness watcher or no order screen is a finding in its own right, graded on the money it is supposed to protect — not a note. And name the **outermost** check: the one thing outside the application that would notice if the whole application stopped. If there is none, say so; that is the owner's decision to make knowingly, and it is the last line of §0.11's escalation chain.
+
 **Step 7 — Numbered report + explicit deferral (5 min).** Every step gets one line in the report:
 
 ```
@@ -215,11 +248,12 @@ An `unknown` verdict is a finding, not a blank cell: a launch planned around a c
 2. /cia universal integrity: ✅ 0 findings  (or ❌ N findings — see below)  (or ⏭ not invoked — user must run /cia; skill routing forbids auto-merge)
 3. /ecommerce-cia commerce: ✅ 0 findings  (or ❌ N findings — see below)
 3b. VSM map (§0.9 step 0): N components → Systems 1–5 / 3*, M channels (table in report). Missing = sweeps had no site list.
-3a. §0.9 cross-boundary invariant sweeps S1–S19 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
+3a. §0.9 cross-boundary invariant sweeps S1–S20 (integration-level / emergent defects): one line each — "swept, 0 findings, N sites" or ❌ finding ref. Missing line = sweep not done. **S15 carries its own four-corner table per flow and cannot be reported as a single line; its report line also names the E2E matrix's written and unwritten walks.**
 4. Full test suite in container: ✅ N/M tests green on HEAD {sha}  (or ⏭ §0.8 ladder stopped at rung R: <exact reason + the command the owner must run>)
 5. Browser walk: ✅ every locale/route clean, K screenshots  (or ❌ finding at page/breakpoint)  (or ⏭ §0.8 ladder stopped at rung R: …)
 6. Sandbox gateway walk: ✅ every gateway round-trip, artefacts at <path>  (or ⏭ §0.8 ladder stopped at rung R: …)
 6b. Host-capability reconciliation (S19): ✅ R provider requirements × E environments, all satisfied  (or ❌ B not satisfied / C unknown — table in report). **Missing line = the launch host was never checked against what the providers require.**
+6c. Detector roll call (S20): ✅ D detectors, all report coverage separately from findings, all watched for liveness, all escalate to an order screen; outermost check: <named>  (or ❌ B blind-capable / H unwatched / E unescalated — table in report). **Missing line = the shop's safety net was never checked for whether it is still looking.**
 7. Fixes applied autonomously this run: N (list path:line + one-line why)  |  Fixes escalated to owner: M (list + why the §0.8 boundary blocked them)
 8. Elapsed: N minutes (budget: 90–225 min)
 ```
@@ -318,6 +352,7 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Hosted-surface control** | a shop setting claims to restrict a choice the buyer makes on the gateway's or carrier's own page, where the request cannot express it and the provider's back-office decides | S17 | System 3 control whose System 1 is on somebody else's server |
 | **Sampled where it should have been enumerated** | one payment or delivery cell read and the conclusion generalised to the grid; a later finding in that class proves the method wrong, not just the answer | S18 | System 3\* measuring a subset and reporting on the whole |
 | **Environment constraint never crossed** | a gateway's or carrier's requirement on the host — fixed egress IP, cron, persistent disk, inbound reachability — and the launch host's capabilities are both written down and never multiplied; usually because the requirement was filed as an owner checklist task | S19 | System 4 reading the environment, never compared with System 3's plan for it |
+| **Blind instrument / dead watchdog** | the settlement reconcile, the capture sweep, the parcel trace or the retention purge stopped running or verified nothing, and the report looked identical to a clean one | S20 | System 3\* with no liveness signal — the channel that reports on the others, unmonitored itself |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -466,6 +501,31 @@ Method:
 **The rule this leaves behind:** when an audit hands the owner a task, it must also record *what makes the task possible* and check that. Otherwise the deploy checklist reaches 100% on a host where one of its boxes was never tickable.
 
 Report line format: `S19 — R provider requirements extracted and cited; E environments crossed (launch + planned); satisfied/not-satisfied/unknown = A/B/C; table in the report.`
+
+**S20 — Liveness of the safety net itself. ZERO FINDINGS AND ZERO LOOKING ARE THE SAME REPORT UNLESS SOMEBODY DESIGNED THEM APART.** Added 2026-09-12, when a shop owner said the thing every preceding sweep had circled — *"Nothing should die silently!!"* — and the example was a settlement watchdog built that same day.
+
+S16 asks whether an **order or a parcel** can stop moving unnoticed. **S20 asks it of the machinery that was supposed to notice**: the settlement reconcile, the capture sweep, the callback drain, the parcel trace, the refund poll, the retention purge, the stock re-count. In a shop these are not monitoring niceties — they are the only reason the books match the acquirer's. Their failure is uniquely quiet, because **a reconcile that verified nothing prints the same line as a reconcile that verified everything and found it all correct**: no discrepancies, no error, exit 0.
+
+The three that happen, all three found in one shop in one day:
+
+1. **It ran and verified nothing.** A nightly settlement audit asked two gateways about every recent order; every answer came back unreachable. It counted the unknowns, raised nothing, exited 0. The most likely cause — an outbound IP the acquirer had stopped accepting (S19) — would have left every order back on a single unverified callback, *with nothing anywhere saying the second witness had stopped*.
+2. **It stopped running at all.** Every worker wrote a heartbeat and nothing read one. A crontab lost in a host migration, a dispatcher throwing on its first line, a job flag switched off during an incident and never switched back — each is silent, because nothing runs to produce the error. A shop whose capture sweep stopped keeps taking authorisations it never collects, and finds out when they expire.
+3. **It ran, found a discrepancy, and told a table.** An alarm with no badge on the order list is a detector whose output dies where it lands (S16 step 5).
+
+Method:
+
+1. **Enumerate the shop's detectors.** Everything scheduled or reactive whose job is to notice: settlement reconcile, authorisation capture before expiry, callback and queue drains, refund and chargeback polls, parcel and pickup-expiry traces, inventory re-count, entitlement expiry, statutory retention purge, fraud-review queue. If the list cannot be produced from the code, that is finding one.
+2. **Demand two numbers from each: coverage and findings.** "0 discrepancies" means nothing without "out of N orders examined". Where coverage can legitimately be zero — no orders in the window, no credentials configured, every gateway refusing — that state must be **named and raised** (*blind*, *degraded*, *nothing verified*), never folded into success.
+3. **Give every scheduled job a heartbeat, and make something read it.** A heartbeat nobody queries is theatre. Compare last-run against the job's own schedule, allow a few intervals of grace so one late run is not an alarm, and treat **never ran** as the loudest case rather than the quietest — on a fresh deploy it means the crontab was never installed, which is precisely the launch-day failure nobody sees.
+4. **Walk each detector's output to a screen a shopkeeper opens** — the order list and the order page, per §0.11. A log file, an alert table, an exit code and mail to an unread address are the same answer: nowhere.
+5. **Name the outermost check, and confirm it is outside the shop.** "Who watches the watcher" terminates only by leaving the system: a cron that mails non-zero exits to a person, an external uptime probe, a dead-man's switch a third party trips when the nightly ping stops arriving. A monitor living inside the application shares the application's outages. If there is none, say so plainly — that is the owner's call, and it must be a made one.
+6. **Test the blind case.** Every detector's suite needs "it examined nothing and said so". The test feels like testing the absence of work; it is testing the difference between silence and safety.
+
+**Grading.** A money-path detector that cannot distinguish blind from clean: **HIGH** — every run it has ever made is uninterpretable, including the ones already filed as green. A money-critical scheduled job with no liveness signal: **HIGH**. A detector whose output reaches no order screen: **HIGH**. No outermost check outside the shop: **MEDIUM**, stated plainly rather than buried.
+
+**The sentence to carry out of this sweep:** *a green report from an instrument nobody has proved is looking is not evidence of health — it is evidence of a report.*
+
+Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
 
 
 
