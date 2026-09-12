@@ -105,7 +105,7 @@ If the user does not explicitly invoke a skill and the request is ambiguous, cho
 
 The audit doctrine in this skill is universal across commerce projects; the runtime bindings that make it executable (payment integration paths, test runner, docker command, sandbox credentials location, preview URL, known blockers) live per-project. On every invocation of `/ecommerce-cia`, before running the audit doctrine, scan the invoking project for context. Do this even if a prior session in the same project already ran the skill — the project may have moved.
 
-**Discovery scan** — check for these artefacts in the invoking project (relative to the project root the shell was launched from), plus in the assistant's project-scoped memory directory (`~/.claude/projects/{project-slug}/memory/`):
+**Discovery scan** — check for these artefacts in the invoking project (relative to the project root the shell was launched from), plus in the assistant's project-scoped memory directory (`~/.claude/projects/{project-slug}/memory/`). **Runtime note:** on Codex (`$ecommerce-cia`) the Claude memory directory does not exist. Substitute `AGENTS.md` at the project root, `~/.codex/AGENTS.md`, and the project's `docs/` for every memory lookup below, and announce `memory: n/a on this runtime` in the discovery block rather than reporting the entries as absent.
 
 1. **Handoff docs** — `docs/handoff/CURRENT.md`, `docs/handoff/*.md`. Read the most recent entry: prior findings, open gaps, environment quirks, current branch.
 2. **Gap register** — `docs/GAP-REGISTER.md`. Every known issue the audit already saw. Do not re-flag as fresh finding.
@@ -265,7 +265,7 @@ Rungs 1–4 require no owner input. Only rung 5 asks, and it asks with the answe
 
 ### 0.9 Mandatory Sweeps — Cross-Boundary Invariant Violations a Green Suite Does Not Catch
 
-**Full text: `references/sweeps.md` — read it in full at Step 3, every run.** Every item there was a real commerce gap that sat under a green fast suite, a clean static analyser and a clean linter. None is optional. Each sweep produces either a numbered finding or an explicit "swept, 0 findings, sites: …" line in the Step 7 report; a sweep with no line in the report was not done. Each sweep line names its sites, not a count: a path list (`path:line` or `path` per site) that the reader can open. `swept, 0 findings, 14 sites` is a claim; the fourteen paths are the evidence, and a line without them is the vacuous pass this skill exists to catch (S8), filed by the auditor. The sweeps run **before any function-level reading**, and they are not a grep list: **step 0 maps the codebase onto Systems 1–5 / 3\*** (`references/theory.md`), and every sweep enumerates its sites from that map's channels.
+**Full text: `references/sweeps.md` — read it in full at Step 3, every run.** Every item there was a real commerce gap that sat under a green fast suite, a clean static analyser and a clean linter. None is optional. Each sweep produces either a numbered finding or an explicit "swept, 0 findings, sites: …" line in the Step 7 report; a sweep with no line in the report was not done. Each sweep line names its sites, not a count: a path list (`path:line` or `path` per site) that the reader can open. `swept, 0 findings, 14 sites` is a claim; the fourteen paths are the evidence, and a line without them is the vacuous pass this skill exists to catch (S8), filed by the auditor. **Add one quoted line from one of those sites** — the predicate, the catch, the setting read, verbatim with its `path:line` — as proof the site was read and not merely listed by a grep. The sweeps run **before any function-level reading**, and they are not a grep list: **step 0 maps the codebase onto Systems 1–5 / 3\*** (`references/theory.md`), and every sweep enumerates its sites from that map's channels.
 
 Index — the sweep, what it hunts, and the VSM channel it walks:
 
@@ -339,6 +339,8 @@ Paths are relative to this skill's directory. "Read" means read the whole file; 
 | `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; §30 five-section final output; §31 must / must-not rules |
 
 Step 3 order, restated: theory → sweeps (step 0 map, then S1–S22, S15 first when time is short) → doctrine → domains (+ adapters) → reporting. Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
+
+**Testing this skill.** `tests/RUNBOOK.md` and `tests/fixture-shop/` are the harness: a planted-defect shop with an answer key. Any change to this file or to `references/` is run against it before it is committed (S8 applies to the skill). `tools/sweep-diff.py` shows where this skill's sweep texts and `cia`'s have diverged, so a lesson that landed in one only is a decision, not an accident.
 
 ### 0.14 Paired Run With `cia` — explicit request only
 
