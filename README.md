@@ -1,5 +1,7 @@
 # ecommerce-cia — 台灣電商金流串接與完整性審查 Skill
 
+[![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
+
 **唯一專為台灣電商實務量身打造的 AI 程式碼檢測與串接 Skill：藍新 NewebPay、綠界 ECPay、統一金流 PAYUNi、TapPay、超商取貨付款、電子發票、個資法 —— 搭配實機驗證探針、新手也能一次搞定的串接引導，以及能在綠燈測試背後抓出潛藏漏洞的審查機制。**
 
 [English README](README.en.md) · 支援 Claude Code · Codex · Cursor · 以及任何能讀取 `SKILL.md` 的 Agent
