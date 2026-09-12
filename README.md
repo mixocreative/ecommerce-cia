@@ -31,9 +31,9 @@
 
 ```bash
 # Claude Code
-git clone https://github.com/<you>/ecommerce-cia ~/.claude/skills/ecommerce-cia
+git clone https://github.com/mixocreative/ecommerce-cia ~/.claude/skills/ecommerce-cia
 # Codex
-git clone https://github.com/<you>/ecommerce-cia ~/.codex/skills/ecommerce-cia
+git clone https://github.com/mixocreative/ecommerce-cia ~/.codex/skills/ecommerce-cia
 # 接著在任何電商專案目錄下輸入：
 #   "我想用藍新金流收款，怎麼開始？"      -> 引導模式 (setup mode)
 #   "pre-launch audit, Screen tier"       -> 審查模式 (audit mode)

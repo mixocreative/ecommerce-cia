@@ -31,9 +31,9 @@ This skill encodes all of that as doctrine, checks it with scripts, and explains
 
 ```bash
 # Claude Code
-git clone https://github.com/<you>/ecommerce-cia ~/.claude/skills/ecommerce-cia
+git clone https://github.com/mixocreative/ecommerce-cia ~/.claude/skills/ecommerce-cia
 # Codex
-git clone https://github.com/<you>/ecommerce-cia ~/.codex/skills/ecommerce-cia
+git clone https://github.com/mixocreative/ecommerce-cia ~/.codex/skills/ecommerce-cia
 # then, in any shop directory:
 #   "我想用藍新金流收款，怎麼開始？"      -> setup mode
 #   "pre-launch audit, Screen tier"       -> audit mode
