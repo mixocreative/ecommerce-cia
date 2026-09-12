@@ -53,7 +53,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 | `online-api-v3/merchant/redirection-pages` | HTTPS TLS 1.2+; LINE Pay calls confirmUrl/cancelUrl by **HTTP GET** with `orderId` + `transactionId`; connection timeout 5 s, read 20 s; the LINE Pay IPs to allowlist **inbound** when `confirmUrlType` is `SERVER` |
 | `sandbox`, `faq`, `api-change-log` | sandbox account rules, the 1106 explanation, v3 → v4 differences |
 
-**Version choice:** new integration → **v4** (a superset; `paymentProvider` tells you whether an EPI or a TSP settled — the field always reads `TSP` for online today, per the change log). Existing v3 code → stay on v3 unless you need the field; both are served. Say which one you chose and why.
+**Version choice:** new integration → **v4** (a superset; `paymentProvider` tells you whether an EPI or a TSP settled — the field always reads `TSP` for online today, per the change log; *live 2026-09-13: v4 confirm and details both returned `"paymentProvider": "TSP"`, otherwise identical to v3*). Existing v3 code → stay on v3 unless you need the field; both are served. Say which one you chose and why.
 
 ---
 
