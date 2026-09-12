@@ -19,7 +19,7 @@ CODES: dict[str, tuple[str, str, str, str, str]] = {
     # ---- NewebPay MPG / query / refund (NDNF-1.2.5 error tables; lessons from a shipped shop) ----
     "MPG02003": ("NewebPay", "This payment method is not enabled for your shop.",
                  "The console toggle may be on, but NewebPay has not switched the product on at their side (seen: three days with every local check green).",
-                 "Check 商店資料設定 → 交易手續費及撥款天數 → the method is 啟用. If it is, this is vendor-side: contact cs@newebpay.com / 02-2786-3655 with your MerchantID and the code, record the date as a wait, and keep building other methods. Re-verify with tools/newebpay/probe_mpg.php, not by placing orders.",
+                 "FIRST flip the toggle in the console (商店資料設定 → 交易手續費及撥款天數 → the method 啟用) and re-probe — an owner enabled 玉山 Wallet and the probe passed within a minute (2026-09-12). If the toggle is already on, this is vendor-side: contact cs@newebpay.com / 02-2786-3655 with your MerchantID and the code, record the date as a wait, and keep building other methods. Re-verify with tools/newebpay/probe_mpg.php, not by placing orders.",
                  "NDNF-1.2.5 MPG error table; mixoweb 2026-08-14..17"),
     "MPG03009": ("NewebPay", "交易資料 SHA 256 檢查不符合 — the signature did not verify.",
                  "HashKey/HashIV do not match this MerchantID on this environment (sandbox keys against core, or the reverse), or TradeSha was computed over the plaintext instead of the TradeInfo ciphertext.",
