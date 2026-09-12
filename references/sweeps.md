@@ -214,6 +214,8 @@ This matters most in exactly the place it is least expected: a **bulk editor** f
 spreadsheet, so nobody thinks about concurrency — and it is the surface where one operator can
 silently discard fifty of another's edits in a single click.
 
+**2c. `rowCount()` may mean *matched*, not *changed* — check the connection before trusting the number.** MySQL's default reports rows the `SET` actually changed; with `PDO::MYSQL_ATTR_FOUND_ROWS` it reports rows the `WHERE` matched, and a codebase may enable that deliberately — one did, to stop idempotent re-saves reading as *"not there"* (`fb64069e`). Rules 2 and 2a survive either setting **only because the precondition is in the `WHERE`**: a row that no longer qualifies is not matched, so it is not counted, whichever semantic is on. What does *not* survive is any code reading `rowCount() === 0` as *"nothing changed"* — under `FOUND_ROWS` a no-op re-save matches and reports 1. A test asserting the old semantic was found red, unreached, at about test 4700 of a six-hour suite. **Grep the connection for `FOUND_ROWS` before writing or auditing any row-count logic, and if the contract needs "nothing to change" to read as zero, put that in the `WHERE` too** — NULL-safely, with `<=>`, because the columns compared are usually the ones that start NULL.
+
 **2b. Validate per cell, not per submission.** One bad value must not reject the other forty-nine.
 Same rule as showing ineligible rows with their reason: the batch reports per row, and the rows that
 were fine are saved.
