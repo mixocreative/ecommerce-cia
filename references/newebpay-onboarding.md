@@ -55,7 +55,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when the project u
    | `藍新金流_合作推廣商商店商業條件申請表` (2026-08-31) | referral-partner commercial terms |
    | `大哥付你分期-賣家約定條款`, `AFTEE服務條款` | BNPL seller terms — signing them is part of enabling `OPPAY` / `AFTEE` |
 
-   **Rule that follows:** before telling a user a method is "a toggle", check this list. If a form exists for it, the method is **vendor-enabled** — the user files the form, NewebPay flips it, and the readiness card carries a dated wait from the first session. Users cannot turn these on in the console, in sandbox or production. *(owner, 2026-09-12: "some payment, even in sandbox, requires customer service to open for test, at least LINE Pay")*
+   **Rule that follows:** before telling a user a method is "a toggle", check this list — and then **probe, because the list is a hypothesis**. A form existing for a method means it is *probably* vendor-enabled in production; in the sandbox, 玉山 Wallet turned out to be a plain console toggle (2026-09-12: `MPG02003` → toggle → PASS in under a minute), while LINE Pay needed 客服. The sequence is always: flip the toggle if there is one → probe → if still `MPG02003`, file the form and record the wait. *(owner, 2026-09-12: "some payment, even in sandbox, requires customer service to open for test, at least LINE Pay")*
 3. **Do not read the manuals from the sandbox portal.** `cwww.newebpay.com`'s download page served NDNF-1.0.8 (2023-10-04) while production served NDNF-1.2.5 — two years behind. *(lesson, verified 2026-09-12)* Manuals from `www`, accounts from `cwww`.
 4. Download the PDFs into a gitignored folder (`.vendor-docs/`), record name + version + date + URL in `docs/integrations/vendor-doc-locations.md` (§1.4). If the code was written against an older version, diff the changelog page before anything else (NDNF 1.2.3 → 1.2.5 added OPPAY instalments and memorised-email params; nothing on URLs, codes or CVSCOM *(lesson)*).
 5. **Citation convention:** PDF page number = printed footer + 1. Say which you use. *(lesson: a page-off-by-one citation sent a session to the wrong table)*
@@ -79,7 +79,7 @@ Ask these in order. Each answer removes work.
 | 信用卡分期 `InstFlag` / 紅利 `CreditRed` | card with instalments / points | as card | bank approval per plan, via NewebPay | keep off until the contract says on |
 | Apple Pay / Google Pay / Samsung Pay `APPLEPAY` `ANDROIDPAY` `SAMSUNGPAY` | wallet on the hosted page | as card | **vendor-enabled**: `行動支付機制申請表`, then NewebPay | need the card product first; Apple Pay adds domain verification |
 | LINE Pay `LINEPAY` | redirect to LINE | wallet settlement | **vendor-enabled, sandbox included**: `LINE Pay閘道_網路商店申請書` + 報價單 to NewebPay, then their 客服 flips it — **the user cannot turn it on in the console** | expect a wait of days; through NewebPay the shop needs **no static IP** *(lesson, NDNF-1.2.5 has no merchant allowlist)* |
-| 玉山 Wallet / 台灣 Pay / TWQR `ESUNWALLET` `TAIWANPAY` | wallet or QR | wallet settlement | **vendor-enabled** (行動支付 form) | same wait shape as LINE Pay |
+| 玉山 Wallet / 台灣 Pay / TWQR `ESUNWALLET` `TAIWANPAY` | wallet or QR | wallet settlement | **console toggle in the sandbox** — verified 2026-09-12: `MPG02003` → owner flipped 玉山 Wallet on in the console → probe PASS within a minute. Production may still need the 行動支付 form; verify | probe after every flip; the toggle-then-probe loop is under a minute |
 | WebATM `WEBATM` | pays now via online banking | immediate | console toggle | fine for any cart size |
 | ATM 轉帳 (虛擬帳號) `VACC` | gets a virtual account, pays later at ATM or app | when the transfer lands — **hours or days** | console toggle on the hosted page; `非信用卡應用 API 機制申請表` if you call the standalone API | the order is *unpaid* until `NotifyURL` fires; expiry sweep + "waiting for payment" screen (TW-4); **refunds need `商店非信用卡退款機制申請表`** or are manual transfers |
 | 超商代碼 `CVS` | gets a code, pays at 7-11/全家/萊爾富/OK counter | when paid at the counter | as `VACC` | **cap NT$6,000 by default** *(lesson; cite NDNF)* — hide it on larger carts |
@@ -125,7 +125,7 @@ From the §1 inventory, for the §2 choices. Each is a PDF from the download pag
 | If the user chose … | File … | Also |
 |---|---|---|
 | LINE Pay | `LINE Pay閘道_網路商店申請書(通用版)` + the 報價單 zip | expect 客服 follow-up; sandbox enablement is theirs too |
-| Apple / Google / Samsung Pay, 玉山 Wallet, 台灣 Pay | `行動支付機制申請表` | Apple Pay domain verification afterwards |
+| Apple / Google / Samsung Pay (and, in production, possibly 玉山 Wallet / 台灣 Pay — in the sandbox these two are plain console toggles) | `行動支付機制申請表` | Apple Pay domain verification afterwards |
 | ATM / CVS / BARCODE refunds through the API | `商店非信用卡退款機制申請表` | otherwise refunds are manual bank transfers the operator records |
 | ATM / CVS via the standalone 非信用卡 APIs (not the hosted page) | `非信用卡應用 API 機制申請表` | hosted MPG usually does not need it — confirm in NDNF |
 | BNPL | sign `AFTEE服務條款` / `大哥付你分期-賣家約定條款` | NewebPay enables after signature |
