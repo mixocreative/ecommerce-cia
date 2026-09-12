@@ -512,7 +512,7 @@ after its manuals had already been read:
    with its own cap, fee, page and payout rule** — and a shop that offers "超商取貨付款" without
    naming which variant has not decided anything yet.
 
-And two rules with teeth for any shop:
+And three rules with teeth for any shop:
 
 - **A store picker is a promise.** The carrier's own store directory returns branches that do not
   offer the service — 台鐵/高鐵 stores in this case. Filter the list by service availability, not
@@ -523,6 +523,15 @@ And two rules with teeth for any shop:
   prompt when that date ages. `fee_kind` / `fee_source` / `fee_read_on` already exist for exactly
   this; a rate a shopkeeper cannot see is a rate nobody re-checks, and carriers change them with
   thirty days' notice on a page nobody has bookmarked.
+
+- **A citation that does not resolve is not a citation, and money citations are the ones that get
+  re-derived.** Page numbers from a PDF reader, folios printed in footers and contents-page section
+  numbers are three different coordinates, and carrier and gateway manuals routinely print a folio
+  one lower than the PDF page. The cells this matters most for are the ones somebody will re-check
+  under pressure: a value cap, a fee, a payment-window limit, a rate-limit lockout code. **State
+  the coordinate system in the document, verify each citation by extracting that page and grepping
+  it for what you claimed, and when a finding forces a re-walk of its class, re-walk the citations
+  too** — including in patches not yet applied, so the docblock that ships names a real page.
 
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
