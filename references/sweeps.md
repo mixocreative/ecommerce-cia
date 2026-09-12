@@ -761,6 +761,17 @@ close the class — an order-scoped finding raises one `OperatorNotice` per orde
 order, row on the desk, idempotent per order and case); a site-scoped one records *count + one
 sentence* beside its heartbeat and the cron page draws it in red under the stopped workers. The
 exit code stays for liveness; it was never a surface.
+
+**Credentials from a screenshot are a hypothesis (2026-09-13, PAYUNi).** A Hash Key read off an
+image had one glyph wrong (lowercase l for capital I); the codec encrypted cleanly and the vendor
+answered `DEF01007 Hash比對不符合`. The proof of a key is a **live no-op request** — a 交易查詢 for an
+order that cannot exist — answered *inside a verified envelope* (`QUERY03001`); an unencrypted
+refusal names which of the three values is wrong. Build that probe before the checkout, put it on
+the gateway test page, and try the l/I, O/0, 1/l variants yourself before asking anyone to paste.
+**Vendor docs behind an SPA (ShowDoc, docsify):** pull the page source through the app's own API
+(`/server/index.php?s=/api/page/info`, `page_id`) — the rendered page is empty to a fetcher and a
+copied table drops the cells that carry the money rules. Cite page ids, keep the markdown in the
+gitignored vendor-docs folder, generate the status map and its audit document from one script.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
