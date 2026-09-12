@@ -751,6 +751,14 @@ before drawing anything:
    filter is *not yet done*, which re-exports rows somebody already uploaded, and a duplicate upload
    is the failure that costs money. The *tell the customer* box is default on, and unticking it is
    recorded on the row with a name, never silently absent.
+
+**The class behind rule 1, walked 2026-09-13:** `grep -l 'exit(1)' tools/ops tools/worker` and
+ask of each what a person *sees*. Three scripts answered *a log file*: a PDPA request past its
+fifteen days, stored PHP in Hanna Code, a digital sale with no waiver evidence. Two surfaces
+close the class — an order-scoped finding raises one `OperatorNotice` per order (badge on the
+order, row on the desk, idempotent per order and case); a site-scoped one records *count + one
+sentence* beside its heartbeat and the cron page draws it in red under the stopped workers. The
+exit code stays for liveness; it was never a surface.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
