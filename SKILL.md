@@ -1,6 +1,6 @@
 ---
 name: ecommerce-cia
-description: "Use when auditing a transactional e-commerce codebase — checkout, orders, payments, gateway callbacks, inventory, fulfilment and pickup, refunds, promotions, tax and invoices, digital entitlements, settlement, provider reconciliation, consumer-law and privacy compliance (GDPR, CCPA, APPI, 個資法, PIPA, LGPD), legal pages and terms acceptance, subscriptions, or setting up a gateway from zero (NewebPay 藍新 sandbox, merchant account, 串接) — or when a commerce project (payment-gateway code, orders/cart schema, checkout routes, or a commerce framework dependency present) hears pre-launch words: run tests, test suite, pre-launch, handoff, green-light, ready for launch, audit, security audit, wiring audit, nothing dies silently, dead control, fail-open, vacuous pass, TOCTOU, four-corner walk, VSM map, empty state, admin dashboard. Explicit /ecommerce-cia or $ecommerce-cia always selects this skill. Not for /cia or $cia (the separate Code Integrity Auditor) and not for non-commerce projects."
+description: "Use when auditing a transactional e-commerce codebase — checkout, orders, payments, gateway callbacks, inventory, fulfilment and pickup, refunds, promotions, tax and invoices, digital entitlements, settlement, reconciliation, consumer-law and privacy compliance (GDPR, CCPA, APPI, 個資法, PIPA, LGPD), legal pages, subscriptions, or setting up a gateway from zero (NewebPay 藍新 / ECPay 綠界 sandbox, merchant account, 串接, which gateway to use) — or when a commerce project (payment-gateway code, orders/cart schema, checkout routes, or a commerce framework dependency present) hears pre-launch words: run tests, test suite, pre-launch, handoff, green-light, ready for launch, audit, security audit, wiring audit, nothing dies silently, dead control, fail-open, vacuous pass, TOCTOU, four-corner walk, VSM map, empty state, admin dashboard. Explicit /ecommerce-cia or $ecommerce-cia always selects this skill. Not for /cia or $cia (the separate Code Integrity Auditor) and not for non-commerce projects."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
@@ -199,7 +199,7 @@ An `unknown` verdict is a finding, not a blank cell: a launch planned around a c
 
 A detector with no coverage number, no liveness watcher or no order screen is a finding in its own right, graded on the money it is supposed to protect — not a note. And name the **outermost** check: the one thing outside the application that would notice if the whole application stopped. If there is none, say so; that is the owner's decision to make knowingly, and it is the last line of §0.10's escalation chain.
 
-**Step 7 — Numbered report + explicit deferral (5 min).** Every step gets one line in the report:
+**Step 7 — Numbered report + explicit deferral (5 min).** Open with the owner paragraph (§0.16.8): ≤ 5 plain lines — what is safe, what is not, what to do first. Then every step gets one line in the report:
 
 ```
 1. Fast lint + scope tests: ✅ N tests / M assertions green  (or ❌ finding at path:line)
@@ -339,6 +339,7 @@ Paths are relative to this skill's directory. "Read" means read the whole file; 
 | `references/jurisdictions.md` | Any non-Taiwan selling jurisdiction | §23 EU, Japan, United States, United Kingdom adapters at Taiwan depth (tax, consumer law, payments, logistics, invoices) and the adapter rule |
 | `references/global-compliance.md` | Every run, after the jurisdiction adapters | §23a global layer: GT terms-and-services checkup (mandatory pages, acceptance evidence, subscriptions, marketing consent, price display); PR privacy checkup across EU / UK / US-state / JP / TW / KR / CA / AU / BR / CN / SG / IN / HK regimes (data map, consent, cookies, DSAR clocks, retention vs fiscal, processors and transfers, breach detection, children, notice-vs-system); short adapters for Korea, Canada, Australia, Singapore, China CBEC, Brazil, India, Hong Kong |
 | `references/newebpay-onboarding.md` + `tools/newebpay/` | Setup mode (§0.15) when NewebPay is used or chosen | Detect (`detect.py`) → latest manuals and the hidden form inventory (`fetch_manuals.py`) from `www.newebpay.com` → choice menu (methods, 超商取貨, chains, host) → prerequisite checklist → S19 host table → sandbox registration (user drives) → console activation and probes → console activation proved by `probe_mpg.php` (vendor-enabled methods such as LINE Pay are dated waits, not toggles) → wiring contract, `callback.php` to verify or simulate callbacks → sandbox walk → go-live checklist → gotchas → platform programme → readiness card (`readiness.py`) |
+| `references/ecpay-onboarding.md` + `tools/ecpay/` | Setup mode (§0.15) when ECPay is used or chosen | Detect → markdown-twin docs by page id (`fetch_docs.py`) → public stage credentials → choice menu → prerequisites (no stage registration; production contract, 測標) → S19 → probe (`probe_aio.php`, live-verified) → wiring (`CheckMacValue` known-answer test, `1|OK`, `RtnCode` semantics, `SimulatePaid`, DoAction production-only, two logistics families) → stage walk limits → go-live → gotchas → readiness card |
 | `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; §30 five-section final output; §31 must / must-not rules |
 
 Step 3 order, restated: theory → sweeps (step 0 map, then S1–S22, S15 first when time is short) → doctrine → domains (+ adapters) → global-compliance → reporting. Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
@@ -374,12 +375,56 @@ The audit assumes an integration exists. When it does not — the user wants to 
 - **Vendor support is a dated wait, not a plan** — used only for vendor-side enablement nothing else can flip, recorded with the date and what it blocks.
 - **Ends with the readiness card** (per-provider format in the guide): every prerequisite ✅ / ⏳ / ❌ with an owner and a date, waits on others, and the next three actions.
 
+**Choosing a Taiwan gateway (say this before any provider guide when the user has not chosen):**
+
+| | NewebPay 藍新 | ECPay 綠界 |
+|---|---|---|
+| First sandbox payment | hours–days: register on `cwww` with ID documents and SMS, create a shop, copy keys; card product may need vendor enablement | **~5 minutes**: public stage MerchantID + keys on the docs page, test card, 3DS OTP fixed `1234` |
+| Crypto schemes to get right | **one** (AES-256-CBC hex + `TradeSha`) for MPG, query, refund | **three** (`CheckMacValue`; AES-128 JSON for refunds / family-A logistics / invoice; a second logistics family) |
+| Refund in sandbox | works | **impossible** for cards — first proof is production |
+| 超商取貨 | store picker hosted inside the payment page; one logistics API; needs a stable outbound IP | two logistics products with different acks; 測標 per sub-type; no stage status pushes either |
+| Docs | one integrated PDF (browser only; sandbox portal serves a stale copy) | HTML with markdown twins, but pages contradict themselves |
+| Vendor waits | LINE Pay / wallets / BNPL by form, sandbox included | product activation, 測標 |
+| WooCommerce | vendor module (2026-03) | vendor module |
+
+**Default for a first shop built by a non-engineer: NewebPay** — fewer ways to be silently wrong, and the sandbox proves refunds. **Choose ECPay** when the user is on WooCommerce, wants a sandbox payment today, or already holds an ECPay contract. Do not run both for the same job; a shop that ended with both did so as a cost, not a plan *(mixoweb)*.
+
 **Provider guides:**
 
 | Provider | Guide | Status |
 |---|---|---|
-| NewebPay 藍新金流 (MPG, 定期定額, 物流) | `references/newebpay-onboarding.md` | complete — manuals inventoried 2026-09-12, lessons from a shipped integration |
-| ECPay 綠界, PAYUNi, TapPay, direct LINE Pay, Stripe/Adyen | — | not yet written; run setup mode from the posture above and the vendor's manual, and say the guide is missing |
+| NewebPay 藍新金流 (MPG, 定期定額, 物流) | `references/newebpay-onboarding.md` + `tools/newebpay/` | complete — manuals inventoried 2026-09-12, lessons from a shipped integration, cold-tested |
+| ECPay 綠界 (AIO, DoAction, two logistics families, e-invoice) | `references/ecpay-onboarding.md` + `tools/ecpay/` | complete — pages fetched 2026-09-12, probe verified live against stage, CheckMacValue known-answer test |
+| PAYUNi, TapPay, direct LINE Pay, Stripe/Adyen | — | not yet written; run setup mode from the posture above and the vendor's manual, and say the guide is missing |
+
+Shared: `tools/explain_error.py <code>` translates NewebPay and ECPay error codes into cause + next action; `tools/newebpay/readiness.py` renders the card for either provider.
+
+### 0.16 Plain-Language Contract — when the user is not an engineer
+
+Detect it, do not ask: the request is in everyday words ("怎麼開始", "my site broke after payment", "is it safe to launch"), the directory is empty or has no tests, the user has not used a technical term. Then, for the rest of the session, every user-facing message obeys:
+
+1. **One thing at a time.** One question, 2–4 choices, one-line consequence each. One next action at the end of every message, in bold.
+2. **Say what it means, not what it is called.** Sweep ids, section numbers, VSM systems and taxonomy terms stay in the report file; to the user, "a setting nothing reads, so switching it does nothing" — never "S5 dead control". The first use of any unavoidable term gets a six-word gloss.
+3. **Show the road.** The first reply draws the whole path as 4–6 numbered stops and says which stop we are at; every later reply says "stop N of M".
+4. **Never hand them a command you can run.** §0.8 applies doubly: the AI runs the probe, the fetch, the test, the tunnel. The user's own actions are only the ones the hard limits reserve for them (identity, passwords, account creation, console changes on a fresh yes), and each is one exact click with a link.
+5. **Errors are translated, not quoted.** A gateway code goes through `tools/explain_error.py` (or the vendor page) and comes back as: what happened, why, the one thing to do, who does it. The raw code appears once, in brackets.
+6. **Waits are named.** Anything that depends on a vendor or a host is a line: who, what was asked, since when, what it blocks — on the readiness card, not in prose.
+7. **Money and identity get the slow voice.** Before any step that touches real money, a production console, or the user's identity, drop the shorthand: full sentences, what will happen, what cannot be undone, and an explicit yes.
+8. **Reports get an owner paragraph first.** Any audit or setup report opens with ≤ 5 plain lines: what is safe, what is not, what to do first — before the numbered lines (§0.6 Step 7 / the readiness card).
+
+The doctrine does not change; only the voice does. A finding is still graded, cited and filed exactly as §0.9 and `reporting.md` require.
+
+### 0.17 Start Menu — the first reply on a fresh project
+
+When neither an explicit skill call nor a clear trigger word settles the mode, ask this once, with choices, and go:
+
+| The user's situation | Route |
+|---|---|
+| **"I have an idea, no code yet."** | Setup mode (§0.15): choose the gateway (§0.15 table), then the provider guide from Q1. |
+| **"I have a shop / code. Is it safe to launch?"** | Audit, Screen tier (§0.6), plain-language report (§0.16.8). |
+| **"Something broke."** (payment, order, callback) | Step 1 fast tests + S10 probe-before-diagnosis + `explain_error.py` on whatever code appeared; then the smallest fix with a test, per §0.8. |
+| **"I got an error code from the gateway."** | `tools/explain_error.py <code>`; if the answer is vendor-side, a dated wait; if it is keys or config, the probe until PASS. |
+| **"Which payment company should I use?"** | §0.15 "Choosing a Taiwan gateway", one question about what they sell, then a recommendation with the reason. |
 
 ---
 
