@@ -26,7 +26,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when the project u
 ## 1. Get the latest manuals (10 minutes, AI does this)
 
 1. Open **https://www.newebpay.com/website/Page/content/download_api** in a browser (the page returns **403 to `curl` and to plain fetchers** — use the browser tool, or send a browser User-Agent and Referer). *(lesson)*
-2. Read the table. As of 2026-09-12 it lists:
+2. Run `python tools/newebpay/fetch_manuals.py` (stdlib; sends a browser UA + Referer; `--download .vendor-docs` saves the PDFs; `--record docs/integrations/vendor-doc-locations.md` writes the dated citation lines). The page renders its table client-side from embedded JSON, and **the visible tab shows three manuals while the JSON carries ~65 documents** — application forms, member guides, platform APIs, terms. The fetcher lists them all by kind. As of 2026-09-12 the manuals are:
 
    | Document | 程式版本 | 文件版本 | Date | Covers |
    |---|---|---|---|---|
@@ -35,6 +35,27 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when the project u
    | 物流服務技術串接手冊 (+ 程式範例 zip) | v3.0 | NDNSv1.0.0 | 2024-05-16 | convenience-store logistics API: label, shipment number, query, modify, trace, status push — only if you ship to 超商 |
 
    Plus CMS modules: **WooCommerce** `newebpay-payment-1.0.12` (2026-03-03, WordPress 6.4.3 / PHP ≥ 8.0), OpenCart 1/2/3, Joomla event modules. **If the user is on WordPress + WooCommerce, install the vendor module first and this guide becomes the checklist for configuring it — do not write a gateway by hand.**
+
+   And the **hidden inventory** the fetcher exposes (kind `form` / `guide`), which is where the "why is this method still off" answers live:
+
+   | Document (2026-09-12) | What it is for |
+   |---|---|
+   | `藍新科技_LINE Pay閘道_網路商店申請書(通用版).pdf` + `…網路商店報價單(通用版).zip` (2025-07-30) | **LINE Pay through NewebPay is applied for on paper** — form + quote, sent to NewebPay; enablement is theirs, in sandbox too |
+   | `藍新金流_LINE Pay 閘道幕後授權機制申請表` (2025-09-05) | server-side (幕後) LINE Pay authorisation — only if you do not use the hosted page |
+   | `藍新金流_行動支付機制申請表` (2025-09-05) | Apple Pay / Google Pay / Samsung Pay and other wallets — application, not a toggle |
+   | `藍新金流_非信用卡應用 API 機制申請表` (2025-09-05) | non-card methods driven by API (ATM 虛擬帳號, 超商代碼/條碼 via the 非信用卡 APIs) — check whether your MPG use needs it; the hosted MPG page usually does not, the standalone APIs do |
+   | `藍新金流_商店非信用卡退款機制申請表` (2024-12-13) | **refunding ATM / CVS payments** — without it non-card refunds are manual bank transfers |
+   | `藍新金流_信用卡幕後授權機制申請表`, `信用卡嵌入式支付機制申請表` (2025-09-05) | server-side card authorisation / embedded card form — PCI scope; only if you leave the hosted page |
+   | `藍新金流_NOTIFY 回傳信用卡資訊機制申請表` (2025-09-05) | getting card details (last four, issuer) in the `NotifyURL` payload |
+   | `藍新金流_約定信用卡付款授權申請表`, `約定信用卡 APP 綁卡電話驗證機制申請表` | card-on-file / recurring (定期定額 and 約定付款) |
+   | `藍新金流_商店交易通知信機制異動申請表`, `商店提領機制異動申請表`, `匯款帳戶異動申請表`, `商店狀態異動申請表` | operational changes: notification mail, payout, bank account, shop status |
+   | `藍新科技_電子收據_會員資料異動與串接IP申請表` | e-receipt service — **and the one document that names an IP allowlist by form** |
+   | `藍新金流企業會員操作手冊` / `個人會員操作手冊` (2019-07-17) | console walkthroughs — old, but the only official map of the member area |
+   | `NWP_PlatformAPI_202502`, `NWP_MIDcreateAPI_202502`, `NWP_Datachange_202502`, `NWP_M_Upload_Guide`, `平台商建立商店串接設定申請表(標準版/特規版).zip` (2026-06-30) | **the platform-partner programme**: a platform creates sub-merchant shops by API — see §12 |
+   | `藍新金流_合作推廣商商店商業條件申請表` (2026-08-31) | referral-partner commercial terms |
+   | `大哥付你分期-賣家約定條款`, `AFTEE服務條款` | BNPL seller terms — signing them is part of enabling `OPPAY` / `AFTEE` |
+
+   **Rule that follows:** before telling a user a method is "a toggle", check this list. If a form exists for it, the method is **vendor-enabled** — the user files the form, NewebPay flips it, and the readiness card carries a dated wait from the first session. Users cannot turn these on in the console, in sandbox or production. *(owner, 2026-09-12: "some payment, even in sandbox, requires customer service to open for test, at least LINE Pay")*
 3. **Do not read the manuals from the sandbox portal.** `cwww.newebpay.com`'s download page served NDNF-1.0.8 (2023-10-04) while production served NDNF-1.2.5 — two years behind. *(lesson, verified 2026-09-12)* Manuals from `www`, accounts from `cwww`.
 4. Download the PDFs into a gitignored folder (`.vendor-docs/`), record name + version + date + URL in `docs/integrations/vendor-doc-locations.md` (§1.4). If the code was written against an older version, diff the changelog page before anything else (NDNF 1.2.3 → 1.2.5 added OPPAY instalments and memorised-email params; nothing on URLs, codes or CVSCOM *(lesson)*).
 5. **Citation convention:** PDF page number = printed footer + 1. Say which you use. *(lesson: a page-off-by-one citation sent a session to the wrong table)*
@@ -52,19 +73,21 @@ Ask these in order. Each answer removes work.
 
 **Q2 — Which payment methods?** Offer the NewebPay MPG list with the one-line consequence of each (caps and behaviours from NDNF-1.2.5 — cite the page when you show them):
 
-| Method (MPG flag) | What the customer does | Money arrives | Notes to tell the user |
-|---|---|---|---|
-| 信用卡一次付清 `CREDIT` | card on NewebPay's hosted page | at authorisation, settled per contract | the default; **3-D Secure** is on NewebPay's side; the sandbox needs the product enabled by NewebPay (§6) |
-| 信用卡分期 `InstFlag` / 紅利 `CreditRed` | card with instalments / points | as card | needs bank approval per instalment plan; keep off until the contract says on |
-| Apple Pay / Google Pay / Samsung Pay `APPLEPAY` `ANDROIDPAY` `SAMSUNGPAY` | wallet on the hosted page | as card | need the card product first; Apple Pay needs domain verification steps in the console |
-| LINE Pay `LINEPAY` | redirect to LINE | wallet settlement | **activation is a NewebPay-side approval** — apply in the console and expect a wait (§6); through NewebPay the shop needs **no static IP** *(lesson, NDNF-1.2.5 has no merchant allowlist)* |
-| 玉山 Wallet / 台灣 Pay / TWQR | wallet or QR | wallet settlement | same activation shape as LINE Pay |
-| WebATM `WEBATM` | pays now via online banking | immediate | fine for any cart size |
-| ATM 轉帳 (虛擬帳號) `VACC` | gets a virtual account, pays later at ATM or app | when the transfer lands — **hours or days** | the order is *unpaid* until `NotifyURL` fires; you need an expiry sweep and a "waiting for payment" screen (TW-4) |
-| 超商代碼 `CVS` | gets a code, pays at 7-11/全家/萊爾富/OK counter | when paid at the counter | **cap NT$6,000 by default** *(lesson; cite NDNF)* — hide it on larger carts; same waiting rules as ATM |
-| 超商條碼 `BARCODE` | prints/shows a barcode, pays at counter | as above | higher cap than 代碼 (check NDNF); same waiting rules |
-| 先買後付 BNPL `AFTEE` / `OPPAY` (大哥付你) | credit approval at checkout | provider settles | approval can refuse; refunds go through BNPL capture/void APIs (NDNF §BNPL) |
-| 定期定額 (recurring) | separate NDNP API, not MPG | per period | only if Q1 said subscriptions |
+| Method (MPG flag) | What the customer does | Money arrives | **Who switches it on** | Notes to tell the user |
+|---|---|---|---|---|
+| 信用卡一次付清 `CREDIT` | card on NewebPay's hosted page | at authorisation, settled per contract | console toggle **and** NewebPay's product flag — *(lesson: `MPG02003` for three days with the toggle on)* | the default; **3-D Secure** is on NewebPay's side; probe it (§6a) before building |
+| 信用卡分期 `InstFlag` / 紅利 `CreditRed` | card with instalments / points | as card | bank approval per plan, via NewebPay | keep off until the contract says on |
+| Apple Pay / Google Pay / Samsung Pay `APPLEPAY` `ANDROIDPAY` `SAMSUNGPAY` | wallet on the hosted page | as card | **vendor-enabled**: `行動支付機制申請表`, then NewebPay | need the card product first; Apple Pay adds domain verification |
+| LINE Pay `LINEPAY` | redirect to LINE | wallet settlement | **vendor-enabled, sandbox included**: `LINE Pay閘道_網路商店申請書` + 報價單 to NewebPay, then their 客服 flips it — **the user cannot turn it on in the console** | expect a wait of days; through NewebPay the shop needs **no static IP** *(lesson, NDNF-1.2.5 has no merchant allowlist)* |
+| 玉山 Wallet / 台灣 Pay / TWQR `ESUNWALLET` `TAIWANPAY` | wallet or QR | wallet settlement | **vendor-enabled** (行動支付 form) | same wait shape as LINE Pay |
+| WebATM `WEBATM` | pays now via online banking | immediate | console toggle | fine for any cart size |
+| ATM 轉帳 (虛擬帳號) `VACC` | gets a virtual account, pays later at ATM or app | when the transfer lands — **hours or days** | console toggle on the hosted page; `非信用卡應用 API 機制申請表` if you call the standalone API | the order is *unpaid* until `NotifyURL` fires; expiry sweep + "waiting for payment" screen (TW-4); **refunds need `商店非信用卡退款機制申請表`** or are manual transfers |
+| 超商代碼 `CVS` | gets a code, pays at 7-11/全家/萊爾富/OK counter | when paid at the counter | as `VACC` | **cap NT$6,000 by default** *(lesson; cite NDNF)* — hide it on larger carts |
+| 超商條碼 `BARCODE` | prints/shows a barcode, pays at counter | as above | as `VACC` | higher cap than 代碼 (check NDNF) |
+| 先買後付 BNPL `AFTEE` / `OPPAY` (大哥付你) | credit approval at checkout | provider settles | **vendor-enabled**: seller terms signed (`AFTEE服務條款`, `大哥付你分期-賣家約定條款`), then NewebPay | approval can refuse; refunds via BNPL capture/void APIs |
+| 定期定額 (recurring) | separate NDNP API, not MPG | per period | **vendor-enabled**: `約定信用卡付款授權申請表` | only if Q1 said subscriptions |
+
+**Say this to the user on day one:** every row marked *vendor-enabled* will be off in the sandbox until NewebPay switches it on, whatever the console shows. File the form the same day the method is chosen; put the wait on the readiness card with the date; build and test the console-toggle methods meanwhile. Do not spend a session "debugging" a method that was never enabled.
 
 Recommend a **starter set** for a first shop: `CREDIT` + `WEBATM` + `VACC`, add `CVS` if the average order is under NT$6,000, add LINE Pay after activation lands. Everything else off until there is a reason. Record the chosen set as data (a `payment_methods` setting), not as constants.
 
@@ -94,6 +117,21 @@ Print this as a checklist with ✅ / ⏳ / ❌ and *who* obtains each. Everythin
 | Bank account (存摺 image) for 撥款 | not needed | yes | user | payout target; name must match the registered entity |
 | 商店 (a shop inside the account) | created in the console after login | same | user, AI guides | each shop has its own **MerchantID, HashKey, HashIV** |
 | MerchantID / HashKey / HashIV | from 商店資料設定 → API 串接金鑰 | same, different values | user copies into `.env`; AI never sees them in chat | never commit; sandbox and production pairs are different secrets |
+
+### 3a-bis. Forms to file (vendor-enabled methods and options)
+
+From the §1 inventory, for the §2 choices. Each is a PDF from the download page, filled and sent to NewebPay (the form says where); each is a **dated wait** on the readiness card from the day it is sent.
+
+| If the user chose … | File … | Also |
+|---|---|---|
+| LINE Pay | `LINE Pay閘道_網路商店申請書(通用版)` + the 報價單 zip | expect 客服 follow-up; sandbox enablement is theirs too |
+| Apple / Google / Samsung Pay, 玉山 Wallet, 台灣 Pay | `行動支付機制申請表` | Apple Pay domain verification afterwards |
+| ATM / CVS / BARCODE refunds through the API | `商店非信用卡退款機制申請表` | otherwise refunds are manual bank transfers the operator records |
+| ATM / CVS via the standalone 非信用卡 APIs (not the hosted page) | `非信用卡應用 API 機制申請表` | hosted MPG usually does not need it — confirm in NDNF |
+| BNPL | sign `AFTEE服務條款` / `大哥付你分期-賣家約定條款` | NewebPay enables after signature |
+| 定期定額 / card-on-file | `約定信用卡付款授權申請表` (+ APP 綁卡 form if applicable) | NDNP manual |
+| card details in `NotifyURL` | `NOTIFY 回傳信用卡資訊機制申請表` | only if the shop needs last-four / issuer |
+| server-side or embedded card form | `信用卡幕後授權機制申請表` / `信用卡嵌入式支付機制申請表` | PCI scope — a first shop should stay on the hosted page |
 
 ### 3b. Domain, URLs, network
 
@@ -167,7 +205,7 @@ Console path *(as seen 2026-08, mixoweb; find the words)*: 商店資料設定 �
 
 - after enabling, **probe before building**: post one synthetic MPG request (a throwaway `MerchantOrderNo` like `PROBE_<timestamp>`, `Amt` 1, `CREDIT=1`) to `https://ccore.newebpay.com/MPG/mpg_gateway` from a script; PASS = the response is NewebPay's card-entry page echoing your order number; FAIL = the body contains `MPG02003`, `MPG00040`, `CHK00007` or a `TRA` code. No order, no cart, no database needed — credentials and a callback URL only. *(lesson: `tools/ops/probe-newebpay-mpg-synthetic.php`)*
 - a FAIL with `MPG02003` after the toggle is on means the product is not enabled at NewebPay; this is one of the few cases where the vendor's 客服 (02-2786-3655, cs@newebpay.com, 08:00–23:00) is the only path. Record it as a **dated external wait** with the question and what it blocks (S14.1); keep building everything else. Do not repeat the probe in a loop — the query API locks for **4 hours** after too many not-found lookups (`TRA10071`, NDNF-1.2.5 p.95) and refunds lock for 1 hour (`TRA10702`) *(lesson)*.
-- **LINE Pay / wallets / BNPL** show an application step rather than a toggle; apply, record the date, expect days.
+- **LINE Pay / wallets / BNPL / recurring are not toggles at all** — they are the forms in §3a-bis. The console may show nothing for them until NewebPay has enabled the product. Send the form, record the date, keep building; the readiness card carries the wait. A probe (`probe_mpg.php LINEPAY`) before enablement returns a refusal — that is expected, not a bug.
 
 ### 6b. URLs
 
@@ -254,7 +292,23 @@ Feed the result into the four-corner table (S15): customer sees / operator sees 
 
 ---
 
-## 11. The readiness card (what setup mode prints at the end of every session)
+## 11. The harness — scripts that make the steps checkable
+
+All under `tools/newebpay/` in this skill; stdlib Python and plain PHP, no dependencies. Tests: `python tests/test_newebpay_tools.py`.
+
+| Script | Step | What it does |
+|---|---|---|
+| `detect.py [dir]` | §0 | scans a project for NewebPay signals, env key *names*, callback endpoints, the WooCommerce module, vendor docs on disk; says `setup` / `audit` / `not-newebpay` |
+| `fetch_manuals.py [--download DIR] [--record FILE]` | §1 | lists every document on the production download page by kind (manual / form / guide / terms / module), downloads the manuals, appends dated citation lines to the locations file |
+| `probe_mpg.php [METHOD] [--dry-run]` | §6a, §9 | one synthetic MPG request per method: PASS / FAIL (`MPG02003` = vendor-side) / UNKNOWN; refuses production unless `--i-mean-production`; never prints keys |
+| `callback.php verify` / `make` | §7, §8 | verifies a real callback body (TradeSha over the ciphertext, then decrypt) or **makes a signed callback** from a JSON payload so the `NotifyURL` handler is testable locally before the sandbox posts anything |
+| `readiness.py [--init]` | §13 | the readiness card from `docs/integrations/newebpay-readiness.yaml`; exit 1 while anything is `missing`; flags a `wait` with no owner/date |
+
+## 12. If you are a platform, not a shop
+
+NewebPay runs a **platform-partner programme** (`平台商`): a platform creates and configures sub-merchant shops through `NWP_MIDcreateAPI` / `NWP_PlatformAPI` (2025-02) after filing `平台商建立商店串接設定申請表` (標準版 / 特規版, 2026-06-30); there is also a `合作推廣商商店商業條件申請表` (2026-08-31) for referral partners. A SaaS, a site builder or an AI harness that onboards many merchants belongs in that programme rather than repeating this guide per merchant by hand. Read the platform manuals from the download page first; the merchant-facing steps above still apply to each sub-merchant's methods, forms and host.
+
+## 13. The readiness card (what setup mode prints at the end of every session)
 
 ```
 NewebPay readiness — <shop> — <date>
@@ -271,4 +325,4 @@ Waits on others: LINE Pay approval (NewebPay, since <date>) · outbound IP answe
 Next three actions, in order: 1 … 2 … 3 …
 ```
 
-A ❌ or ⏳ with no owner and no date is a finding against the guide, not the user.
+A ❌ or ⏳ with no owner and no date is a finding against the guide, not the user. `readiness.py` enforces exactly this.
