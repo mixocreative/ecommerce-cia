@@ -755,6 +755,50 @@ of thousands of cells and will never be walked. So:
   the axes taken at full depth and those taken pairwise, so the next reader knows what was not walked.
 
 
+### S22 step 0 — draw the decision tree before the matrix, because the matrix takes its steps from it
+
+**Added 2026-09-12, from an owner proposing a better order of work than the sweep had:** *"maybe you
+should first draw a map of customer checkout choices of combination step by step, so you know how
+many different paths and diversion of choices they can make each step… and to know best maintainable
+non-messy way to set those paths."*
+
+**The matrix as first written takes its step list as given, which is a sampling error wearing a
+grid.** Steps enumerated from the code are the steps somebody already built; the tree enumerates the
+steps the *customer* can take, including the branches nobody implemented. Do the tree first.
+
+**Method.** One node per decision the customer makes or the system makes for them, in order, from
+first intent to the last irreversible event — cart shape, identity, destination, delivery method,
+payment method, payment execution, outcome, fulfilment, delivery, and the reversals. At each node
+list **every branch**, not the common ones. Then:
+
+1. **Count the leaves.** That number is the honest size of the problem, and it is usually an order of
+   magnitude larger than the team's mental model. It is also the number the S18/S22 depth rule then
+   bounds — money paths at full depth, the rest pairwise.
+2. **Mark where branches converge.** *This is the maintainability question and it is the reason to
+   draw the tree at all.* Fifty-four paths collapsing into six screens is a good design; fifty-four
+   staying fifty-four is a mess that will be maintained forever. **Converge as early as the domain
+   allows, and keep separate only what genuinely differs** — and write down which is which, because
+   the next person will otherwise merge two paths that had a reason to be apart, or split one that
+   did not.
+3. **Mark every node where the screen changes.** That set, exactly, is the preview-fixture list —
+   which answers *"what has to exist before this can be themed"* without anybody guessing.
+4. **Mark every node where control leaves the system** — a hosted payment page, a carrier's site, a
+   counter, a bank. Each is a **round trip**, and each needs the return path enumerated as carefully
+   as the outgoing one. The classic miss is a branch that leaves and has no drawn way back:
+   abandoned at the gateway, closed the tab after paying, the callback that never came.
+5. **Mark every node that needs an operator gate** before the object can move on — and be explicit
+   where the honest answer is *none*, because a blank reads as an oversight.
+
+**What the tree catches that the matrix alone does not:** a branch that exists in the UI and has no
+handler; a branch the code handles that no UI can reach (S13 from the other end); two branches that
+were drawn separately and behave identically, which is cost with no benefit; and the branches that
+only appear after something goes wrong, which are the ones nobody draws because nobody demonstrates
+them.
+
+**Then build the matrix from the tree's steps**, not from the code's. The tree is also the artefact to
+keep: it is the one document a new person can read to learn what the system is *for*, and it dates
+far more slowly than the code.
+
 ### S22 closure rule — the authority's error table *is* the outcome column
 
 **Added 2026-09-12, from the owner completing the sweep's own statement:** *"every api or return
