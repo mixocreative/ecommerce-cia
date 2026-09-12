@@ -1,0 +1,27 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.2", extensions: openssl, curl }
+      - name: PHP lint (fixture + tools)
+        run: find tests/fixture-shop tools -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: NewebPay tools
+        run: python tests/test_newebpay_tools.py
+      - name: ECPay tools (offline)
+        run: python tests/test_ecpay_tools.py
+      - name: Skill frontmatter sanity
+        run: |
+          python - <<'PY'
+          import re,sys
+          t=open('SKILL.md',encoding='utf-8').read()
+          m=re.match(r'---\nname: (\S+)\ndescription: "(.*)"\n---\n',t,re.S)
+          assert m, 'frontmatter shape'
+          assert len(m.group(2))<=1024, f'description {len(m.group(2))} chars > 1024'
+          print('ok', m.group(1), len(m.group(2)), 'chars')
+          PY
