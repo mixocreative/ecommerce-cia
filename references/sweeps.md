@@ -726,6 +726,31 @@ before drawing anything:
 | A bulk action | select → action menu → **confirm sheet listing what will happen and to how many** → per-row result |
 | A record detail | header with the key facts and the primary action, then panels, then a **timeline of what happened when** |
 | Nothing yet | an **empty state** with one sentence and the action that ends it, never a blank table |
+
+**The operator-desk pattern, four rules that a night of building desks kept re-finding
+(2026-09-13 — mailing, postage, accounting, quick edit):**
+
+1. **A queue, not a list.** A desk is *the number, the one sentence that says what a person does
+   about it, and the link that opens exactly those rows*. A count that was already being computed
+   by a worker and answered into a cron mail, an exit code or a digest is a queue with nowhere to
+   put itself; give it the number, the sentence and the link. A zero reads as quiet, never as
+   missing.
+2. **Blank is a value.** *Nobody has told us yet* is different from `0`, which is a figure (free
+   postage happens). A blank cell leaves the row alone; clearing a figure sets it back to *not
+   known* and is logged like any change; an export carries the column empty and ruled, never as
+   `0`. **Expected and actual never merge**: what the customer was charged, what the rate card
+   predicts and what the receipt says are three columns, and the accountant needs the third.
+3. **Value edits need compare-and-swap.** A grid drawn at 14:02 and saved at 14:09 posts what each
+   cell held when drawn beside what was typed; a value another operator changed meanwhile is refused
+   for that row, in words, never overwritten. A bulk action resolves *all N matching* to explicit
+   ids once, against the same cap, before anything runs — it never re-runs a filter that may have
+   moved.
+4. **A hand-off needs a marker and an artefact.** A sheet that walks out of the building — to the
+   carrier's upload page, to the accountant — stamps *exported_at* / *handed_to_accountant_at* and
+   *by whom* the first time, and a re-download does not move the date; without the marker the only
+   filter is *not yet done*, which re-exports rows somebody already uploaded, and a duplicate upload
+   is the failure that costs money. The *tell the customer* box is default on, and unticking it is
+   recorded on the row with a name, never silently absent.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
