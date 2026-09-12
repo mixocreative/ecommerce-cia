@@ -22,6 +22,9 @@
  *   php tools/linepay/probe_request.php --v4         # same against /v4 (adds info.paymentProvider on confirm)
  *   php tools/linepay/probe_request.php --amount 100
  *   php tools/linepay/probe_request.php --check <transactionId>   # GET /v3/payments/requests/{id}/check
+ *   php tools/linepay/probe_request.php --confirm <transactionId> [--amount N]   # POST .../confirm after the customer approved (0110)
+ *   php tools/linepay/probe_request.php --refund <transactionId> [--amount N]    # POST .../refund (omit --amount for full)
+ *   php tools/linepay/probe_request.php --details <transactionId>  # GET /v3/payments?transactionId=
  * Exit 0 PASS, 2 FAIL (code named), 3 UNKNOWN, 1 configuration error. Prints the Channel ID length only, never
  * the secret, never the signature.
  * Reference: https://developers-pay.line.me/online-api-v3/request-payment (read 2026-09-13).
@@ -52,10 +55,13 @@ $cid = env('LINEPAY_CHANNEL_ID'); $sec = env('LINEPAY_CHANNEL_SECRET'); $mode = 
 $base = rtrim(env('LINEPAY_CALLBACK_BASE'), '/');
 $dry = in_array('--dry-run', $args, true);
 $ver = in_array('--v4', $args, true) ? 'v4' : 'v3';
-$amount = 1; $check = null;
+$amount = 1; $check = null; $confirm = null; $refund = null; $details = null; $amountGiven = false;
 for ($i = 0; $i < count($args); $i++) {
-    if ($args[$i] === '--amount' && isset($args[$i + 1])) { $amount = (int) $args[$i + 1]; }
+    if ($args[$i] === '--amount' && isset($args[$i + 1])) { $amount = (int) $args[$i + 1]; $amountGiven = true; }
     if ($args[$i] === '--check' && isset($args[$i + 1])) { $check = $args[$i + 1]; }
+    if ($args[$i] === '--confirm' && isset($args[$i + 1])) { $confirm = $args[$i + 1]; }
+    if ($args[$i] === '--refund' && isset($args[$i + 1])) { $refund = $args[$i + 1]; }
+    if ($args[$i] === '--details' && isset($args[$i + 1])) { $details = $args[$i + 1]; }
 }
 
 $problems = [];
@@ -104,6 +110,36 @@ if ($check !== null) {
     exit(in_array($code, ['0000', '0110', '0123'], true) ? 0 : ($code === '' ? 3 : 2));
 }
 
+if ($confirm !== null || $refund !== null || $details !== null) {
+    // confirm: the amount and currency MUST equal the request's; the probe requested --amount (default 1) TWD.
+    // refund: refundAmount omitted = full refund. details: GET with the query string signed.
+    if ($confirm !== null) { $method = 'POST'; $path = "/{$ver}/payments/{$confirm}/confirm"; $payload = json_encode(['amount' => $amount, 'currency' => 'TWD']); }
+    elseif ($refund !== null) { $method = 'POST'; $path = "/{$ver}/payments/{$refund}/refund"; $payload = $amountGiven ? json_encode(['refundAmount' => $amount]) : '{}'; }
+    else { $method = 'GET'; $path = "/{$ver}/payments"; $payload = 'transactionId=' . $details; }
+    printf("%s %s%s  (env=%s, body/query %s)
+", $method, HOSTS[$mode], $path, $mode, $payload);
+    if ($dry) { echo "DRY RUN — not sent.
+"; exit(0); }
+    [$status, $j, $raw] = call($method, $path, (string) $payload, $cid, $sec, $mode);
+    $code = (string) ($j['returnCode'] ?? $j['resultCode'] ?? '');
+    $msg = (string) ($j['returnMessage'] ?? $j['statusMessage'] ?? '');
+    printf("HTTP %d returnCode=%s (%s)
+", $status, $code === '' ? '(none)' : $code, $msg);
+    if ($code === '0000') {
+        echo json_encode($j['info'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT), "
+";
+        if ($confirm !== null) { echo "PASS — payment confirmed; payInfo above is the money proof (BALANCE / CREDIT_CARD / POINT).
+"; }
+        if ($refund !== null) { echo "PASS — refunded; refundTransactionId above.
+"; }
+        exit(0);
+    }
+    $extra = ['1169' => 'customer has not authenticated on the LINE Pay page yet (live: confirm before approval returns this) - poll --check for 0110 first', '1150' => 'no confirmed transaction with this id (live: --details on an unconfirmed reservation returns this; details lists confirmed payments only)', '1145' => 'confirm already in progress - do not retry; poll --check', '1152' => 'already confirmed - treat as done, read --details', '1172' => 'already confirmed - the sandbox answers a second confirm with 1172 (live 2026-09-13); treat as done, read --details', '1165' => 'already refunded - treat as done', '1159' => 'no payment request for this id, or it expired - the customer never approved, or you confirmed a different id'];
+    printf("FAIL — returnCode %s. %s
+", $code, $extra[$code] ?? (WHY[$code] ?? 'see the result-code table'));
+    exit($code === '' ? 3 : 2);
+}
+
 $orderId = 'PROBE_' . date('YmdHis') . '_' . substr(bin2hex(random_bytes(3)), 0, 6);
 $req = [
     'amount' => $amount,
@@ -131,7 +167,7 @@ $code = (string) ($j['returnCode'] ?? $j['resultCode'] ?? '');
 $msg = (string) ($j['returnMessage'] ?? $j['statusMessage'] ?? '');
 if ($code === '0000' && isset($j['info']['paymentUrl']['web'], $j['info']['transactionId'])) {
     printf("PASS — returnCode 0000; transactionId %s; payment page %s\n", $j['info']['transactionId'], $j['info']['paymentUrl']['web']);
-    echo "  Open that URL with a personal LINE account to approve, then call confirm with the same amount/currency; or poll --check <transactionId> (0110 = ready to confirm).\n";
+    echo "  Open that URL on a PC and ALLOW POP-UPS: the simulator opens as a 320x560 pop-up with a PAY NOW button (no LINE login). Then poll --check <transactionId> until 0110, then --confirm <transactionId>. Never confirm before 0110 - it kills the reservation (1169, then 0122).\n";
     echo "  In the sandbox only paymentUrl.web works; paymentUrl.app is production-only.\n";
     exit(0);
 }

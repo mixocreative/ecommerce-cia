@@ -107,6 +107,16 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 4. `LINEPAY_ENV=sandbox`, `LINEPAY_CALLBACK_BASE=https://<tunnel or domain>`.
 5. Sandbox transactions are visible in the merchant center's **sandbox menu** (FAQ) — that is where "did it land" is answered.
 
+### 5a. Approving a sandbox payment — what the page really does *(live, 2026-09-13)*
+
+`info.paymentUrl.web` opens `sandbox-web-pay.line.me/web/payment/wait…`, which on a desktop browser shows a **decoy**: "Please update to the latest version of LINE / LINE must be installed". Ignore it. The page's script polls `/web/payment/check/<reserveId>` every 3 s and, on the first poll, **opens a 320×560 pop-up** `/web/sandbox/payment/<sandboxMerchantKey>/<reserveId>` — the simulator, with the amount, the product names and one **PAY NOW** button ("This simulation does not actually select a method of payment or make actual payments"). Chrome blocks that pop-up by default, so nothing seems to happen.
+
+- **Allow pop-ups for `sandbox-web-pay.line.me`**, or open the pop-up URL from the page source directly. Click PAY NOW → "Payment completed" → `--check` flips to `0110`.
+- **No LINE login is needed** for the online sandbox: the simulator has no login step. The `test_…@line.pay` payer account the sandbox e-mail hands out is not used on this path.
+- **A phone fails**: the same simulator URL on iOS Safari answered 無法處理您的申請 (generic error); the desktop user-agent works. Test on the PC.
+- **Never call confirm before `--check` says `0110`**: a premature confirm returned `1169` *and then the reservation died* — the next `--check` was `0122 payment failed` and the customer could no longer approve it. New request needed.
+- `--details` on an unconfirmed reservation → `1150` (details lists confirmed payments only); after confirm → `payStatus: CAPTURE`, `payInfo[].method: CREDIT_CARD` in the simulator.
+
 ---
 
 ## 6. Prove the credentials, then prove a payment
@@ -115,14 +125,14 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 
 | Result | Meaning | Next |
 |---|---|---|
-| `PASS — returnCode 0000; transactionId …; payment page …` | credentials valid on this host, the merchant may request payments | open the URL with a personal LINE account to approve; then `--check <transactionId>` → `0110` → confirm |
+| `PASS — returnCode 0000; transactionId …; payment page …` | credentials valid on this host, the merchant may request payments | open the URL on a PC, allow the pop-up, PAY NOW (§5a); then `--check <transactionId>` → `0110` → `--confirm` |
 | `FAIL — 1104 Merchant not found` | Channel ID not registered on this environment — live-verified: fake credentials return exactly this | re-copy from Manage Link Key; check `LINEPAY_ENV` matches the host |
 | `FAIL — 1106 header error` | HMAC did not verify: secret wrong, or signed bytes ≠ sent bytes | `php tools/linepay/sign.php selftest`; sign the exact serialised body |
 | `FAIL — 1105` | merchant unavailable (suspended / not approved) | vendor-side, dated wait |
 | `FAIL — 1178 / 1183 / 1184 / 1124` | currency or amount settings | fix the field or `--amount N` |
 | `REFUSED: LINEPAY_ENV=production` | the probe will not touch production without `--i-mean-production` | intended |
 
-`--v4` runs the same against `/v4/payments/request`. `--dry-run` prints the exact body (secret redacted) to compare with the reference page when `2101` / `2102` appear.
+`--v4` runs the same against `/v4/payments/request`. `--dry-run` prints the exact body (secret redacted) to compare with the reference page when `2101` / `2102` appear. `--confirm <id>`, `--refund <id> [--amount N]` and `--details <id>` complete the walk from the same tool — all live-verified 2026-09-13 on a sandbox Channel: confirm `0000` + `payInfo`, refund `0000` + `refundTransactionId`, second refund `1165`, second confirm `1172`, check after completion `0123`.
 
 **A PASS here is a credential proof, not a payment proof.** The payment proof is §8: approve on the page, confirm, see `payInfo`.
 
@@ -135,7 +145,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 3. **Request** (`POST /v3/payments/request`): `amount` = Σ `packages[].amount` (+ `userFee`); `orderId` unique per request (`1172` otherwise — suffix retries); `redirectUrls.confirmUrl` / `cancelUrl` HTTPS; keep `info.transactionId` **as a string** (19 digits; `1150` / `1155` when a parser rounds it) together with `orderId`, before redirecting.
 4. **Redirect** the customer to `info.paymentUrl.web` (the sandbox does not support `paymentUrl.app` — FAQ).
 5. **confirmUrl** is called by **GET** with `orderId` and `transactionId` appended — do not put those parameters in the URL yourself (LINE Pay appends them; an `orderId` already in the URL is left alone). This is where the money is still unsettled: the handler must call **confirm**, not mark the order paid.
-6. **Confirm** (`POST /v3/payments/{transactionId}/confirm`, body `{amount, currency}` identical to the request): `0000` + `info.payInfo[]` (`BALANCE` / `CREDIT_CARD` / `POINT`) = paid (capture automatic) — or authorised only if you separated capture. Make it **idempotent per transactionId**: a customer who reloads the confirm page double-submits → `1145` / `1152`; read those as "already done" and look the order up, never as failure. Read timeout ≥ 40 s; a retry inside it → `1198`.
+6. **Confirm** (`POST /v3/payments/{transactionId}/confirm`, body `{amount, currency}` identical to the request): `0000` + `info.payInfo[]` (`BALANCE` / `CREDIT_CARD` / `POINT`) = paid (capture automatic) — or authorised only if you separated capture. Make it **idempotent per transactionId**: a customer who reloads the confirm page double-submits → the sandbox answered a second confirm with **`1172`** ("order with this orderId already exists"; the reference also lists `1145` in-progress and `1152` duplicate); read all three as "already done" and look the order up with `--details`, never as failure. Read timeout ≥ 40 s; a retry inside it → `1198`.
 7. **No confirmUrl flow** (`implement-payment` variants): poll `GET /v3/payments/requests/{transactionId}/check` ≥ 1 s apart; `0000` is *still waiting*, `0110` is *confirm now* — the same four digits mean different things on different endpoints; `tools/explain_error.py linepay:0000` says so.
 8. **Capture / void** only when capture was separated: `POST /v3/payments/authorizations/{id}/capture` (`1153` if the amount differs) or `/void`.
 9. **Refund** (`POST /v3/payments/{transactionId}/refund`): omit `refundAmount` for full, set it for partial; `1164` past the paid total, `1165` already refunded (treat as success), `1163` past the refund window → manual refund via the merchant center, recorded on the order (S16: a refund the API cannot make is not a refund that did not happen).
@@ -146,7 +156,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 
 ## 8. Sandbox walk (the AI runs it, §0.8)
 
-One end-to-end order: request → open `paymentUrl.web` in the browser tool → user logs in with a personal LINE account and approves (the AI never enters the LINE credentials) → confirmUrl hit → confirm → order `paid` with `transactionId` and `payInfo` stored → refund of the same order → merchant center sandbox menu shows both. Artefacts: the request body (secret redacted), the confirm response, the refund response, the order row, a screenshot of the sandbox transaction list. Then the negative walk: cancel on the LINE page → `cancelUrl` → order stays unpaid; reload the confirm page → second confirm returns `1145`/`1152` and the order is not double-paid.
+One end-to-end order: request → open `paymentUrl.web` in the browser tool → user logs in with a personal LINE account and approves (the AI never enters the LINE credentials) → confirmUrl hit → confirm → order `paid` with `transactionId` and `payInfo` stored → refund of the same order → merchant center sandbox menu shows both. Artefacts: the request body (secret redacted), the confirm response, the refund response, the order row, a screenshot of the sandbox transaction list. Then the negative walk: cancel on the LINE page → `cancelUrl` → order stays unpaid; reload the confirm page → second confirm returns `1172` (or `1145`/`1152`) and the order is not double-paid. *(Run 2026-09-13 on the skill's own sandbox Channel: request → PAY NOW → `0110` → confirm `payInfo CREDIT_CARD 1` → details `CAPTURE` → refund → `1165` on retry → `1172` on re-confirm → `0123`.)*
 
 ---
 
@@ -176,6 +186,9 @@ One end-to-end order: request → open `paymentUrl.web` in the browser tool → 
 | Signing the body on a GET | `1106` on `/check` and `/payments` | GET signs the query string |
 | Reusing `orderId` on retry | `1172` | unique per request |
 | Retrying confirm inside the read timeout | `1198`, then `1145` | wait ≥ 40 s; check status; idempotent handler |
+| Confirm before the customer approved | `1169`, then the reservation dies (`0122`) | poll `--check` for `0110` first; a dead reservation needs a new request |
+| Sandbox payment page shows "update LINE" | tester installs LINE, tries a phone, gives up | it is a pop-up simulator: allow pop-ups on `sandbox-web-pay.line.me`, PAY NOW on a PC; no LINE login |
+| Sandbox `test_…@line.pay` account | typed into every page, in chat | not needed for the online simulator; never paste it anywhere |
 | `0000` from `/check` read as success | order marked paid before the customer authenticated | on `/check`, `0000` = not yet; `0110` = confirm now; `0123` = completed |
 | Testing with `paymentUrl.app` in the sandbox | page never opens | sandbox is web-only (FAQ) |
 | Product image on HTTP in the sandbox | image missing, panic | HTTPS in the sandbox; production renders either (FAQ) |
@@ -194,7 +207,7 @@ All under `tools/linepay/`; stdlib Python and plain PHP. Tests: `python tests/te
 | `detect.py [dir]` | §1 | direct vs via vs offline signals, env key *names*, confirm handlers; says `setup-direct` / `audit` / `via-aggregator (…)` / `not-linepay` |
 | `fetch_docs.py --latest` / `--page` / `--fetch DIR` | §2 | versions in the nav, endpoints per version, change-log head; pages as text |
 | `sign.php headers METHOD /path [payload]` / `selftest` | §7 | the three headers for any call; selftest prints a fixed-input MAC that the Python test recomputes independently |
-| `probe_request.php [--dry-run] [--v4] [--amount N] [--check id]` | §6, §9 | one 1 TWD request: PASS / named `returnCode` / UNKNOWN; production refused without `--i-mean-production`; secret and signature never printed; `--check` reads the five status codes |
+| `probe_request.php [--dry-run] [--v4] [--amount N] [--check id] [--confirm id] [--refund id] [--details id]` | §6, §8, §9 | one 1 TWD request: PASS / named `returnCode` / UNKNOWN; production refused without `--i-mean-production`; secret and signature never printed; `--check` reads the five status codes; `--confirm` / `--refund` / `--details` finish the walk — all live-verified |
 | `../explain_error.py linepay:<code>` | any | meaning, cause, next action; bare four-digit codes that NewebPay 物流 also uses print both readings |
 
 ---
@@ -207,7 +220,7 @@ Route: direct Online API v4 | via NewebPay (LINEPAY) | via PAYUNi | via ECPay
 Reference: developers-pay.line.me read <date> · versions v3 + v4 · change log Nov 2025
 Sandbox: account ✅ (<e-mail>) · Channel ID/Secret ✅ in .env (gitignored) · personal LINE account for the test page ✅
 Probe: request PASS ✅ (transactionId stored as string) · 1104/1106 ❌ none
-Walk: approve → confirm → payInfo ✅ · cancel → cancelUrl ✅ · double-confirm → 1145 read as done ✅ · refund ✅ · sandbox menu shows both ✅
+Walk: PAY NOW (pop-up) → 0110 → confirm → payInfo ✅ · cancel → cancelUrl ✅ · double-confirm → 1172 read as done ✅ · refund ✅ · re-refund 1165 ✅ · sandbox menu shows both ✅
 Host (S19): TLS 1.2+ on confirmUrl ✅ · read timeouts 10/40/20 ✅ · inbound allowlist ⏭ (confirmUrlType CLIENT) · static IP ⏭ not required
 Production: merchant application ⏳ since <date> (LINE Pay TW) · production keys ❌ · canary ❌
 Waits on others: merchant review (LINE Pay, since <date>) · agency for keys (…)
