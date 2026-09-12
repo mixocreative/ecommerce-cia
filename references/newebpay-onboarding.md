@@ -175,7 +175,7 @@ NewebPay's requirements on **your** host, and what each hosting shape does to th
 - shared hosting with a **rotating** IP → buy a dedicated IP, **or** launch without 超商取貨 and add it when moving to a VPS *(lesson: the mixoweb plan)*
 - PaaS / serverless → logistics API needs a static-egress feature; if the platform has none, run the logistics calls from a small VPS or skip 超商取貨
 
-**Direct LINE Pay (not via NewebPay) does need a merchant IP allowlist** and a separate merchant application; through NewebPay it does not, because the shop never calls LINE Pay — the customer's browser goes to NewebPay's page, which talks to LINE. *(lesson, NDNF-1.2.5 read at source)* Tell the user this before they buy a static IP for the wrong reason.
+**Direct LINE Pay (not via NewebPay) needs a separate merchant application and its own Channel ID/Secret, but not a fixed outbound IP either** — the Online API v3/v4 authenticates with HMAC headers, and the server allowlist is an Offline (POS) API concept *(read at source 2026-09-13, `developers-pay.line.me/online/prerequisites`; see `linepay-onboarding.md` §4)*. Through NewebPay the shop never calls LINE Pay at all — the customer's browser goes to NewebPay's page, which talks to LINE. *(lesson, NDNF-1.2.5 read at source)* Tell the user this before they buy a static IP for the wrong reason.
 
 Report: the S19 table for the chosen host, every row satisfied / not / unknown, and the one action if a row is not satisfied.
 
@@ -298,14 +298,14 @@ Feed the result into the four-corner table (S15): customer sees / operator sees 
 
 ## 11. The harness — scripts that make the steps checkable
 
-All under `tools/newebpay/` in this skill; stdlib Python and plain PHP, no dependencies. Tests: `python tests/test_newebpay_tools.py`.
+All under `tools/newebpay/` in this skill; stdlib Python and plain PHP, no dependencies. Tests: `python tests/test_newebpay_tools.py` (28, offline; the vendor known-answer is recomputed by the Python standard library independently of PHP).
 
 | Script | Step | What it does |
 |---|---|---|
 | `detect.py [dir]` | §0 | scans a project for NewebPay signals, env key *names*, callback endpoints, the WooCommerce module, vendor docs on disk; says `setup` / `audit` / `not-newebpay` |
 | `fetch_manuals.py [--download DIR] [--record FILE]` | §1 | lists every document on the production download page by kind (manual / form / guide / terms / module), downloads the manuals, appends dated citation lines to the locations file |
-| `probe_mpg.php [METHOD] [--dry-run]` | §6a, §9 | one synthetic MPG request per method: PASS / FAIL (`MPG02003` = vendor-side) / UNKNOWN; refuses production unless `--i-mean-production`; never prints keys |
-| `callback.php verify` / `make` | §7, §8 | verifies a real callback body (TradeSha over the ciphertext, then decrypt) or **makes a signed callback** from a JSON payload so the `NotifyURL` handler is testable locally before the sandbox posts anything |
+| `probe_mpg.php [METHOD] [--dry-run]` | §6a, §9 | one synthetic MPG request per method: PASS / FAIL (`MPG02003` = vendor-side) / UNKNOWN; refuses production unless `--i-mean-production`; never prints keys. `--selftest` reproduces the **manual's own worked example** (`manual-example.json`: NDNF-1.2.5 §4.1 key / IV / plaintext → `TradeInfo` 448 hex and `TradeSha`) byte-for-byte — the proof that the codec is NewebPay's, not merely round-trip-consistent |
+| `callback.php verify` / `make` / `selftest` | §7, §8 | verifies a real callback body (TradeSha over the ciphertext, then decrypt) or **makes a signed callback** from a JSON payload so the `NotifyURL` handler is testable locally before the sandbox posts anything; `selftest` also verifies and decodes the manual's Step-5 signed callback (`PaymentType=CREDIT`) |
 | `readiness.py [--init]` | §13 | the readiness card from `docs/integrations/newebpay-readiness.yaml`; exit 1 while anything is `missing`; flags a `wait` with no owner/date |
 
 ## 12. If you are a platform, not a shop

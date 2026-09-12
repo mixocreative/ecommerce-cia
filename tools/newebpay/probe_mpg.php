@@ -96,8 +96,28 @@ if (in_array('--selftest', $args, true)) {
     $ok = $ok && strlen($sha) === 64 && ctype_xdigit($sha) && $sha === strtoupper($sha);
     // signing the plaintext must NOT equal signing the ciphertext (the classic mistake)
     $ok = $ok && tradeSha($plain, $key, $iv) !== $sha;
-    echo $ok ? "SELFTEST PASS — AES-256-CBC hex round-trip, TradeSha 64 upper hex over ciphertext\n" : "SELFTEST FAIL\n";
-    exit($ok ? 0 : 1);
+    if (!$ok) {
+        echo "SELFTEST FAIL — codec round-trip\n";
+        exit(1);
+    }
+    // Known-answer test against the vendor's own worked example (NDNF-1.2.5 §4.1): the manual prints the
+    // key, IV, plaintext and the resulting TradeInfo/TradeSha. If we do not reproduce them byte-for-byte
+    // the codec is wrong in a way the round-trip above cannot see (padding, mode, hex case, sign order).
+    $kat = json_decode((string) file_get_contents(__DIR__ . '/manual-example.json'), true);
+    if (!is_array($kat)) {
+        echo "SELFTEST FAIL — manual-example.json missing or unreadable\n";
+        exit(1);
+    }
+    $ti = encrypt($kat['plain'], $kat['hash_key'], $kat['hash_iv']);
+    $katOk = hash_equals($kat['trade_info'], $ti)
+        && hash_equals($kat['trade_sha'], tradeSha($kat['trade_info'], $kat['hash_key'], $kat['hash_iv']))
+        && decrypt($kat['trade_info'], $kat['hash_key'], $kat['hash_iv']) === $kat['plain'];
+    if (!$katOk) {
+        echo "SELFTEST FAIL — vendor known-answer (NDNF-1.2.5 §4.1) not reproduced: TradeInfo " . (hash_equals($kat['trade_info'], $ti) ? 'ok' : 'DIFFERS') . "\n";
+        exit(1);
+    }
+    echo "SELFTEST PASS — AES-256-CBC hex round-trip; TradeSha 64 upper hex over ciphertext; vendor known-answer NDNF-1.2.5 §4.1 reproduced byte-for-byte (TradeInfo " . strlen($ti) . " hex, TradeSha " . substr($kat['trade_sha'], 0, 8) . "…)\n";
+    exit(0);
 }
 
 loadDotEnv(getcwd() . '/.env');

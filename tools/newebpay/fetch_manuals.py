@@ -89,7 +89,10 @@ def parse(page: str) -> list[dict]:
             "summary": (o.get("WDI_Content") or "")[:160],
             "url": "https://www.newebpay.com/website/Page/download_file?name=" + urllib.parse.quote(name),
         })
-    docs.sort(key=lambda d: (d["kind"] != "manual", d["kind"], d["family"], d["file"]))
+    # manuals first; within a family the newest date first - "always use latest" (owner, 2026-09-12)
+    docs.sort(key=lambda d: d["file"])
+    docs.sort(key=lambda d: d["dated"], reverse=True)
+    docs.sort(key=lambda d: (d["kind"] != "manual", d["kind"], d["family"]))
     return docs
 
 

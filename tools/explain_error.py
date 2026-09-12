@@ -4,6 +4,7 @@
 Usage:  python tools/explain_error.py MPG02003
         python tools/explain_error.py 10200079 TRA10071 1106
         echo "...response body..." | python tools/explain_error.py -      (scan text for known codes)
+        python tools/explain_error.py linepay:1106                        (LINE Pay shares numbers with NewebPay 物流)
 
 Covers the codes a first integration actually meets, from the vendor pages and a shipped shop's
 notes; every entry names its source. A code not listed prints the page to look it up on. Add
@@ -12,7 +13,6 @@ codes here only with a source; never from memory.
 from __future__ import annotations
 
 import re
-import sys
 import sys
 
 if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp1252; the output carries CJK and emoji
@@ -83,17 +83,85 @@ CODES: dict[str, tuple[str, str, str, str, str]] = {
           "Store the account and ExpireDate, show 'waiting for payment'. Reply 1|OK.", "p=2881"),
 }
 
+# LINE Pay Online API v3/v4 returnCode (https://developers-pay.line.me/online-api-v3, result-code table; FAQ; read 2026-09-13).
+# These are four-digit numbers that collide with NewebPay 物流's 11xx codes, so they live in their own table and are
+# chosen by the "linepay:" prefix, by a response body that carries "returnCode", or when both match, both are printed.
+LINEPAY_CODES: dict[str, tuple[str, str, str, str, str]] = {
+    "0000": ("LINE Pay", "Success - or, on a status check, 'the customer has not completed LINE Pay authentication yet'.",
+             "Same code, two meanings: on /request or /confirm it is success; on /requests/{id}/check it means still waiting.",
+             "On a check, keep polling (>= 1 s apart) until 0110; never treat 0000 from check as paid.", "online-api-v3 result codes"),
+    "0110": ("LINE Pay", "The customer completed LINE Pay authentication - you may call confirm now.", "Status check only.",
+             "POST /v3/payments/{transactionId}/confirm with the SAME amount and currency as the request.", "check-payment-request-status"),
+    "0121": ("LINE Pay", "The customer cancelled, or the authentication window expired.", "Status check only.",
+             "Mark the order unpaid; a new attempt needs a new /request (new transactionId).", "check-payment-request-status"),
+    "0122": ("LINE Pay", "Payment failed.", "Status check only; the confirm did not complete.", "Show a retry; do not ship.", "check-payment-request-status"),
+    "0123": ("LINE Pay", "Payment completed.", "Status check only.", "Nothing to do if your confirm handler already flipped the order; if not, reconcile from GET /v3/payments.", "check-payment-request-status"),
+    "1101": ("LINE Pay", "The customer is not a LINE Pay user.", "Customer-side.", "Nothing to fix; offer another method.", "online-api-v3 result codes"),
+    "1102": ("LINE Pay", "The customer cannot transact with LINE Pay right now.", "Customer account state.", "Nothing to fix server-side.", "online-api-v3 result codes"),
+    "1104": ("LINE Pay", "Merchant not found - the Channel ID is not registered on this environment.",
+             "Sandbox credentials against api-pay.line.me (or production credentials against the sandbox), a typo, or an agency-registered account whose keys you cannot see.",
+             "Re-copy Channel ID from Merchant Center > 開發者工具 > 管理連結金鑰 and confirm LINEPAY_ENV matches the host. Live-verified: fake credentials against the sandbox return exactly this.", "online-api-v3 result codes; tools/linepay/probe_request.php"),
+    "1105": ("LINE Pay", "LINE Pay is unavailable for this merchant.", "Account suspended or not yet approved.", "Vendor-side: a dated wait on the readiness card; contact linepaymerchant@linecorp.com.", "online-api-v3 result codes; FAQ"),
+    "1106": ("LINE Pay", "Request header error - the HMAC signature did not verify.",
+             "Channel Secret wrong, or the MAC was computed over a different string than the bytes sent (JSON key order, whitespace, GET signing the body instead of the query string).",
+             "Run tools/linepay/sign.php selftest; sign the exact serialised body you post; for GET sign the query string.", "FAQ 'Why do I get a 1106 error when calling the Online API?'"),
+    "1110": ("LINE Pay", "The credit card cannot be used.", "Customer's card.", "Nothing to fix; customer picks another method.", "online-api-v3 result codes"),
+    "1124": ("LINE Pay", "Amount error.", "amount != sum of packages[].amount (+ userFee); TWD is integer-only; confirm amount != request amount.", "Recompute from the packages; confirm with the request's amount.", "online-api-v3 result codes"),
+    "1141": ("LINE Pay", "Account status problem.", "Customer's LINE Pay account; for pre-approved payment the key was discarded.", "Customer-side; for regKey flows obtain a new key.", "online-api-v3 result codes"),
+    "1142": ("LINE Pay", "Balance insufficient.", "Customer-side.", "Nothing to fix.", "online-api-v3 result codes"),
+    "1145": ("LINE Pay", "Payment is in progress.", "A confirm is already running for this transaction (double-submit from the confirmUrl page).", "Make the confirm handler idempotent per transactionId; poll check, do not re-confirm.", "online-api-v3 result codes"),
+    "1150": ("LINE Pay", "No transaction details.", "transactionId unknown here - wrong environment, or the 19-digit id was rounded by a float/JSON parser.", "Treat transactionId as a string end-to-end (the reference's handleBigInteger).", "online-api-v3 Transaction ID"),
+    "1152": ("LINE Pay", "Duplicate transaction.", "The same action was already applied.", "Read it as 'already done'; look the order up via GET /v3/payments.", "online-api-v3 result codes"),
+    "1153": ("LINE Pay", "Request amount and capture amount differ.", "Capture-separated flow with a different amount.", "Capture the authorised amount, or void and re-request.", "online-api-v3 result codes"),
+    "1155": ("LINE Pay", "Invalid transaction ID.", "Malformed id (rounded, truncated, or a refundTransactionId used as a payment id).", "Pass the id exactly as a string.", "online-api-v3 result codes"),
+    "1159": ("LINE Pay", "No payment request information.", "confirm called for a transactionId that never had a /request, or it expired.", "Start again from /request.", "online-api-v3 result codes"),
+    "1163": ("LINE Pay", "Refund not available - the refund period has expired.", "Too old to refund via API.", "Refund through the merchant center / support; record the manual refund on the order.", "online-api-v3 result codes"),
+    "1164": ("LINE Pay", "Exceeded the refundable amount.", "Partial refunds summed past the paid amount.", "Refund at most paid - already refunded.", "online-api-v3 result codes"),
+    "1165": ("LINE Pay", "Already refunded.", "Retry of a refund that succeeded.", "Treat as success; reconcile from GET /v3/payments.", "online-api-v3 result codes"),
+    "1169": ("LINE Pay", "LINE Pay requires payment-method selection and password authentication.", "Customer must finish the LINE Pay screen.", "Customer-side.", "online-api-v3 result codes"),
+    "1170": ("LINE Pay", "The customer's balance changed.", "Between authentication and confirm.", "Ask the customer to retry; new /request.", "online-api-v3 result codes"),
+    "1172": ("LINE Pay", "An order with this orderId already exists.", "orderId reused (retry loop, or non-unique order numbering).", "orderId must be unique per /request; suffix retries.", "online-api-v3 result codes"),
+    "1177": ("LINE Pay", "Exceeded the maximum number of transactions retrievable (100).", "GET /v3/payments with too many ids.", "Batch by 100.", "online-api-v3 result codes"),
+    "1178": ("LINE Pay", "Currency not supported by this merchant.", "Contract currency is not the one sent (TWD for a Taiwan merchant).", "Send the contract currency.", "online-api-v3 result codes"),
+    "1179": ("LINE Pay", "Cannot be processed at the moment.", "Transient state.", "Retry later.", "online-api-v3 result codes"),
+    "1180": ("LINE Pay", "Payment time expired.", "confirm came too late after authentication.", "New /request.", "online-api-v3 result codes"),
+    "1183": ("LINE Pay", "Amount below the merchant's minimum.", "Shop setting.", "Raise the amount or the setting.", "online-api-v3 result codes"),
+    "1184": ("LINE Pay", "Amount above the merchant's maximum.", "Shop setting.", "Split or raise the setting.", "online-api-v3 result codes"),
+    "1194": ("LINE Pay", "Pre-approved payment not available for this merchant.", "Contract does not include regKey payments.", "Vendor-side enablement; dated wait.", "online-api-v3 result codes"),
+    "1198": ("LINE Pay", "Duplicate API request - the same request is still being processed.", "A retry fired inside the read timeout.", "Read timeouts >= 10 s (request) / 40 s (confirm) / 20 s (refund); never retry blindly - check status first.", "online-api-v3 endpoint pages"),
+    "1199": ("LINE Pay", "Internal error during the request.", "LINE Pay side.", "Retry later; if persistent, theirs.", "online-api-v3 result codes"),
+    "2101": ("LINE Pay", "Parameter error.", "A required field missing or malformed.", "Compare tools/linepay/probe_request.php --dry-run with the request-payment reference page.", "online-api-v3 result codes"),
+    "2102": ("LINE Pay", "JSON data format error.", "Body is not valid JSON, or Content-Type is not application/json.", "Fix the serialiser; sign the same bytes.", "online-api-v3 result codes"),
+    "2104": ("LINE Pay", "Request method not supported.", "GET sent to a POST endpoint (or the reverse).", "Use the method the reference lists. Live-verified: GET /v3/payments/request returns this.", "tools/linepay/probe_request.php"),
+    "9000": ("LINE Pay", "Internal error.", "LINE Pay side.", "Retry later.", "online-api-v3 result codes"),
+}
+
 LOOKUP = {
     "PAYUNi": "https://docs.payuni.com.tw/web/#/7/156 (通用) and #/7/44 (UPP)",
     "TapPay": "https://docs.tappaysdk.com/tutorial/zh/reference.html",
     "NewebPay": "NDNF-1.2.5 error tables (MPG p.~90, query p.~95) from https://www.newebpay.com/website/Page/content/download_api",
     "NewebPay 物流": "NDNS-1.0.0 p.31-32",
     "ECPay": "https://developers.ecpay.com.tw/?p=2878 (result codes) and the 交易訊息代碼一覽表 linked from it",
+    "LINE Pay": "https://developers-pay.line.me/online-api-v3 (result-code table at the foot) and /faq",
 }
 
 
-def explain(code: str) -> str:
+def explain(code: str, hint: str = "") -> str:
     c = code.strip().upper()
+    if c.lower().startswith("linepay:"):
+        c, hint = c[8:].strip(), "linepay"
+    if hint == "linepay" or (c in LINEPAY_CODES and c not in CODES):
+        if c in LINEPAY_CODES:
+            gw, meaning, cause, action, src = LINEPAY_CODES[c]
+            return f"{c} [{gw}]\n  What it means : {meaning}\n  Likely cause  : {cause}\n  Do this       : {action}\n  Source        : {src}\n"
+        if hint == "linepay":
+            return f"{c}: not in the LINE Pay table. Look it up: {LOOKUP['LINE Pay']}.\n"
+    if c in CODES and c in LINEPAY_CODES and hint != "newebpay":
+        # a four-digit number two vendors both use: say so, print both, and say how to tell them apart
+        a = explain(c, "newebpay")
+        b = explain("linepay:" + c)
+        return ("AMBIGUOUS " + c + ": NewebPay 物流 and LINE Pay both use this number. A LINE Pay response is JSON with "
+                "\"returnCode\"/\"returnMessage\"; a NewebPay logistics response carries Status/Message. Both readings:\n" + a + b)
     if c in CODES:
         gw, meaning, cause, action, src = CODES[c]
         return f"{c} [{gw}]\n  What it means : {meaning}\n  Likely cause  : {cause}\n  Do this       : {action}\n  Source        : {src}\n"
@@ -108,10 +176,13 @@ def main(argv: list[str]) -> int:
         print(__doc__); return 1
     if argv == ["-"]:
         text = sys.stdin.read()
-        found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|DEF\d{5}|API\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
-        if not found:
-            print("no known code pattern in the text"); return 1
-        argv = found
+        if re.search(r'"returnCode"\s*:\s*"(\d{4})"', text):
+            argv = ["linepay:" + m for m in sorted(set(re.findall(r'"returnCode"\s*:\s*"(\d{4})"', text)))]
+        else:
+            found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|DEF\d{5}|API\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
+            if not found:
+                print("no known code pattern in the text"); return 1
+            argv = found
     for c in argv:
         print(explain(c))
     return 0

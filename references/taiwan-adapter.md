@@ -22,7 +22,7 @@ Per §1.4 the auditor reads the vendor's latest official manual and rate card be
 |---|---|---|---|
 | 藍新 NewebPay | `https://www.newebpay.com/website/Page/content/download_api` — MPG (NDNF-x.y.z), 物流 (NDNS), 定期定額 (NDNP) PDFs; bare `curl` gets 403, send a browser UA + Referer | `https://www.newebpay.com/website/Page/content/service_fare` (list price, 含稅) | merchant console 會員專區, per service; hidden until the service is activated |
 | 綠界 ECPay | `https://developers.ecpay.com.tw/` (AIO 全方位金流, 物流, 電子發票 pages by id) | `https://www.ecpay.com.tw/` 費率 pages per product | merchant backoffice 特店 費率 |
-| LINE Pay | `https://developers.line.biz/` (LINE Pay Online API) | LINE Pay merchant site | merchant center |
+| LINE Pay | `https://developers-pay.line.me/` (Online API v3 + v4 reference, prerequisites, sandbox, FAQ — not `developers.line.biz`, which is Messaging/LIFF) | `https://pay.line.me/tw` merchant application | merchant center → 開發者工具 → 管理連結金鑰 |
 | 台灣Pay / TWQR | via the acquiring gateway's manual (NewebPay / ECPay) | gateway rate card | gateway console |
 
 ## TW-1. Provider Discovery
