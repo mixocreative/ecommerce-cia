@@ -405,7 +405,7 @@ The audit assumes an integration exists. When it does not — the user wants to 
 | LINE Pay — direct Online API v3/v4, or via NewebPay / PAYUNi | `references/linepay-onboarding.md` + `tools/linepay/` | complete — `developers-pay.line.me` read 2026-09-13 (v4 added Nov 2025); HMAC signer cross-checked against an independent implementation; **full walk live on a sandbox Channel**: request → simulator PAY NOW → `0110` → confirm (`payInfo`) → details (`CAPTURE`) → refund → `1165` / `1172` / `0123` on the retries; wrong credentials → `1104` |
 | Stripe/Adyen | — | not yet written; run setup mode from the posture above and the vendor's manual, and say the guide is missing |
 
-Shared: `tools/explain_error.py <code>` translates NewebPay, ECPay, PAYUNi, TapPay and LINE Pay (`linepay:<code>`) error codes into cause + next action; `tools/newebpay/readiness.py` renders the card for any provider.
+Shared: `tools/explain_error.py <code>` translates NewebPay, ECPay, PAYUNi, TapPay and LINE Pay (`linepay:<code>`) error codes into cause + next action; `tools/newebpay/readiness.py --init --provider newebpay|ecpay|linepay|payuni` writes each provider's readiness template and renders any of them.
 
 ### 0.16 Plain-Language Contract — when the user is not an engineer
 

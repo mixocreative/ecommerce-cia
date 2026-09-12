@@ -227,6 +227,20 @@ class FetchManualsEdgeTests(unittest.TestCase):
 
 
 class ReadinessEdgeTests(unittest.TestCase):
+    def test_provider_templates_render_with_their_own_title(self):
+        with tempfile.TemporaryDirectory() as d:
+            for prov, title in (("ecpay", "ECPay"), ("linepay", "LINE Pay"), ("payuni", "PAYUNi"), ("newebpay", "NewebPay")):
+                p = Path(d) / f"{prov}.yaml"
+                self.assertEqual(readiness.main(["--init", "--provider", prov, str(p)]), 0)
+                import io
+                from contextlib import redirect_stdout
+                buf = io.StringIO()
+                with redirect_stdout(buf):
+                    rc = readiness.main([str(p)])
+                self.assertEqual(rc, 1)  # templates start with missing rows
+                self.assertTrue(buf.getvalue().startswith(f"{title} readiness"), buf.getvalue()[:60])
+            self.assertEqual(readiness.main(["--init", "--provider", "stripe", str(Path(d) / "x.yaml")]), 1)
+
     def test_wait_without_owner_or_date_is_a_finding(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "r.yaml"
