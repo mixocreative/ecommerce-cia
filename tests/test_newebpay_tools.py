@@ -118,6 +118,12 @@ class PhpToolTests(unittest.TestCase):
         self.assertNotIn("MS123456", r.stdout)
         self.assertNotIn("k" * 32, r.stdout)
 
+    def test_probe_names_both_live_refusals(self) -> None:
+        src = (TOOLS / "probe_mpg.php").read_text(encoding="utf-8")
+        for code in ("MPG02003", "MPG03009"):
+            self.assertIn(code, src)
+        self.assertIn('"payType"', src)
+
     def test_probe_refuses_production_by_default(self) -> None:
         env = {**os.environ, "NEWEBPAY_MERCHANT_ID": "MS1", "NEWEBPAY_HASH_KEY": "k" * 32, "NEWEBPAY_HASH_IV": "i" * 16, "NEWEBPAY_CALLBACK_BASE": "https://example.test", "NEWEBPAY_ENV": "production"}
         with tempfile.TemporaryDirectory() as d:
