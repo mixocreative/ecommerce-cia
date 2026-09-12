@@ -471,6 +471,26 @@ it to a log or an exit code is the queue's missing half** — this shop had six 
    eligible>`, then read the affected-row count. Closes the select-then-commit race, makes double
    clicks harmless, needs no lock and no version column. **Never `UPDATE … WHERE id = ?` alone** —
    in a desk or anywhere else.
+**2a. A state transition and a value edit need different preconditions, and conflating them is a silent data loss.** Rule 2 above is not one rule but two, and the second is the one that gets missed:
+
+| | Precondition | Why it is enough, or is not |
+|---|---|---|
+| **State transition** — mark dispatched, mark paid, cancel | `WHERE id = ? AND dispatched_at IS NULL` | **Self-protecting.** The condition can only be true once, so the second writer matches zero rows and learns it lost. The row count *is* the answer |
+| **Value edit** — price, stock, a note, a cost | `WHERE id = ?` | **Not enough, and it fails silently.** There is no natural once-only condition on a value. Two operators editing the same price both match, both succeed, and the first edit vanishes with nobody told |
+
+**For a value edit, carry the value you read**: `WHERE id = ? AND price = ?` — compare-and-swap — or
+a `version` / `updated_at` token if several fields move together. A zero row count then means
+*"somebody changed this while you were looking at it"*, which is a sentence the operator can act on,
+and **the alternative is not a conflict, it is a disappearance.**
+
+This matters most in exactly the place it is least expected: a **bulk editor** feels like typing in a
+spreadsheet, so nobody thinks about concurrency — and it is the surface where one operator can
+silently discard fifty of another's edits in a single click.
+
+**2b. Validate per cell, not per submission.** One bad value must not reject the other forty-nine.
+Same rule as showing ineligible rows with their reason: the batch reports per row, and the rows that
+were fine are saved.
+
 3. **If two rows could legitimately differ, it cannot be a header field.** One shared field for a
    per-item value writes the same tracking number, refund amount or invoice number onto every row in
    the selection. The test is one sentence: *could two selected rows honestly want different values?*
