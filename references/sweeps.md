@@ -326,6 +326,12 @@ And three rules with teeth for any shop:
   Extract tables with the layout preserved (`pdftotext -layout` or your tool's equivalent): a
   collapsed two-column code/message table binds a cap to the wrong error code, and the
   `UNVERIFIED` that follows is your tooling, not the manual.
+  **And when `-layout` and the raw extract disagree, the raw one preserves row order — read
+  both.** `-layout` keeps columns but can shift a cell one row on a multi-line table; a
+  column-shifted read once put a gateway's 4-hour lockout sentence beside the wrong code and
+  was one step from "correcting" shipped software that was already right. For any
+  code-to-meaning binding you are about to act on, confirm it in the raw extract — or find the
+  vendor's own prose naming both together, which a manual's FAQ usually does.
 
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
