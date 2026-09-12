@@ -13,6 +13,11 @@ from __future__ import annotations
 
 import re
 import sys
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp1252; the output carries CJK and emoji
+    sys.stdout.reconfigure(encoding="utf-8")
+
 
 # code -> (gateway, plain meaning, likely cause, next action, source)
 CODES: dict[str, tuple[str, str, str, str, str]] = {
