@@ -618,6 +618,35 @@ Method: enumerate the tests that touch the system's real configuration or entry 
 Report line format: `S21 — T tests / A assertions quoted; V vacuous-pass risks found; E tests that mutate the runner environment, R of them restoring it; S secrets reachable in failure output.`
 
 
+**S22 — Surface completeness across step × outcome × audience. A STEP WITH NO SCREEN IS A STEP NOBODY CAN BE TOLD ABOUT, AND A SCREEN NOBODY HAS RENDERED IS A SCREEN NOBODY KNOWS IS BROKEN.** Added 2026-09-12, from an owner question no sweep in this file could answer: *"are you sure all gaps for [the] purchasing cycle, all combinations of them, each step has a UI and screen, to flag, show and confirm and catch whatever throws back, and every purchasing and checking step has a display showing admin or customer… how do you call this gap and how does our skill catch these gaps?"* The honest answer was that it had no name and no sweep, and the same day's §8am proved it: ninety-five preview scenarios existed, forty-six of them admin, and **not one rendered an exception, alarm or badge**.
+
+**Why the existing sweeps miss it, stated precisely, because each is close enough to feel like coverage:**
+
+| Sweep | What it asks | Why it is not this |
+|---|---|---|
+| **S15** four-corner walk | do the corners *agree* about the object | a corner can agree perfectly and still have no screen |
+| **S16** terminal-state accountability | does the state *end* somewhere a person can account for | satisfied by an alarm row that reaches *a* screen; never enumerates step × outcome × audience |
+| **S17** control enforcement | can the setting reach the decision | about controls, not about surfaces |
+| **S18** enumeration against the authority | is every *contract* combination verified | fields and pages, not faces |
+| **S13** orphan capability | is the capability wired | a wired capability with no rendered state passes |
+
+**The method is a matrix, and it is a different matrix from S18's.** Build it once, per commerce flow — purchase, subscription renewal, refund, return, exchange, store credit:
+
+1. **Enumerate the steps** of the flow end to end, **including the reversals** — which are the half that gets forgotten, because the happy path is the one everybody demonstrates. For a purchase: offer, checkout, authorise, instruct or capture, settle, fulfil, deliver, close; then expire, cancel, refund, return, chargeback, and the late arrival that contradicts one of those.
+2. **Enumerate the outcomes** of each step, and **`unknown` is a required column, not an edge case** — S21 and S20 both exist because a system that cannot say *"I could not tell"* says something false instead. The set: **succeeded · refused · timed out · partial · unknown · reversed after the fact.**
+3. **For each cell, name the surface for each audience that bears the consequence** — typically customer and operator, sometimes a third (an accountant, a courier, a regulator). Where a cell genuinely has no audience, write that down rather than leaving it blank; a blank is indistinguishable from an oversight.
+4. **A surface only counts if it satisfies all four:** it **exists**; it is **reachable by a URL or route somebody can open on demand**, without reproducing the situation that causes it; it **says what happened in words that audience can act on**; and for the operator it **says what to do next**. A log line is not a surface. An email is not a surface for the operator. A row in a table with no screen is not a surface.
+5. **Mark every cell `OK` / `GAP` / `UNVERIFIED`**, exactly as S18 does, and treat `UNVERIFIED` as a task. A cell nobody has opened in a browser is `UNVERIFIED`, whatever the integration tests say — because an integration test asserts the *data* and has never once proved the page renders.
+
+**The renderability clause, which is what makes this sweep different from S16 and is the part that gets skipped.** The states that most need a surface are the ones that only appear when something has gone wrong, and those are exactly the ones no fixture produces. **Demand a fixture per situational surface, not per page.** If reaching a screen requires reproducing a gateway outage, a lost callback or a ten-day-silent parcel, then in practice nobody has ever seen it — not the designer, not the reviewer, not the person who will have to read it at three in the morning. A coverage ratchet that counts pages and scenarios will report clean on all of them; widen it to count **conditional surfaces inside existing pages** — a badge, an alarm panel, an empty state, a disabled control, a refusal message.
+
+**Grading.** A money step whose **refused**, **timed out** or **unknown** outcome has no operator surface: **HIGH** — that is §8ai and §8ae in one cell. A customer-facing refusal with no customer surface: **HIGH**, because the customer is stranded mid-purchase with their money possibly taken. A surface that exists but has never been rendered: **MEDIUM**, and it becomes HIGH the moment anything on the page is typed — §8ak is a settings page that threw a `TypeError` on every request for days because nothing ever opened it.
+
+**The sentence to carry out of this sweep:** *every way a purchase can go must have a face, and a face nobody has looked at is a rumour.*
+
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells; K OK, G GAP, U UNVERIFIED; situational surfaces with a fixture: X of Y.`
+
+
 
 ## 0.11 Escalation — a finding that reaches a file and not a person has not been escalated
 
