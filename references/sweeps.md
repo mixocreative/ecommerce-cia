@@ -777,6 +777,32 @@ unique forever, so the shop froze every pickup order after one hosted-page visit
 refuses a repeat within ten minutes, and the same freeze would have left an abandoned PAYUNi page
 unpayable for good. When a third provider joins, walk every `if pickup` / `if provider` guard and
 ask which vendor's manual it came from — a guard with no citation belongs to one vendor only.
+**The third provider's checklist (2026-09-13, PAYUNi, found by a Screen-tier pass forty minutes
+after the merge).** A new provider inherits every *per-provider* safety net the first two grew,
+and each one is a separate place to forget: **(a)** the expiry sweep's hold-back for a notification
+queued but unread — three providers, three hold-backs, the third was missing and the drainer
+(5 min) is slower than the expirer (1 min); **(b)** the pull behind the push — a poll of awaiting
+orders when the vendor documents no notify retry, keyed to what the vendor's "no such order"
+answer costs (PAYUNi: nothing; NewebPay: a four-hour lockout after too many 查無, so that one
+needs the order to *record its gateway at redirect time* instead of a blind poll); **(c)** the
+operator note that names a console — grep every sentence naming the first vendor's menu and ask
+whether it renders for the new vendor's rows; **(d)** the customer note under the Pay button, which
+must read the request's own switches, never a fixed sentence per delivery method. Walk the list
+by grepping the *first* provider's name across `tools/worker`, the admin notes and the storefront
+copy, and asking of each hit what the third provider does there.
+**The audit reads the gateway off a row that does not exist yet (2026-09-13, S16 × S21).** A
+settlement audit took the vendor from the *payment* row; an awaiting order has none (it is written
+at settlement), so the audit's own "the notification never arrived" branch was reachable only by
+a test fixture that gave an awaiting order a payment row production never writes. **A test that
+hands its subject a shape production cannot produce is a fixture-shaped pass**: for every
+"what if X never happened" test, check where the fixture's rows come from in production and
+whether *that* writer runs before X. The fix was a column written at redirect time, and the lesson
+generalises — an object waiting on an external signal must record whom it is waiting on, or
+nothing can ask.
+**A code-only Screen pass while the full suite holds the database is worth running (2026-09-13).**
+Two HIGHs and a vacuous test in forty minutes, none of which needed a database, a browser or a
+sandbox; the DB tests written for the fixes are queued for the slow filter and named as unrun
+(S8). Do not wait for the environment to be free to read the code.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
