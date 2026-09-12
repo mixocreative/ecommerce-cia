@@ -1,6 +1,6 @@
 # §22 Taiwan E-Commerce Adapter — TW-0 … TW-14
 
-Loaded by `ecommerce-cia` when the audit profile (§3) names Taiwan as merchant or checkout jurisdiction, or the code names ECPay / NewebPay / TapPay / LINE Pay / 電子發票. Extends the global doctrine; never replaces it.
+Loaded by `ecommerce-cia` when the audit profile (§3) names Taiwan as merchant or checkout jurisdiction, or the code names ECPay / NewebPay / TapPay / LINE Pay / 電子發票. Extends the global doctrine; never replaces it. Taiwan's privacy regime (個資法: 告知義務, 身分證字號 handling, sector cross-border rules, request clocks) is PR-9 in `global-compliance.md`, which loads after this adapter.
 
 
 Activate this adapter when:

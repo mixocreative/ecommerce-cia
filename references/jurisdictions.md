@@ -1,6 +1,6 @@
 # §23 Global Provider / Jurisdiction Adapters — EU, Japan, United States, United Kingdom
 
-Loaded by `ecommerce-cia` for any non-Taiwan selling jurisdiction the audit profile (§3) names. Taiwan has its own adapter: `taiwan-adapter.md`. Every adapter **extends** the global audit; none replaces it.
+Loaded by `ecommerce-cia` for any non-Taiwan selling jurisdiction the audit profile (§3) names. Taiwan has its own adapter: `taiwan-adapter.md`. The cross-jurisdiction layer — mandatory legal pages, acceptance evidence, subscriptions, marketing consent, and the privacy regimes of every market including Korea, Canada, Australia, Singapore, China, Brazil, India and Hong Kong — is `global-compliance.md`, loaded after this file on every run. Every adapter **extends** the global audit; none replaces it.
 
 **Version-aware, per §1.3 and §1.4.** Thresholds, rates, mandates and dates below are the state of the world as last written into this file; several are on legislated timetables that move. Before any finding cites one, fetch the current official source (tax authority, regulator, scheme rules, the gateway's own manual), cite the version and date read, and record the location in `docs/integrations/vendor-doc-locations.md`. A number quoted from this file without that check is `UNVERIFIED`, never `OK`.
 
