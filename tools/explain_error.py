@@ -61,6 +61,11 @@ CODES: dict[str, tuple[str, str, str, str, str]] = {
                  "crypto.php selftest; compare against docs #/7/29 PHP example.", "docs #/7/156"),
     "API00010": ("PAYUNi", "EncryptInfo format error.", "Not hex, or missing the ':::' tag separator.", "Rebuild with tools/payuni/crypto.php encrypt.", "docs #/7/156"),
     "API00011": ("PAYUNi", "HashInfo format error.", "Not 64 upper-hex.", "strtoupper(sha256(key . EncryptInfo . iv)).", "docs #/7/156"),
+    "UPP02073": ("PAYUNi", "此支付工具未啟用，LinePay — LINE Pay is not enabled for this shop.", "Console toggle off (商店資料 → 商業條件及支付工具設定); a new sandbox shop ships with it off.", "Flip the toggle, probe again; if still refused it is vendor-side — dated wait. Live-verified 2026-09-13.", "tools/payuni/probe_upp.php (ReturnURL auto-form, decrypted)"),
+    "UPP02049": ("PAYUNi", "此支付工具未啟用，愛金卡 — icash Pay is not enabled.", "icash needs an application PAYUNi reviews.", "File the icash form; dated wait.", "probe_upp.php live 2026-09-13"),
+    "UPP02050": ("PAYUNi", "此支付工具未啟用，後支付(AFTEE) — AFTEE is not enabled.", "Application-gated.", "File the AFTEE form; dated wait.", "probe_upp.php live 2026-09-13"),
+    "UPP02109": ("PAYUNi", "此支付工具未啟用，街口支付 — JKoPay is not enabled.", "Application-gated.", "File the 街口 form; dated wait.", "probe_upp.php live 2026-09-13"),
+    "UPP02063": ("PAYUNi", "此支付工具未啟用，信用卡(ApplePay) — Apple Pay is not enabled.", "Console / application.", "Enable in the console or file the form.", "probe_upp.php live 2026-09-13"),
     "API00009": ("PAYUNi", "The same data is already being processed.", "MerTradeNo reused within 10 minutes, or a double submit.",
                  "Generate a new MerTradeNo per attempt; treat as a duplicate, not a failure.", "docs #/7/34, #/7/156"),
     # ---- TapPay (docs.tappaysdk.com reference; read 2026-09-13) ----
@@ -165,7 +170,7 @@ def explain(code: str, hint: str = "") -> str:
     if c in CODES:
         gw, meaning, cause, action, src = CODES[c]
         return f"{c} [{gw}]\n  What it means : {meaning}\n  Likely cause  : {cause}\n  Do this       : {action}\n  Source        : {src}\n"
-    fam = ("NewebPay" if re.match(r"^(MPG|TRA|CHK)", c) else "PAYUNi" if re.match(r"^(DEF|API)\d{5}$", c)
+    fam = ("NewebPay" if re.match(r"^(MPG|TRA|CHK)", c) else "PAYUNi" if re.match(r"^(DEF|API|UPP)\d{5}$", c)
            else "ECPay" if re.match(r"^10\d{6}$", c) else "TapPay" if re.match(r"^(915|1000\d)$", c)
            else "NewebPay 物流" if re.match(r"^[124]\d{3}$", c) else "unknown")
     return f"{c}: not in this table. Look it up: {LOOKUP.get(fam, 'the vendor manual you downloaded (never memory)')}. If you find it, add it here with the source.\n"
@@ -179,7 +184,7 @@ def main(argv: list[str]) -> int:
         if re.search(r'"returnCode"\s*:\s*"(\d{4})"', text):
             argv = ["linepay:" + m for m in sorted(set(re.findall(r'"returnCode"\s*:\s*"(\d{4})"', text)))]
         else:
-            found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|DEF\d{5}|API\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
+            found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|DEF\d{5}|API\d{5}|UPP\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
             if not found:
                 print("no known code pattern in the text"); return 1
             argv = found
