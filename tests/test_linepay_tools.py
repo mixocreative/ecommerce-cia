@@ -155,6 +155,29 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("REFUSED", r.stderr)
 
+    def test_walk_commands_dry_run_and_sign_the_right_payload(self):
+        env = {**os.environ, **FAKE_ENV}
+        with tempfile.TemporaryDirectory() as d:
+            c = run([PHP, str(TOOLS / "probe_request.php"), "--confirm", "2026091302381764410", "--dry-run"], env=env, cwd=d)
+            self.assertIn('/v3/payments/2026091302381764410/confirm  (env=sandbox, body/query {"amount":1,"currency":"TWD"})', c.stdout)
+            r = run([PHP, str(TOOLS / "probe_request.php"), "--refund", "2026091302381764410", "--dry-run"], env=env, cwd=d)
+            self.assertIn("/refund  (env=sandbox, body/query {})", r.stdout)  # omitted refundAmount = full refund
+            r2 = run([PHP, str(TOOLS / "probe_request.php"), "--refund", "2026091302381764410", "--amount", "5", "--dry-run"], env=env, cwd=d)
+            self.assertIn('{"refundAmount":5}', r2.stdout)
+            g = run([PHP, str(TOOLS / "probe_request.php"), "--details", "2026091302381764410", "--dry-run"], env=env, cwd=d)
+            self.assertIn("GET https://sandbox-api-pay.line.me/v3/payments  (env=sandbox, body/query transactionId=2026091302381764410)", g.stdout)
+            for r_ in (c, r, r2, g):
+                self.assertEqual(r_.returncode, 0, r_.stderr)
+                self.assertNotIn(FAKE_ENV["LINEPAY_CHANNEL_SECRET"], r_.stdout)
+
+    def test_probe_source_carries_the_live_learned_codes(self):
+        # 1169 (confirm before approval), 1172 (second confirm), 1165 (second refund), 1150 (details before confirm):
+        # all observed live 2026-09-13 - see tests/RUNS.md
+        src = (TOOLS / "probe_request.php").read_text(encoding="utf-8")
+        for code in ("1169", "1172", "1165", "1150", "1145", "1152"):
+            self.assertIn(f"'{code}'", src)
+        self.assertIn("POP-UPS", src)
+
     def test_probe_source_names_the_documented_refusals(self):
         src = (TOOLS / "probe_request.php").read_text(encoding="utf-8")
         for code in ("1104", "1106", "1178", "1183", "1184", "2101", "2102"):
