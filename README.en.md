@@ -1,5 +1,7 @@
 # ecommerce-cia — Commerce Integrity Auditor for Taiwan e-commerce
 
+[![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
+
 **The only AI coding skill built around how Taiwanese shops actually take money and ship parcels: 藍新 NewebPay, 綠界 ECPay, 統一金流 PAYUNi, TapPay, 超商取貨付款, 電子發票, 個資法 — with live-verified probes, a fool-proof setup guide for first-time builders, and an audit that finds the defects a green test suite cannot.**
 
 [繁體中文 README](README.md) · Works with Claude Code · Codex · Cursor · any agent that reads `SKILL.md`

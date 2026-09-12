@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discussions / 討論區
+    url: https://github.com/mixocreative/ecommerce-cia/discussions
+    about: Questions, gateway choice, "is this a bug or my host" — ask here first.
