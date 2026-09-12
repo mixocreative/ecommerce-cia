@@ -772,6 +772,11 @@ the gateway test page, and try the l/I, O/0, 1/l variants yourself before asking
 (`/server/index.php?s=/api/page/info`, `page_id`) — the rendered page is empty to a fetcher and a
 copied table drops the cells that carry the money rules. Cite page ids, keep the markdown in the
 gitignored vendor-docs folder, generate the status map and its audit document from one script.
+**One vendor's rule, applied to the next, is a bug (2026-09-13).** NewebPay's order number is
+unique forever, so the shop froze every pickup order after one hosted-page visit; PAYUNi only
+refuses a repeat within ten minutes, and the same freeze would have left an abandoned PAYUNi page
+unpayable for good. When a third provider joins, walk every `if pickup` / `if provider` guard and
+ask which vendor's manual it came from — a guard with no citation belongs to one vendor only.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
