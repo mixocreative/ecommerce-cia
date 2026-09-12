@@ -22,7 +22,7 @@ CARDS = {
     "ecommerce-cia": {
         "kicker": "AI SKILL · CLAUDE CODE · CODEX · CURSOR",
         "title": "台灣電商金流\n串接與完整性審查",
-        "sub": "藍新 NewebPay · 綠界 ECPay · 統一金流 PAYUNi · TapPay",
+        "sub": "藍新 NewebPay · 綠界 ECPay（另含 PAYUNi、TapPay）",
         "chips": ["超商取貨付款", "電子發票", "個資法", "實機探針驗證", "新手引導"],
         "foot": "github.com/mixocreative/ecommerce-cia",
         "accent": (30, 180, 140),
