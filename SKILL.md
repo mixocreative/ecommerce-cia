@@ -532,6 +532,9 @@ And three rules with teeth for any shop:
   the coordinate system in the document, verify each citation by extracting that page and grepping
   it for what you claimed, and when a finding forces a re-walk of its class, re-walk the citations
   too** — including in patches not yet applied, so the docblock that ships names a real page.
+  Extract tables with the layout preserved (`pdftotext -layout` or your tool's equivalent): a
+  collapsed two-column code/message table binds a cap to the wrong error code, and the
+  `UNVERIFIED` that follows is your tooling, not the manual.
 
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
