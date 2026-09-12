@@ -841,6 +841,40 @@ large enough that the screen is ignored. An outcome unclassified: **MEDIUM** —
 so nobody can be wrong yet, but nobody can be right either.
 
 
+### S22 — do not invent admin UX; the conventions are settled
+
+**Added 2026-09-12 at the owner's instruction:** *"reference to shopify or woocommerce or whatever
+best ecommerce standard, do not reinvent the wheel, only improve."*
+
+**An operator who has run any shop already knows how an admin works.** Shopify, WooCommerce and
+Magento converged decades of operator hours onto the same handful of shapes, and a product that
+invents its own spends the operator's attention teaching them a layout instead of showing them their
+orders. **Divergence is a cost paid on every single screen, forever.**
+
+So when a surface from this sweep has to be designed, **name the established pattern it follows**
+before drawing anything:
+
+| Need | The settled shape |
+|---|---|
+| A list of records | filter bar, saved views/tabs, per-page selector, sortable columns, row checkboxes, a sticky bulk bar that appears on selection, paging with a total |
+| Status | a **pill** with a colour and a word, consistent per state across every screen it appears on |
+| An exception on a record | a banner at the top of the detail page and a marker on the list row — never only one of the two |
+| A bulk action | select → action menu → **confirm sheet listing what will happen and to how many** → per-row result |
+| A record detail | header with the key facts and the primary action, then panels, then a **timeline of what happened when** |
+| Nothing yet | an **empty state** with one sentence and the action that ends it, never a blank table |
+| A field the operator cannot use | disabled, **with the reason beside it** |
+
+**Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
+a two-month filing 期, 取貨付款's money-at-the-counter, a carrier upload that takes a spreadsheet.
+Those have no equivalent in a Shopify admin and are where invention is warranted. **A paging
+control is not.**
+
+**The audit question, then, is not "is this well designed?"** — it is **"which established pattern
+is this, and if none, what does the domain require that the established one could not express?"** An
+answer of *"it just grew that way"* is a finding, and it is the cheapest kind to fix while the
+screens are still being built.
+
+
 Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
 
