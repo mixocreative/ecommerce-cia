@@ -644,7 +644,59 @@ Report line format: `S21 — T tests / A assertions quoted; V vacuous-pass risks
 
 **The sentence to carry out of this sweep:** *every way a purchase can go must have a face, and a face nobody has looked at is a rumour.*
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells; K OK, G GAP, U UNVERIFIED; situational surfaces with a fixture: X of Y.`
+### S22 — what this is called outside this file, because hunting it needs the right words
+
+**It has names. Several, one per community, and an auditor who does not know them cannot search for
+prior art, cannot read the tooling that already solves half of it, and cannot tell a developer what
+is missing in a word they will recognise.**
+
+| Community | The name | What it gives S22 |
+|---|---|---|
+| UI design | **The UI Stack** — Scott Hurff, 2015: every component has **blank / loading / partial / error / ideal**. Missing ones are **empty-state** and **error-state gaps** | The canonical five-state checklist. Most teams design *ideal* and ship the other four by accident |
+| Front-end | **story coverage** (Storybook), **visual coverage** (Chromatic, Percy, Applitools). The maxim is *"if it can render, it needs a story"* | The fixture-per-state discipline, already an industry norm - and the reason a preview catalogue is the right instrument rather than an invention |
+| QA / test | **unhappy-path** or **sad-path coverage**, **negative testing**, and for state machines **statechart coverage**, split into **state coverage** (every state reached) and **transition coverage** (every edge taken) | Names the asymmetry precisely: happy-path coverage can be 100% while sad-path coverage is 0%, and one number hides the other |
+| Combinatorics | **state-space explosion**, answered by **pairwise / all-pairs / n-wise coverage** (Combinatorial Test Design) | The honest answer to *"all combinations"*: the full cross-product is infeasible and nobody runs it. See the depth rule below |
+| SRE | **actionable alerting** - the Google SRE rule that an alert which does not tell a human what to do is **noise**, not signal - plus **runbook coverage** and **observability gap** | Exactly why a log line and a digest mail fail this sweep. The industry already decided this and wrote it down |
+| Product / internal | **operator experience**, **internal-tooling debt**, **back-office UX** | The vocabulary for arguing the work is worth doing, to somebody who thinks admin screens do not need design |
+| Reaching the states | **fault injection**, **state injection**, fixtures and mocks; **chaos engineering** at the infrastructure tier | How the untestable-looking states get rendered without waiting for a real outage |
+
+**Use these words in findings.** *"The refund-refused path has no error state and no story"* lands
+with a front-end developer; *"S22 cell 4.3 is a GAP"* does not.
+
+### How to hunt them - mechanical, in rough order of yield
+
+1. **Grep the render guards.** Every conditional that wraps output is a surface: an emptiness check,
+   a null check, an early return carrying a refusal reason, a match arm that renders something else.
+   **Enumerate them and ask which has a fixture.** Highest-yield pass and pure grep - a conditional
+   surface inside an existing page is the exact thing a page-level coverage ratchet cannot see.
+2. **Walk the enums as statecharts.** **State coverage**: has each case a rendered surface?
+   **Transition coverage**: has each edge one where it matters? The edges that run *backwards* -
+   cancelled-then-paid, delivered-then-returned, refunded-then-charged-back - are where surfaces go
+   missing, because forward edges get demonstrated and backward ones do not.
+3. **Inventory the error paths.** Every catch, every throw that can reach a request, every refusal
+   string, every non-zero exit. Each is an outcome. **A refusal reason that exists only as a string
+   in a log is an error state with no error surface.**
+4. **Empty states.** Every list, table and collection: what is shown at zero rows? Zero is the state
+   a shop is in on **day one**, so it is the first thing a new operator sees and the least likely to
+   have been designed.
+5. **Read the alerting.** Every notifier, digest, cron exit code and alarm row: where does it land,
+   and is that a screen somebody opens? Apply the SRE test - **does it say what to do?**
+6. **Then, and only then, the cross-product** - bounded deliberately.
+
+**The depth rule, because "all combinations" is not a plan.** The full cross-product of
+step x outcome x audience x payment method x delivery method x destination x cart shape runs to tens
+of thousands of cells and will never be walked. So:
+
+- **Money paths at full depth.** Every step whose outcome can move, hold or lose money gets every
+  outcome and every audience, enumerated exhaustively. This is a small set - it is the failure
+  column, not the whole grid.
+- **Everything else pairwise.** All-pairs coverage over the remaining axes catches the large majority
+  of interaction defects at a fraction of the cells, which is the published result behind CTD.
+- **Say which is which in the report.** A matrix that silently sampled is S18's original sin. State
+  the axes taken at full depth and those taken pairwise, so the next reader knows what was not walked.
+
+
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'.`
 
 
 
