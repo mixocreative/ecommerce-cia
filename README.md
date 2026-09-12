@@ -1,6 +1,6 @@
 # ecommerce-cia — 台灣電商金流串接與完整性審查 Skill
 
-**唯一專為台灣電商實務量身打造的 AI 程式碼檢測與串接 Skill：藍新 NewebPay、綠界 ECPay、超商取貨付款、電子發票、個資法 —— 搭配實機驗證探針、新手也能一次搞定的串接引導，以及能在綠燈測試背後抓出潛藏漏洞的審查機制。**
+**唯一專為台灣電商實務量身打造的 AI 程式碼檢測與串接 Skill：藍新 NewebPay、綠界 ECPay、統一金流 PAYUNi、TapPay、超商取貨付款、電子發票、個資法 —— 搭配實機驗證探針、新手也能一次搞定的串接引導，以及能在綠燈測試背後抓出潛藏漏洞的審查機制。**
 
 [English README](README.en.md) · 支援 Claude Code · Codex · Cursor · 以及任何能讀取 `SKILL.md` 的 Agent
 
@@ -50,6 +50,7 @@ git clone https://github.com/<you>/ecommerce-cia ~/.codex/skills/ecommerce-cia
 | 在真實 NewebPay 測試店家執行 `tools/newebpay/probe_mpg.php` | CREDIT · WEBATM · VACC · CVS · BARCODE · LINEPAY · ESUNWALLET → **PASS**（經伺服器端 `payType` 確認）；未啟用的支付方式 → `MPG02003`；錯誤的 HashIV → `MPG03009` |
 | 在 ECPay 公開測試店家執行 `tools/ecpay/probe_aio.php` | Credit, BNPL → **PASS**；金鑰錯誤 → `10200073` |
 | 執行 `tools/ecpay/callback.php selftest` | 逐 Byte 完全重現 ECPay 官方範例的 `CheckMacValue` 算碼結果 |
+| 對 PAYUNi 測試區執行 `tools/payuni/probe_upp.php` | 拒絕路徑精確（`JS_INFO.success=false` 商店不存在）；AES-256-GCM 封裝通過自我測試 |
 | 執行 `tools/newebpay/fetch_manuals.py` | 成功讀取正式環境下載頁面（用 `curl` 會被擋 `403`），抓出一般頁籤隱藏的 **65 份文件** —— 包含解答「為什麼這個支付方式一直開不起來」的所有申請表單 |
 | 由全新 Agent 進行無快取冷啟動（Cold run） | setup Q1 · setup 4-turn · 易懂白話審查 · paired 模式 —— **0 誤報（False positive）**，準確抓出測試電商中 16/16 個已知漏洞 |
 
@@ -66,12 +67,17 @@ references/
                                  測試環境註冊、後台啟用 + 探針實測、串接程式碼、上線流程、常見坑點
   ecpay-onboarding.md            綠界從零開始：Markdown 雙生文件、公開測試金鑰、CheckMacValue、
                                  1|OK、SimulatePaid、DoAction 僅限正式環境、兩大物流體系
+  payuni-onboarding.md           統一金流從零開始：AES-256-GCM 加密封裝、UPP 旗標與金額上限、
+                                 同一頁整合 7-ELEVEN 物流、模擬繳費、LINE Pay 測試區任意 Channel 即可用
+  tappay-onboarding.md           TapPay：前端 Token 化 SDK、Pay by Prime、各式錢包、3DS 通知、無超商
   jurisdictions.md               歐盟 · 日本 · 美國 · 英國 同等深度說明
   global-compliance.md           跨 13 種法規體系的條款與隱私權（GDPR、個資法、PIPA、APPI、LGPD…）
   doctrine.md / domains.md / theory.md / reporting.md
 tools/
   newebpay/  detect · fetch_manuals · probe_mpg · callback (verify|make) · readiness
   ecpay/     detect · fetch_docs · probe_aio · callback (verify|make|sign|selftest)
+  payuni/    detect · fetch_docs（ShowDoc API）· crypto（GCM selftest|encrypt|decrypt）· probe_upp
+  tappay/    probe_prime（dry-run、--prime、--query）
   explain_error.py               MPG02003? 10200079? 1106? → 顯示含義、原因與唯一下一步行動
 tests/
   fixture-shop/                  包含 16 個已知缺陷與標準解答的 PHP 測試電商
@@ -94,12 +100,12 @@ API 呼叫交給廠商的專用 Skill。這套 Skill 則負責幫你把關周遭
 
 ## 開發路線圖
 
-- PAYUNi 統一金流與 TapPay 新手引導指南（進行中）
+- 申請一個 PAYUNi 測試店家，驗證 PASS 路徑（拒絕路徑已驗證）
 - 比照台灣深度打造日本與歐盟轉接層（法規層已有，金流商引導尚未撰寫）
 - 執行 Codex 運行環境的無快取測試（Cold run），以比照 Claude 測試結果
 
 ## 致謝與專案由來
 
-本 Skill 的核心準則來自於實際上線經營台灣電商網站（整合藍新 NewebPay + 綠界 ECPay、超商取貨付款、手寫統一發票）的經驗，並記錄下官方技術手冊中未提及的所有坑點。指南中的每個數據均標註 *verify-current*（驗證最新）；源自真實漏洞的每條規則皆標註 *(lesson)*（實戰教訓）。兄弟專案 [`cia`](../cia) 則繼承了本方法論中通用、非電商部分的審查能力。
+本 Skill 的核心準則來自於實際上線經營台灣電商網站（整合藍新 NewebPay + 綠界 ECPay、超商取貨付款、手寫統一發票；PAYUNi 與 TapPay 則依官方文件撰寫）的經驗，並記錄下官方技術手冊中未提及的所有坑點。指南中的每個數據均標註 *verify-current*（驗證最新）；源自真實漏洞的每條規則皆標註 *(lesson)*（實戰教訓）。兄弟專案 [`cia`](../cia) 則繼承了本方法論中通用、非電商部分的審查能力。
 
 授權條款：MIT。
