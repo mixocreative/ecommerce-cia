@@ -1,0 +1,16 @@
+cff-version: 2.0.0
+message: "If you use this skill, please cite it."
+title: "ecommerce-cia: Commerce Integrity Auditor skill (Viable System Model)"
+authors:
+  - name: "MixoCreative"
+repository-code: "https://github.com/mixocreative/ecommerce-cia"
+license: MIT
+version: 2.0.0
+date-released: 2026-09-13
+keywords:
+  - viable system model
+  - stafford beer
+  - cybernetics
+  - code audit
+  - claude code
+  - cross-boundary invariant violation

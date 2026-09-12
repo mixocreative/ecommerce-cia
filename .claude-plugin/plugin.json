@@ -1,0 +1,30 @@
+{
+  "name": "ecommerce-cia",
+  "displayName": "Commerce Integrity Auditor",
+  "version": "2.0.0",
+  "description": "Commerce Integrity Auditor for Taiwan e-commerce: audits checkout, payments, stock, orders and entitlements as Viable System channels; setup mode that walks a first-time builder through NewebPay 藍新, ECPay 綠界, PAYUNi 統一金流 or TapPay with live probes; Taiwan chapter TW-0…TW-14; EU/JP/US/UK adapters; global privacy and terms checkup.",
+  "author": {
+    "name": "mixocreative",
+    "url": "https://github.com/mixocreative"
+  },
+  "homepage": "https://github.com/mixocreative/ecommerce-cia",
+  "repository": "https://github.com/mixocreative/ecommerce-cia",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "skill",
+    "ecommerce",
+    "taiwan",
+    "newebpay",
+    "ecpay",
+    "payuni",
+    "tappay",
+    "code-audit",
+    "viable-system-model",
+    "cybernetics"
+  ],
+  "skills": [
+    "./"
+  ]
+}
