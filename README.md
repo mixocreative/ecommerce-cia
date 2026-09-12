@@ -8,11 +8,11 @@ A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce 
 
 > 這是給 Claude Code 與 OpenAI Codex 使用的 Skill。它將電商系統視為 Stafford Beer 所定義的「可存活系統」（Viable System）來進行稽核，專門抓出只有從這個視野才能發現的 bug：**跨邊界不變量違反**（cross-boundary invariant violations），亦即**整合層級缺陷**或**湧現缺陷**。這類 bug 不會單獨存在於任何一個函式中，而是藏在金流、庫存、訂單資料真正流經的「兩個正確函式之間」。
 >
-> 專為台灣電商情境打造：不管是綠界 ECPay、藍新 NewebPay、統一金流 PAYUNi、TapPay，還是 ATM 虛擬帳號、超商代碼／條碼、超商取貨付款、統一發票跟消保法七天鑑賞期，通通都有獨立專章處理。
+> 專為台灣電商情境打造：不管是藍新 NewebPay、綠界 ECPay，還是 ATM 虛擬帳號、超商代碼／條碼、超商取貨付款、統一發票跟消保法七天鑑賞期，通通都有獨立專章處理。
 
-Since v2.0 it also **starts a shop from zero**: a setup mode that walks a first-time builder through 藍新 NewebPay, 綠界 ECPay, 統一金流 PAYUNi or TapPay — one question at a time with choices, the prerequisite list before any code, the hosting checked before any code, and every payment method proved on by a live probe rather than trusted from a console toggle. It speaks plainly to someone who has never integrated a gateway.
+Since v2.0 it also **starts a shop from zero**: a setup mode that walks a first-time builder through **藍新 NewebPay** (the default, verified live on a real sandbox shop) or **綠界 ECPay** (verified live on ECPay's stage) — one question at a time with choices, the prerequisite list before any code, the hosting checked before any code, and every payment method proved on by a live probe rather than trusted from a console toggle. It speaks plainly to someone who has never integrated a gateway. 統一金流 PAYUNi and TapPay are covered from their documentation as secondary options.
 
-> 自 v2.0 起，它也能**幫你從零開始開一家店**：提供「新手引導模式」，一步步帶領第一次建站的人串接藍新 NewebPay、綠界 ECPay、統一金流 PAYUNi 或 TapPay — 每次只問一個帶有選項的問題、寫 Code 前先確認準備清單、寫 Code 前先檢查主機環境，且每一種付款方式都透過實機探針（Live probe）驗證成功，而不是傻傻相信後台的開關。即使你從來沒串過金流，也能聽得懂白話說明。
+> 自 v2.0 起，它也能**幫你從零開始開一家店**：提供「新手引導模式」，一步步帶領第一次建站的人串接**藍新 NewebPay**（預設選擇，已在真實測試商店實機驗證）或**綠界 ECPay**（已在綠界測試環境實機驗證）— 每次只問一個帶有選項的問題、寫 Code 前先確認準備清單、寫 Code 前先檢查主機環境，且每一種付款方式都透過實機探針（Live probe）驗證成功，而不是傻傻相信後台的開關。即使你從來沒串過金流，也能聽得懂白話說明。統一金流 PAYUNi 與 TapPay 則依官方文件納入，作為次要選項。
 
 ## How this is different from a code review｜這跟一般的 Code Review 到底有什麼不一樣？
 
@@ -235,12 +235,16 @@ The audit assumes an integration exists. When it does not — the user is starti
 
 ## Providers｜支援的金流商
 
+The depth is in **NewebPay and ECPay**: a 330-line NewebPay guide built from a shipped Taiwanese shop's lessons and probes verified on a real sandbox shop; an ECPay guide with the `CheckMacValue` known-answer test and probes verified on ECPay's public stage. PAYUNi and TapPay are documentation-derived secondary guides — correct as far as the vendor pages go, not yet backed by a shipped integration.
+
+> 重點深度都在**藍新 NewebPay 與綠界 ECPay**：藍新有一份 330 行、從真實上線台灣電商踩坑經驗寫成的指南，探針已在真實測試商店驗證；綠界則有 `CheckMacValue` 已知答案測試，探針已在綠界公開測試環境驗證。統一金流 PAYUNi 與 TapPay 是依官方文件整理的次要指南 —— 就官方頁面而言正確，但還沒有真實上線案例背書。
+
 | Provider｜金流商 | Guide + tools｜指南與工具 | Verified｜實測驗證狀態 |
 |---|---|---|
-| 藍新 NewebPay｜藍新 NewebPay | manuals + the 65-document hidden inventory (application forms behind every "why is this method still off"), MPG probe, callback verify/simulate, readiness card｜官方手冊 + 藏在深處的 65 份文件庫（解開「為什麼這個付款方式還沒開通」背後的申請表單）、MPG 探針、Callback 驗證／模擬器、準備就緒卡 | live on a real sandbox shop: 7 methods PASS with the server-side `payType` block; not-enabled → `MPG02003`; wrong key → `MPG03009`｜在真實測試商店實測：7 種付款方式皆 PASS（由伺服器端的 `payType` 區塊確認）；未開通 → `MPG02003`；金鑰錯誤 → `MPG03009` |
-| 綠界 ECPay｜綠界 ECPay | markdown-twin docs by page id, public stage keys, AIO probe, `CheckMacValue` verify/make/sign｜按頁碼 ID 整理的 Markdown 雙生文件、公開測試環境金鑰、AIO 探針、`CheckMacValue` 驗證／壓碼／簽章 | live on ECPay's public stage: PASS; wrong keys → `10200073`; `CheckMacValue` reproduces ECPay's published worked example byte-for-byte｜在綠界公開測試環境實測：過關；金鑰錯誤 → `10200073`；`CheckMacValue` 算出的結果與綠界官方範例逐 Byte 完全吻合 |
-| 統一金流 PAYUNi｜統一金流 PAYUNi | docs via the ShowDoc API, AES-256-GCM envelope, UPP probe reading the page's `JS_INFO` verdict｜透過 ShowDoc API 取得文件、AES-256-GCM 加密包裝、讀取頁面 `JS_INFO` 判決結果的 UPP 探針 | refusal path live (`商店不存在`); PASS path awaits a sandbox shop｜拒絕路徑實測通過（`商店不存在`）；成功路徑待測試商店到位 |
-| TapPay｜TapPay | tokenising SDK model, Pay by Prime, wallets, 3DS notify, dry-run probe｜Token 化 SDK 模型、Pay by Prime、電子錢包、3DS 通知、乾跑（Dry-run）探針 | by documentation; a live probe needs an SDK-issued prime by design｜依據官方規格書比對；按架構設計，實機探針需有 SDK 產生的 Prime |
+| **藍新 NewebPay**（default｜預設） | manuals + the 65-document hidden inventory (application forms behind every "why is this method still off"), MPG probe, callback verify/simulate, readiness card｜官方手冊 + 藏在深處的 65 份文件庫（解開「為什麼這個付款方式還沒開通」背後的申請表單）、MPG 探針、Callback 驗證／模擬器、準備就緒卡 | live on a real sandbox shop: 7 methods PASS with the server-side `payType` block; not-enabled → `MPG02003`; wrong key → `MPG03009`｜在真實測試商店實測：7 種付款方式皆 PASS（由伺服器端的 `payType` 區塊確認）；未開通 → `MPG02003`；金鑰錯誤 → `MPG03009` |
+| **綠界 ECPay** | markdown-twin docs by page id, public stage keys, AIO probe, `CheckMacValue` verify/make/sign｜按頁碼 ID 整理的 Markdown 雙生文件、公開測試環境金鑰、AIO 探針、`CheckMacValue` 驗證／壓碼／簽章 | live on ECPay's public stage: PASS; wrong keys → `10200073`; `CheckMacValue` reproduces ECPay's published worked example byte-for-byte｜在綠界公開測試環境實測：過關；金鑰錯誤 → `10200073`；`CheckMacValue` 算出的結果與綠界官方範例逐 Byte 完全吻合 |
+| 統一金流 PAYUNi（secondary｜次要） | docs via the ShowDoc API, AES-256-GCM envelope, UPP probe reading the page's `JS_INFO` verdict｜透過 ShowDoc API 取得文件、AES-256-GCM 加密包裝、讀取頁面 `JS_INFO` 判決結果的 UPP 探針 | refusal path live (`商店不存在`); PASS path awaits a sandbox shop｜拒絕路徑實測通過（`商店不存在`）；成功路徑待測試商店到位 |
+| TapPay（secondary｜次要） | tokenising SDK model, Pay by Prime, wallets, 3DS notify, dry-run probe｜Token 化 SDK 模型、Pay by Prime、電子錢包、3DS 通知、乾跑（Dry-run）探針 | by documentation; a live probe needs an SDK-issued prime by design｜依據官方規格書比對；按架構設計，實機探針需有 SDK 產生的 Prime |
 
 Default for a first shop built by a non-engineer: NewebPay — one crypto scheme, sandbox refunds work, the store picker is hosted. ECPay when the shop is on WooCommerce, wants a sandbox payment in five minutes, or already holds a contract. PAYUNi when 7-ELEVEN is the channel of record or the 超商代碼 cap (NT$20,000) matters. TapPay when the shop wants its own checkout page and card-on-file with every wallet. Where a vendor ships its own AI skill (ECPay does), this skill defers to it for the API calls and covers everything around them.
 
