@@ -861,6 +861,44 @@ large enough that the screen is ignored. An outcome unclassified: **MEDIUM** —
 so nobody can be wrong yet, but nobody can be right either.
 
 
+### S22 — mode errors and invisible scope: a control must show what it will act on
+
+**Added 2026-09-12 after an owner spotted one the sweep had not:** if rows are selected and the
+operator then re-sorts, re-filters or pages, **a naive list keeps the ticks against different
+records** — so the button now acts on a set nobody chose and nobody can see.
+
+**This class has names and they are old ones.** Raskin's *The Humane Interface* calls it a **mode
+error** — the same action producing different results depending on a state the user cannot see — and
+names modes a primary cause of human error. Nielsen's first heuristic is **visibility of system
+status**. In list UIs it shows up as **scope ambiguity** and **stale selection**. Use those words in
+findings; *"confusing"* is not a finding, *"this control has two scopes and neither is shown"* is.
+
+**The rule: a control that acts on a set must make the set visible, unambiguous, and current.**
+
+Three questions, per control that acts on more than one thing:
+
+1. **What exactly will this act on** — the rows I can see, or everything matching a filter I set
+   three screens ago? If the answer is not on screen, that is the finding. **Never one control for
+   both scopes**: a header checkbox meaning *"all 312"* is how somebody marks three hundred orders
+   dispatched intending fifty. Page scope is the safe default; *"select all N matching"* is a
+   separate, visibly different, deliberate act.
+2. **What happens to the selection when the view changes?** Re-sort, re-filter, change page size,
+   page forward. **Silently keeping ticks against new rows is the defect.** Either clear the
+   selection and say so, or carry it as an explicitly filter-defined set that survives paging and
+   dies when the filter changes. Predictable beats clever: an operator who loses eight ticks and is
+   told why re-ticks them; one who silently acts on the wrong eight never finds out.
+3. **Is the mode itself visible?** This is the same defect outside lists, and it is worse where money
+   is involved — **a test/sandbox gateway mode that looks identical to live is a mode error with a
+   payment behind it.** Check every environment switch, impersonation session, draft-vs-published
+   toggle, maintenance flag and preview mode: does the screen say which one it is in, everywhere it
+   matters, or only on the page where it was set?
+
+**Grading.** A destructive or money-moving action whose scope is not visible: **HIGH**. A selection
+that survives a view change without saying so: **HIGH** if it feeds a bulk action, **MEDIUM**
+otherwise. An invisible mode that changes where money goes: **HIGH**, always.
+
+**The sentence:** *the operator should never have to remember what the screen is doing.*
+
 ### S22 — do not invent admin UX; the conventions are settled
 
 **Added 2026-09-12 at the owner's instruction:** *"reference to shopify or woocommerce or whatever
