@@ -1,6 +1,6 @@
 ---
 name: ecommerce-cia
-description: "Use when auditing a transactional e-commerce codebase — checkout, orders, payments, gateway callbacks, inventory, fulfilment and pickup, refunds, promotions, tax and invoices, digital entitlements, settlement, provider reconciliation, consumer-law and privacy compliance (GDPR, CCPA, APPI, 個資法, PIPA, LGPD), legal pages and terms acceptance, subscriptions — or when a commerce project (payment-gateway code, orders/cart schema, checkout routes, or a commerce framework dependency present) hears pre-launch words: run tests, test suite, pre-launch, handoff, green-light, ready for launch, audit, security audit, wiring audit, nothing dies silently, silent failure, dead control, fail-open, vacuous pass, TOCTOU, four-corner walk, VSM map, empty state, error state, admin dashboard, story coverage. Explicit /ecommerce-cia or $ecommerce-cia always selects this skill. Not for /cia or $cia (the separate Code Integrity Auditor) and not for non-commerce projects."
+description: "Use when auditing a transactional e-commerce codebase — checkout, orders, payments, gateway callbacks, inventory, fulfilment and pickup, refunds, promotions, tax and invoices, digital entitlements, settlement, provider reconciliation, consumer-law and privacy compliance (GDPR, CCPA, APPI, 個資法, PIPA, LGPD), legal pages and terms acceptance, subscriptions, or setting up a gateway from zero (NewebPay 藍新 sandbox, merchant account, 串接) — or when a commerce project (payment-gateway code, orders/cart schema, checkout routes, or a commerce framework dependency present) hears pre-launch words: run tests, test suite, pre-launch, handoff, green-light, ready for launch, audit, security audit, wiring audit, nothing dies silently, dead control, fail-open, vacuous pass, TOCTOU, four-corner walk, VSM map, empty state, admin dashboard. Explicit /ecommerce-cia or $ecommerce-cia always selects this skill. Not for /cia or $cia (the separate Code Integrity Auditor) and not for non-commerce projects."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
@@ -338,6 +338,7 @@ Paths are relative to this skill's directory. "Read" means read the whole file; 
 | `references/taiwan-adapter.md` | Audit profile names Taiwan, or the code names ECPay / NewebPay / TapPay / LINE Pay / 電子發票 | §22 TW-0 vendor document locations, TW-1 … TW-14 |
 | `references/jurisdictions.md` | Any non-Taiwan selling jurisdiction | §23 EU, Japan, United States, United Kingdom adapters at Taiwan depth (tax, consumer law, payments, logistics, invoices) and the adapter rule |
 | `references/global-compliance.md` | Every run, after the jurisdiction adapters | §23a global layer: GT terms-and-services checkup (mandatory pages, acceptance evidence, subscriptions, marketing consent, price display); PR privacy checkup across EU / UK / US-state / JP / TW / KR / CA / AU / BR / CN / SG / IN / HK regimes (data map, consent, cookies, DSAR clocks, retention vs fiscal, processors and transfers, breach detection, children, notice-vs-system); short adapters for Korea, Canada, Australia, Singapore, China CBEC, Brazil, India, Hong Kong |
+| `references/newebpay-onboarding.md` | Setup mode (§0.15) when NewebPay is used or chosen | Detect → latest manuals from `www.newebpay.com` → choice menu (methods, 超商取貨, chains, host) → prerequisite checklist → S19 host table → sandbox registration (user drives) → console activation and probes → wiring contract → sandbox walk → go-live checklist → gotchas → readiness card |
 | `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; §30 five-section final output; §31 must / must-not rules |
 
 Step 3 order, restated: theory → sweeps (step 0 map, then S1–S22, S15 first when time is short) → doctrine → domains (+ adapters) → global-compliance → reporting. Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
@@ -355,6 +356,30 @@ Runs only when the user names both skills in one request ("run /cia and /ecommer
 5. **Doctrine once, cia's additions appended.** §1 and §2 are the same doctrine in both skills — read this skill's. Then cia-only: its §3 context profiling (with a matching context template if one fits), its §7 universal test matrix applied to the non-commerce critical flows, its §8 domain checklist. This skill's domain chapters, adapters and reporting run as normal.
 6. **One register, one ID sequence, one report.** Step 7 format here; add lines for cia's §3 profile, §7 matrix, §8 checklist and §0.10 sweeps. Line 2 reads `2. /cia universal integrity: run paired — N findings (see below)` instead of "user must run /cia".
 7. **One tier.** The depth tier (Step 3) is declared once and binds both.
+
+### 0.15 Setup Mode — provider onboarding for a first-time integrator
+
+The audit assumes an integration exists. When it does not — the user wants to *start* taking payments, is half-way and stuck, or asks "how do I set up X" — this skill runs **setup mode** instead: a guided path with a readiness card, written for someone who has never integrated a gateway and is building by describing what they want. Setup mode is not a lighter audit; it is a different job with a different output.
+
+**Enter setup mode when** the user says integrate / set up / 串接 / 申請 / sandbox / 測試環境 / "which payment methods should I offer" / "how do I get a merchant account", **or** §0.5 discovery finds a provider named in config or code with no working callback endpoint, no sandbox record and no walk artefacts. Say which mode you are in. If both apply (a half-built integration the user wants checked), setup mode first — the readiness card names what the audit will later verify.
+
+**Posture in setup mode:**
+
+- **One question at a time, always with choices** (2–4 options, one-line consequence each). The user does not know the vocabulary; the guide supplies it.
+- **Prerequisites before code.** The first artefact is the checklist of everything the user must obtain in the real world (identity documents, bank account, domain, SMS number, decisions), with who acts and how long it takes, so nobody discovers on day three that a review takes a week.
+- **Host before code.** The S19 table for the host they have *and* the host they plan to launch on, before the first line is written; the outbound-IP question is asked of the host, not assumed.
+- **Latest manual, always** — from the vendor's production download page, read fresh (§1.4); never a sandbox portal's copy, never memory.
+- **Prove every switch.** A console toggle is a claim; a synthetic probe or a sandbox round-trip is the evidence. `UNVERIFIED` until then.
+- **The AI's hard limits hold:** it never types a password or a national ID, never uploads an ID image, never creates the account, never changes a merchant-console setting without a fresh explicit yes for that one change. It opens the page, explains every field, prepares every permitted value, and checks the result.
+- **Vendor support is a dated wait, not a plan** — used only for vendor-side enablement nothing else can flip, recorded with the date and what it blocks.
+- **Ends with the readiness card** (per-provider format in the guide): every prerequisite ✅ / ⏳ / ❌ with an owner and a date, waits on others, and the next three actions.
+
+**Provider guides:**
+
+| Provider | Guide | Status |
+|---|---|---|
+| NewebPay 藍新金流 (MPG, 定期定額, 物流) | `references/newebpay-onboarding.md` | complete — manuals inventoried 2026-09-12, lessons from a shipped integration |
+| ECPay 綠界, PAYUNi, TapPay, direct LINE Pay, Stripe/Adyen | — | not yet written; run setup mode from the posture above and the vendor's manual, and say the guide is missing |
 
 ---
 
