@@ -12,6 +12,10 @@ import re
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp1252; the output carries CJK and emoji
+    sys.stdout.reconfigure(encoding="utf-8")
+
+
 SIGNALS = {
     "host_sandbox": re.compile(r"ccore\.newebpay\.com"),
     "host_production": re.compile(r"(?<!c)core\.newebpay\.com"),

@@ -15,6 +15,10 @@ import re
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp1252; the output carries CJK and emoji
+    sys.stdout.reconfigure(encoding="utf-8")
+
+
 HERE = Path(__file__).resolve().parent.parent
 SKILLS = HERE.parent
 CIA = SKILLS / "cia" / "references" / "sweeps.md"

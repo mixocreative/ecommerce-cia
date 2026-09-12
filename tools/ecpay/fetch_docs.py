@@ -24,6 +24,10 @@ import sys
 import urllib.request
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp1252; the output carries CJK and emoji
+    sys.stdout.reconfigure(encoding="utf-8")
+
+
 BASE = "https://developers.ecpay.com.tw/"
 PAGES = {
     "aio": {

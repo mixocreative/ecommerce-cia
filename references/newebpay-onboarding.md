@@ -82,22 +82,24 @@ Ask these in order. Each answer removes work.
 | 玉山 Wallet / 台灣 Pay / TWQR `ESUNWALLET` `TAIWANPAY` | wallet or QR | wallet settlement | **console toggle in the sandbox** — verified 2026-09-12: `MPG02003` → owner flipped 玉山 Wallet on in the console → probe PASS within a minute. Production may still need the 行動支付 form; verify | probe after every flip; the toggle-then-probe loop is under a minute |
 | WebATM `WEBATM` | pays now via online banking | immediate | console toggle | fine for any cart size |
 | ATM 轉帳 (虛擬帳號) `VACC` | gets a virtual account, pays later at ATM or app | when the transfer lands — **hours or days** | console toggle on the hosted page; `非信用卡應用 API 機制申請表` if you call the standalone API | the order is *unpaid* until `NotifyURL` fires; expiry sweep + "waiting for payment" screen (TW-4); **refunds need `商店非信用卡退款機制申請表`** or are manual transfers |
-| 超商代碼 `CVS` | gets a code, pays at 7-11/全家/萊爾富/OK counter | when paid at the counter | as `VACC` | **cap NT$6,000 by default** *(lesson; cite NDNF)* — hide it on larger carts |
+| 超商代碼 `CVS` | gets a code, pays at 7-11/全家/萊爾富/OK counter | when paid at the counter | as `VACC` | **cap NT$6,000 by default** *(lesson; NDNF §超商代碼 — cite the page from the manual you fetched)* — hide it on larger carts |
 | 超商條碼 `BARCODE` | prints/shows a barcode, pays at counter | as above | as `VACC` | higher cap than 代碼 (check NDNF) |
 | 先買後付 BNPL `AFTEE` / `OPPAY` (大哥付你) | credit approval at checkout | provider settles | **vendor-enabled**: seller terms signed (`AFTEE服務條款`, `大哥付你分期-賣家約定條款`), then NewebPay | approval can refuse; refunds via BNPL capture/void APIs |
 | 定期定額 (recurring) | separate NDNP API, not MPG | per period | **vendor-enabled**: `約定信用卡付款授權申請表` | only if Q1 said subscriptions |
 
-**Say this to the user on day one:** every row marked *vendor-enabled* will be off in the sandbox until NewebPay switches it on, whatever the console shows. File the form the same day the method is chosen; put the wait on the readiness card with the date; build and test the console-toggle methods meanwhile. Do not spend a session "debugging" a method that was never enabled.
+**Say this to the user on day one:** every row marked *vendor-enabled* will be off in the sandbox until NewebPay switches it on, whatever the console shows. **Order of work:** register the account and create the shop first (§5) — the application forms ask for the 商店代號 (MerchantID) — then file the form the same day; put the wait on the readiness card with the date; build and test the console-toggle methods meanwhile. Do not spend a session "debugging" a method that was never enabled.
 
 Recommend a **starter set** for a first shop: `CREDIT` + `WEBATM` + `VACC`, add `CVS` if the average order is under NT$6,000, add LINE Pay after activation lands. Everything else off until there is a reason. Record the chosen set as data (a `payment_methods` setting), not as constants.
 
 **Q3 — How will physical goods reach the customer?** home delivery by your own carrier (黑貓 / 郵局 / 賣家宅配 — outside NewebPay) / **超商取貨** via NewebPay (取貨不付款: paid online, collected at store; **取貨付款**: paid at the counter) / both. → 超商取貨 adds the CVSCOM flow and, for labels and tracking, the NDNS logistics API and **its hosting requirement** (§4). Home-delivery COD is not a NewebPay product and should not exist in the checkout at all (§3 fulfilment rule 3).
 
+**Q3-bis — if the user chose online methods AND 取貨付款:** ask which they mean, because the words collide: *(a)* pay online, collect at the store (取貨不付款, `CVSCOM=1`) — cards / LINE Pay are used; *(b)* pay cash at the counter (取貨付款, `CVSCOM=2`) — cards / LINE Pay are not used for that order; *(c)* offer both and let the customer choose. Most shops mean (c); say the assumption out loud and let them correct it. *(cold run 2026-09-12 had to guess here)*
+
 **Q4 — Which chains?** 7-ELEVEN / 全家 / 萊爾富 / OK. → Each is enabled per chain in the console; what the MPG page actually shows is decided by the console, not by your code (S17 — the request field is coarse). Tell the user this before they build a per-chain toggle that cannot work.
 
 **Q5 — Where does it run today, and where will it launch?** localhost only / shared hosting (cPanel: Bluehost, GoDaddy, 遠振, 戰國策…) / VPS (Hetzner, Linode, GCP, AWS EC2) / PaaS (Vercel, Render, Fly, Railway) / serverless. → decides §4 immediately, before any code.
 
-**Q6 — Invoices?** NewebPay's 電子發票 is a separate service and manual, not in NDNF; if the shop needs 統一發票, plan it as its own integration (TW-11) and say so now.
+**Q6 — Invoices?** NewebPay's 電子發票 is a separate service and manual, not in NDNF; if the shop needs 統一發票, plan it as its own integration (TW-11) and say so now. Under the one-question rule this may land as an open decision on the readiness card rather than a question — that is fine, as long as it is on the card with an owner.
 
 ---
 
@@ -220,7 +222,7 @@ The sandbox's test card numbers, expiry and CVV are in NDNF-1.2.5's test section
 
 會員專區 → **物流中心** (or 物流服務) — enable the service, then per chain; set **退貨門市**, **取貨人 / 寄件人** details, the **貨態通知 (push) URL** (NPA-B58 target), fund **預付費用**, and register the **outbound IP** in the allowlist field. Where that field lives is not stated in NDNS-1.0.0 *(lesson: left UNKNOWN in the manual)* — find it in the console under the shop's logistics settings; if it truly does not exist for the sandbox, the sandbox may not enforce `1106` and the first enforcement will be production: say so in the readiness card.
 
-For orders paid through MPG with `CVSCOM=1` (取貨不付款) or `CVSCOM=2` (取貨付款), **NewebPay's payment page hosts the store picker** and the callback returns `StoreCode / StoreName / StoreAddr / StoreType / LgsNo / LgsType`; the logistics API is then for labels (B54), shipment numbers (B53), query (B55), modify (B56), trace (B57) and the push (B58). Do not build a separate store-map round trip for MPG orders. *(lesson, NDNF-1.2.5 §4 + NDNS)* Cap for 取貨付款: **NT$20,000 including freight** (NDNF, cite page). The sandbox **cannot simulate parcel status pushes**; the first proof of the 到店 → 取貨 → 未取退回 lifecycle is a real parcel sent to yourself, one per chain *(lesson)*.
+For orders paid through MPG with `CVSCOM=1` (取貨不付款) or `CVSCOM=2` (取貨付款), **NewebPay's payment page hosts the store picker** and the callback returns `StoreCode / StoreName / StoreAddr / StoreType / LgsNo / LgsType`; the logistics API is then for labels (B54), shipment numbers (B53), query (B55), modify (B56), trace (B57) and the push (B58). Do not build a separate store-map round trip for MPG orders. *(lesson, NDNF-1.2.5 §4 + NDNS)* Cap for 取貨付款: **NT$20,000 including freight** (NDNF-1.2.3 p.37 *(lesson)*; re-cite from the NDNF-1.2.5 you fetched — the section moved between versions). The sandbox **cannot simulate parcel status pushes**; the first proof of the 到店 → 取貨 → 未取退回 lifecycle is a real parcel sent to yourself, one per chain *(lesson)*.
 
 ### 6e. Prove the switch, not the click
 

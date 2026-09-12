@@ -15,6 +15,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp1252; the output carries CJK and emoji
+    sys.stdout.reconfigure(encoding="utf-8")
+
+
 DEFAULT = Path("docs/integrations/newebpay-readiness.yaml")
 ICON = {"ok": "✅", "wait": "⏳", "missing": "❌", "skip": "⏭"}
 
