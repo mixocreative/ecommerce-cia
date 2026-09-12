@@ -4,6 +4,8 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when the project u
 
 **Sources.** ECPay's developer site is the authority (§1.4) — **read the markdown twins**, `https://developers.ecpay.com.tw/<id>.md`, not the HTML (`?p=<id>`): a shipped shop misread one HTML page three times. Everything not cited to a page is a *(lesson)* from that shop (mixoweb, 2026-08/09). Page ids as of 2026-09-12; `tools/ecpay/fetch_docs.py` holds the list.
 
+**ECPay publishes its own AI skill — use it for the code.** `https://github.com/ECPay/ecpay-api-skill` (v3.4 as of 2026-09-12; targets Claude Code, Copilot, Cursor, Codex, Gemini CLI; 29 guides, 134 verified PHP examples, 443 live doc references, cross-language crypto test vectors, `/ecpay-pay` style commands; licence "All Rights Reserved" — install it, do not copy from it). When it is installed, **its guides answer "how do I call X" and this guide answers everything around the call**: which gateway to choose, what the user must obtain before coding, what the host must provide (S19), what stage cannot prove, the vendor-enabled waits, the integrity audit afterwards, and the plain-language path for a non-engineer. Detect it with `ls ~/.claude/skills | grep -i ecpay`; if absent, say so and offer the install link before writing a gateway by hand.
+
 **Choosing between ECPay and NewebPay** — see SKILL.md §0.15 "Choosing a Taiwan gateway". Short form: ECPay is faster on day one (public sandbox keys, no registration, fixed 3DS OTP); NewebPay is safer to finish (one crypto scheme, sandbox refunds work, hosted store picker). Default for a first shop is NewebPay unless the user is on WooCommerce, wants a sandbox payment in five minutes, or already has an ECPay contract.
 
 ---
@@ -60,7 +62,7 @@ Starter set: `Credit` + `WebATM` + `ATM`, `CVS` if the average order fits the ca
 | Account | **none needed** — public MerchantID `3002607` + printed HashKey/HashIV (p=2856); backoffice `vendor-stage.ecpay.com.tw` with printed test login | register at `https://www.ecpay.com.tw/` → 廠商後台 `vendor.ecpay.com.tw`; company documents, 負責人 ID, bank account; ECPay reviews and activates products | user |
 | Keys | on the page | 廠商後台 → 系統開發管理 → 系統介接設定 (HashKey 16 / HashIV 16) | user copies to `.env`; AI checks lengths only |
 | Public HTTPS URL for `ReturnURL` / `PaymentInfoURL` | yes (tunnel on localhost) | yes | AI sets up tunnel |
-| Logistics contract + **測標** (label approval per `LogisticsSubType`) | stage creds exist for logistics too (see p=10075 / 7380 test pages) | per sub-type approval, calendar not code — start early; **never call it a blocker before the contract says so** *(lesson)* | user |
+| Logistics contract + **測標** (label approval) | stage creds exist for logistics too (see p=10075 / 7380 test pages) | **B2C 大宗寄倉 only** (全家 B2C, 7-ELEVEN B2C, 7-ELEVEN 冷凍) — a printed label posted to the logistics centre; **C2C 店到店 needs none** (p=10075 comparison table). Calendar not code — start early; never call it a blocker before the contract says so *(lesson)* | user |
 | 物流貨態代碼 table | downloaded from 廠商後台 → 物流管理 → 物流貨態代碼查詢, differs per chain, changes | same | user downloads; AI maps every code to a state (§3 fulfilment rule 6) |
 | e-invoice | separate stage merchant (p=7849) | separate contract | user |
 
@@ -94,7 +96,7 @@ Proves: checkout, `CheckMacValue`, the `ReturnURL` path, idempotency, the amount
 
 ## 9. Go-live
 
-Production registration and product activation by ECPay (days); keys from 系統介接設定 into the live `.env`; `ECPAY_ENV=production`; probe each method with `--i-mean-production` once (it creates an unpaid order — cancel it in the console); a real card canary refunded via DoAction the same day; 測標 done per chain before 超商取貨 is offered; the 貨態代碼 table downloaded and mapped; cron for expiry/query/trace with a heartbeat someone reads.
+Production registration and product activation by ECPay (days); keys from 系統介接設定 into the live `.env`; `ECPAY_ENV=production`; probe each method with `--i-mean-production` once (it creates an unpaid order — cancel it in the console); a real card canary refunded via DoAction the same day; 測標 done per B2C chain before B2C 超商取貨 is offered (C2C needs none); the 貨態代碼 table downloaded and mapped; cron for expiry/query/trace with a heartbeat someone reads.
 
 ## 10. Gotchas
 
@@ -112,6 +114,8 @@ Production registration and product activation by ECPay (days); keys from 系統
 | `TransCode=1` read as success | it means "received"; `RtnCode` is the answer |
 
 ## 11. Harness
+
+For the API calls themselves, ECPay's official skill (above) is the reference; the scripts here cover the checks around it.
 
 `tools/ecpay/detect.py`, `fetch_docs.py`, `probe_aio.php`, `callback.php verify|make|sign|selftest`, shared `tools/explain_error.py`, and `tools/newebpay/readiness.py` (provider-neutral card; use the same status file with `ecpay.*` rows). Tests: `python tests/test_ecpay_tools.py`.
 

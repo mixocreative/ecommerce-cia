@@ -394,7 +394,7 @@ The audit assumes an integration exists. When it does not — the user wants to 
 | Provider | Guide | Status |
 |---|---|---|
 | NewebPay 藍新金流 (MPG, 定期定額, 物流) | `references/newebpay-onboarding.md` + `tools/newebpay/` | complete — manuals inventoried 2026-09-12, lessons from a shipped integration, cold-tested |
-| ECPay 綠界 (AIO, DoAction, two logistics families, e-invoice) | `references/ecpay-onboarding.md` + `tools/ecpay/` | complete — pages fetched 2026-09-12, probe verified live against stage, CheckMacValue known-answer test |
+| ECPay 綠界 (AIO, DoAction, two logistics families, e-invoice) | `references/ecpay-onboarding.md` + `tools/ecpay/` | complete — pages fetched 2026-09-12, probe verified live against stage, CheckMacValue known-answer test. **ECPay ships an official AI skill (`ECPay/ecpay-api-skill`) for the API code; this guide covers choice, prerequisites, host, waits, audit** |
 | PAYUNi, TapPay, direct LINE Pay, Stripe/Adyen | — | not yet written; run setup mode from the posture above and the vendor's manual, and say the guide is missing |
 
 Shared: `tools/explain_error.py <code>` translates NewebPay and ECPay error codes into cause + next action; `tools/newebpay/readiness.py` renders the card for either provider.
