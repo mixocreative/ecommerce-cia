@@ -748,7 +748,61 @@ and every refusal the system itself can produce, has all three columns filled. A
 silence; a screen with no design is a message nobody reads in time.*
 
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds, handled H, surfaced F, designed D.`
+### S22 — what "handled" means, and it is not a `catch`
+
+**Corrected 2026-09-12 by the owner, against a scoring that had reported 26 of 26 handled:**
+
+> *"Handled meant it is a closed loop and nothing dies quietly without a human actually noticing or
+> taking action. Code may have a catch and quietly log it, but any exception should be noticed by
+> admin dashboard, at least a flag or a badge for each situation. Admin may choose to diffuse or
+> ignore, but it should be admin's decision, not quietly logged. You should determine whether the
+> response requires actual follow up, so the UX for both admin and customer is fully informed — that
+> the entire operation is a complete, or dismissed as an informed decision."*
+
+**That is the terminal condition for this sweep, and it replaces the weak column outright:**
+
+> **Every operation ends COMPLETED or DISMISSED-BY-A-PERSON. There is no third ending. "Logged" is
+> not an ending.**
+
+A `catch` that writes a log line is **not** handled. It is *caught* — a different, much weaker
+property that only says the process did not crash. Scoring the two as one is how an audit reports
+clean on a system whose every failure is invisible. **Score five columns, not three:**
+
+| Column | The test | Failure mode it catches |
+|---|---|---|
+| **Caught** | the process does not crash, the request does not 500 | the weakest property, and the one most often mistaken for the others |
+| **Classified** | **somebody decided, in advance and in writing, whether this outcome needs follow-up or is informational.** Not inferred at read time | the whole table treated as one severity, so nothing can be prioritised and everything is either noise or missed |
+| **Raised** | if it needs follow-up, it reaches a **flag or badge on the screen the operator already opens** — not a log, not a digest, not an exit code | the silence this sweep exists for |
+| **Closable** | a person can **dismiss it, and the dismissal is recorded** — who, when, why. Dismissing is an act, not an absence | an alarm that cannot be cleared becomes wallpaper within a week, and wallpaper is the same as silence |
+| **Designed** | it has a visual form somebody chose: severity, colour, position, blocking or not | the operator cannot tell urgent from routine at a glance, so triage happens by reading everything |
+
+**"Ignore" is a legitimate outcome and it must be expensive enough to be real.** The owner's
+formulation is exact: the admin may diffuse or ignore, *but it must be the admin's decision.* So a
+dismissal path is **required**, and it must capture a reason and a person. A system that cannot
+record *"I looked at this and decided it did not matter"* forces its operator to choose between
+acting on noise and ignoring signal — and they will choose ignoring, every time, and then miss the
+one that mattered.
+
+**Classification is the auditor's own work, not the developer's.** For every outcome in the table,
+say which of these it is, and say it in the report:
+
+- **Needs follow-up** — a person must do something. Raise, and keep raising until dismissed.
+- **Needs telling, not doing** — the customer or operator should know; no action. Show once.
+- **Informational** — genuinely nothing. **Say so explicitly**, because a blank in this column is
+  indistinguishable from an oversight, and the next auditor will re-derive it.
+
+**And both audiences, always.** An outcome the customer bears — their payment refused, their parcel
+returned, their refund past its window — needs a customer surface *and* an operator surface, and
+they say different things. "Fully informed" in the owner's sentence means both, not either.
+
+**The grading follows directly.** An outcome that needs follow-up and is only logged: **HIGH**, and
+it is HIGH whether or not money is involved, because the failure is the invisibility rather than the
+amount. An outcome raised with no way to dismiss it: **MEDIUM**, rising to HIGH once the count is
+large enough that the screen is ignored. An outcome unclassified: **MEDIUM** — nobody has decided,
+so nobody can be wrong yet, but nobody can be right either.
+
+
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
 
 
