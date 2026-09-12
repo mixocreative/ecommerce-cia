@@ -66,8 +66,21 @@ if ($cmd === 'selftest') {
     // a tampered TradeInfo must fail the signature
     $t = $f; $t['TradeInfo'] = substr($t['TradeInfo'], 0, -2) . '00';
     $ok = $ok && !hash_equals(tradeSha($t['TradeInfo'], $key, $iv), $t['TradeSha']);
-    echo $ok ? "SELFTEST PASS\n" : "SELFTEST FAIL\n";
-    exit($ok ? 0 : 1);
+    if (!$ok) { echo "SELFTEST FAIL — synthetic round-trip\n"; exit(1); }
+    // Vendor known-answer: the NDNF-1.2.5 manual (§4.1.4 Step 5) prints a complete NotifyURL body signed
+    // with its example keys. verify must accept it, and the decoded RespondType=String payload must say
+    // PaymentType=CREDIT — the same path a real sandbox post takes.
+    $kat = json_decode((string) file_get_contents(__DIR__ . '/manual-example.json'), true);
+    if (!is_array($kat)) { echo "SELFTEST FAIL — manual-example.json missing\n"; exit(1); }
+    parse_str($kat['callback_body'], $kf);
+    $katOk = hash_equals(tradeSha((string) $kf['TradeInfo'], $kat['hash_key'], $kat['hash_iv']), (string) $kf['TradeSha']);
+    $plain = $katOk ? decrypt((string) $kf['TradeInfo'], $kat['hash_key'], $kat['hash_iv']) : '';
+    parse_str($plain, $kp);
+    foreach ($kat['callback_expect'] as $k => $v) { $katOk = $katOk && (string) ($kp[$k] ?? '') === (string) $v; }
+    // and the request-side example too, so make/verify share one proven codec
+    $katOk = $katOk && hash_equals($kat['trade_info'], encrypt($kat['plain'], $kat['hash_key'], $kat['hash_iv']));
+    echo $katOk ? "SELFTEST PASS — synthetic round-trip + tamper refused; vendor known-answer NDNF-1.2.5 §4.1 callback verified and decoded (PaymentType=CREDIT)\n" : "SELFTEST FAIL — vendor known-answer not reproduced\n";
+    exit($katOk ? 0 : 1);
 }
 
 loadDotEnv(getcwd() . '/.env');

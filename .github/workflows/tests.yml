@@ -15,6 +15,8 @@ jobs:
         run: python tests/test_newebpay_tools.py
       - name: ECPay tools (offline)
         run: python tests/test_ecpay_tools.py
+      - name: LINE Pay tools (offline)
+        run: python tests/test_linepay_tools.py
       - name: PAYUNi + TapPay tools (offline)
         run: python tests/test_payuni_tappay_tools.py
       - name: Skill frontmatter sanity

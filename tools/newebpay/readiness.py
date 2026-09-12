@@ -12,6 +12,7 @@ No third-party modules.
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -84,6 +85,11 @@ def render(path: Path) -> int:
             blocking += 1
         if status in ("wait", "missing") and not note:
             flag = "   <- no owner / date: finding against the guide"
+        elif status == "wait" and not (re.search(r"\d{4}-\d{2}-\d{2}", note) and "," in note):
+            # a wait must name who is being waited on and since when; "applied" alone is the silent wait S16 forbids
+            flag = "   <- wait without who/since date: finding against the guide"
+        if flag:
+            blocking += 1
         print(f"{icon} {key.ljust(width)}  {note}{flag}")
     print("-" * (width + 40))
     print(f"{blocking} item(s) missing. " + ("Not ready." if blocking else "Every row is ok, waiting with a date, or deliberately skipped."))
