@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Detect LINE Pay usage in a project and say which mode the skill should enter - and, crucially, WHICH
 LINE Pay: direct (Online API, your own Channel ID/Secret) or via an aggregator (NewebPay LINEPAY=1,
-ECPay ChoosePayment=..., PAYUNi). The two are different contracts, different prerequisites, different
+PAYUNi LinePay=1). ECPay's AIO has no LINE Pay flag (2864.md, 2026-09-13) - code that claims one is reported as suspect. The two are different contracts, different prerequisites, different
 failure codes; a project that has both is audited as two channels.
 
 Usage:  python tools/linepay/detect.py [project-dir]        (default: cwd)
@@ -60,10 +60,11 @@ def scan(root: Path) -> dict:
                 confirm_files.append(rel)
 
     direct = bool(hits["host_sandbox"] or hits["host_production"] or hits["online_api_path"] or hits["auth_headers"] or hits["offline_api"]) or bool(env_keys)
-    via = [k[4:] for k in ("via_newebpay", "via_ecpay", "via_payuni") if hits[k]]
+    via = [k[4:] for k in ("via_newebpay", "via_payuni") if hits[k]]
+    suspect_ecpay = bool(hits["via_ecpay"])  # ECPay AIO cannot render LINE Pay; the code promises what the hosted page will not show
     brand_only = bool(hits["brand"]) and not direct and not via
 
-    if not direct and not via and not brand_only:
+    if not direct and not via and not brand_only and not suspect_ecpay:
         mode = "not-linepay"
     elif direct and confirm_files:
         mode = "audit (direct Online API integration exists: confirm step found) - walk request -> confirmUrl -> confirm as one channel"
@@ -71,14 +72,17 @@ def scan(root: Path) -> dict:
         mode = "setup-direct (Online API host/headers or LINEPAY_* env named, no confirm handler found)"
     elif via:
         mode = f"via-aggregator ({', '.join(via)}): LINE Pay is one method flag of that gateway - use that provider's guide; the only LINE-Pay-specific fact is that the vendor's 客服 must enable it"
+    elif suspect_ecpay:
+        mode = "suspect: code names LINE Pay under ECPay, but ECPay's AIO has no LINE Pay flag (developers.ecpay.com.tw/2864.md) - S17 finding: a method promised that the hosted page cannot show"
     else:
-        mode = "setup-undecided (LINE Pay named, nothing wired) - ask direct vs via NewebPay/ECPay first (linepay-onboarding.md section 0)"
+        mode = "setup-undecided (LINE Pay named, nothing wired) - ask direct vs via NewebPay/PAYUNi first (linepay-onboarding.md section 0)"
 
     return {
         "root": str(root),
-        "detected": direct or bool(via) or brand_only,
+        "detected": direct or bool(via) or brand_only or suspect_ecpay,
         "direct_online_api": direct,
         "via_aggregator": via,
+        "suspect_ecpay_linepay": suspect_ecpay,
         "offline_api_present": bool(hits["offline_api"]),
         "mode": mode,
         "signals": {k: v for k, v in hits.items() if v},
@@ -86,7 +90,7 @@ def scan(root: Path) -> dict:
         "confirm_files": confirm_files,
         "next": (
             "read references/linepay-onboarding.md section 0 (direct vs via), then run fetch_docs.py --latest"
-            if direct or via or brand_only
+            if direct or via or brand_only or suspect_ecpay
             else "no LINE Pay signals; if the user wants LINE Pay, start at linepay-onboarding.md section 0"
         ),
     }

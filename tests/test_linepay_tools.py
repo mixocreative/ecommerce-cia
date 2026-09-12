@@ -70,6 +70,17 @@ class DetectTests(unittest.TestCase):
             self.assertEqual(r["via_aggregator"], ["newebpay"])
             self.assertTrue(r["mode"].startswith("via-aggregator (newebpay)"))
 
+    def test_ecpay_claiming_linepay_is_suspect_not_via(self):
+        # ECPay's AIO ChoosePayment has no LINE Pay value (developers.ecpay.com.tw/2864.md, 2026-09-13)
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p / "Aio.php").write_text("$f['ChoosePayment'] = $wallet === 'linepay' ? 'LINEPay' : 'Credit';", encoding="utf-8")
+            r = detect.scan(p)
+            self.assertEqual(r["via_aggregator"], [])
+            self.assertTrue(r["suspect_ecpay_linepay"])
+            self.assertTrue(r["mode"].startswith("suspect"))
+            self.assertIn("2864", r["mode"])
+
     def test_offline_api_is_flagged(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d)
