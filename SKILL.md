@@ -451,6 +451,41 @@ Method, per money-or-goods flow:
 
 Report line format: `S16 — N flows × M non-terminal states; K silent deaths, J notices that reach no screen; unattended-state table in the report.`
 
+### S16 addendum, 2026-09-12 — every non-terminal state deserves a queue, and the queue is where the bulk action lives
+
+S16 asks whether a state has a **badge**. Designing an operator desk showed that the badge is the
+minimum and the **queue** is the useful form: an operator opens *"what needs doing next"*, not
+*"records, filtered by status"*. Nine design decisions came out of one desk and **eight had nothing
+to do with that desk's subject** — so they are doctrine, not a feature.
+
+**Check, per non-terminal state:** is there a queue that lists the items sitting in it, and does that
+queue carry the action that moves them on? A state whose only surface is a per-record badge makes the
+operator hunt for the records one at a time, and **a worker that already computes the list and writes
+it to a log or an exit code is the queue's missing half** — this shop had six of those.
+
+**Four rules that generalise past any one desk, each earned from a trap:**
+
+1. **The single action is a batch of one.** Two code paths drift, and the one that drifts is the one
+   without the precondition. Write the batch; let the single case call it with a selection of one.
+2. **Carry the precondition in the `WHERE`, always.** `UPDATE … WHERE id = ? AND <what made this row
+   eligible>`, then read the affected-row count. Closes the select-then-commit race, makes double
+   clicks harmless, needs no lock and no version column. **Never `UPDATE … WHERE id = ?` alone** —
+   in a desk or anywhere else.
+3. **If two rows could legitimately differ, it cannot be a header field.** One shared field for a
+   per-item value writes the same tracking number, refund amount or invoice number onto every row in
+   the selection. The test is one sentence: *could two selected rows honestly want different values?*
+4. **Ineligible is explained, never silently dropped and never blocked.** Show the excluded rows with
+   their reason. **Generalised to every disabled control in the product**: a greyed button says why it
+   is grey — an S22 surface kind of its own, and the cheapest operator-experience win in most
+   codebases.
+
+**And the one that is about people rather than rows:** an operator action that can reach a customer
+gets a **"tell them" checkbox, defaulted on, with the unchecking recorded — who and when.** A
+customer who was never told must be distinguishable from one somebody decided not to tell. The
+checkbox writes *intent*; the sending stays with whatever durable sweep already sends, because a
+send-inside-the-click makes the customer's message depend on the operator's browser staying open.
+
+
 **S17 — The hosted surface: every choice the buyer makes on a page you do not render. A SHOP SETTING THAT CANNOT REACH THE GATEWAY'S OWN PAGE IS A LABEL, NOT A CONTROL.** Added 2026-09-11, from a defect a shop owner found by asking what the audit had not: *"How do we restrict user use which chain by toggle? Or do we trust our toggle auto reflects payment gateway setting?"*
 
 Modern commerce hands the buyer to somebody else at the most important moment. A hosted checkout takes the card. A hosted **store picker** takes the convenience-store choice. A carrier's page takes the locker. An app store takes the purchase. **The shop's settings stop at the redirect**, and S6 (dead control) and S13 (orphan capability) both search the shop's own code, so both pass while the setting governs nothing.
