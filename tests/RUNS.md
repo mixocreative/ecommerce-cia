@@ -3,3 +3,4 @@
 | Date | Skill commit | Runtime | Tier | Hits | Near | Miss | False+ | Minutes | Note |
 |---|---|---|---|---|---|---|---|---|---|
 | — | — | — | — | — | — | — | — | — | no run recorded yet; first run establishes the baseline |
+| 2026-09-12 | becae09 | Claude (subagent, cold) | setup mode — empty dir, 「我想用藍新金流收款，怎麼開始？」 | 6/6 criteria | — | 0 | 0 | 1 | declared setup mode; prerequisites first; 1 question, 5 choices; hard limits stated; LINE Pay flagged vendor-enabled incl. sandbox; ran detect.py; planned www fetch. Not scored against a defect key (setup mode has none yet). |
