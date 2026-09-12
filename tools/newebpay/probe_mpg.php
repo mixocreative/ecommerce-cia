@@ -31,7 +31,7 @@ declare(strict_types=1);
 const STAGE = 'https://ccore.newebpay.com/MPG/mpg_gateway';
 const PROD = 'https://core.newebpay.com/MPG/mpg_gateway';
 const METHODS = ['CREDIT', 'WEBATM', 'VACC', 'CVS', 'BARCODE', 'LINEPAY', 'APPLEPAY', 'ANDROIDPAY', 'SAMSUNGPAY', 'ESUNWALLET', 'TAIWANPAY', 'UNIONPAY', 'BITOPAY', 'AFTEE', 'OPPAY'];
-const REFUSALS = ['MPG02003', 'MPG00040', 'MPG01001', 'MPG01002', 'CHK00007', 'CHK00001', 'TRA10014', 'TRA10015', 'TRA10021'];
+const REFUSALS = ['MPG02003', 'MPG03009', 'MPG00040', 'MPG01001', 'MPG01002', 'CHK00007', 'CHK00001', 'TRA10014', 'TRA10015', 'TRA10021'];
 
 function env(string $k, string $default = ''): string
 {
@@ -177,14 +177,35 @@ if ($body === false) {
     exit(3);
 }
 printf("HTTP %d, %d bytes\n", $status, strlen((string) $body));
+// Verdicts verified live against ccore on 2026-09-12 with a real sandbox shop:
+//   ESUNWALLET on a shop without it -> MPG02003; a wrong HashIV -> MPG03009 (交易資料 SHA 256 檢查不符合);
+//   an enabled method -> the payment page, whose server-side "payType" block marks the method 1.
+$why = [
+    'MPG02003' => 'Product not enabled at NewebPay for this shop: check the console toggle, then this is a vendor-side enablement (dated wait), not a code problem.',
+    'MPG03009' => '交易資料 SHA 256 檢查不符合: HashKey/HashIV do not match this MerchantID (sandbox keys against production?), or TradeSha was computed over the plaintext instead of the ciphertext. Run --selftest, then re-copy the keys.',
+];
 foreach (REFUSALS as $code) {
     if (str_contains((string) $body, $code)) {
-        printf("FAIL — %s in response. %s\n", $code, $code === 'MPG02003' ? 'Product not enabled at NewebPay for this shop: check the console toggle, then this is a vendor-side enablement (dated wait), not a code problem.' : 'Look the code up in the NDNF error table you downloaded.');
+        printf("FAIL — %s in response. %s\n", $code, $why[$code] ?? 'Look the code up in the NDNF error table you downloaded.');
         exit(2);
     }
 }
-if (stripos((string) $body, '藍新金流') !== false && str_contains((string) $body, $orderNo)) {
-    echo "PASS — NewebPay returned its payment page echoing the order number; {$method} is enabled for this shop in {$mode}.\n";
+$isPage = stripos((string) $body, '藍新金流') !== false && str_contains((string) $body, $orderNo);
+$offered = null;
+if (preg_match('/"payType":\{([^}]*)\}/', (string) $body, $m) === 1
+    && preg_match('/"' . preg_quote($method, '/') . '":([01])/', $m[1], $mm) === 1) {
+    $offered = $mm[1] === '1';
+}
+if ($isPage && $offered === true) {
+    echo "PASS — payment page served and its payType block marks {$method}=1; the method is enabled for this shop in {$mode}.\n";
+    exit(0);
+}
+if ($isPage && $offered === false) {
+    echo "UNKNOWN — payment page served but payType marks {$method}=0: request accepted, method will not be shown. Check the console toggle for {$method}.\n";
+    exit(3);
+}
+if ($isPage) {
+    echo "PASS (weak) — payment page served echoing the order number, but no payType block confirms {$method}; open the page in a browser to see the offered methods.\n";
     exit(0);
 }
 echo "UNKNOWN — neither a known refusal code nor the payment page shape. Open the same request in a browser and read the page.\n";

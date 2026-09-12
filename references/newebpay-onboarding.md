@@ -203,6 +203,7 @@ Console path *(as seen 2026-08, mixoweb; find the words)*: 商店資料設定 �
 
 **Some products are enabled on NewebPay's side, not yours.** *(lesson: `MPG02003` on every card checkout for three days with every local check green; a 客服 escalation on 2026-08-14 flipped it by 2026-08-17.)* So:
 
+- **Live-verified 2026-09-12 on a real sandbox shop:** an enabled method returns the payment page whose server-side `payType` block marks it `1`; a product NewebPay has not enabled returns **`MPG02003`** (seen on `ESUNWALLET`); a wrong HashIV returns **`MPG03009` 交易資料 SHA 256 檢查不符合**. So the probe's three verdicts are exact, not inferred.
 - after enabling, **probe before building**: post one synthetic MPG request (a throwaway `MerchantOrderNo` like `PROBE_<timestamp>`, `Amt` 1, `CREDIT=1`) to `https://ccore.newebpay.com/MPG/mpg_gateway` from a script; PASS = the response is NewebPay's card-entry page echoing your order number; FAIL = the body contains `MPG02003`, `MPG00040`, `CHK00007` or a `TRA` code. No order, no cart, no database needed — credentials and a callback URL only. *(lesson: `tools/ops/probe-newebpay-mpg-synthetic.php`)*
 - a FAIL with `MPG02003` after the toggle is on means the product is not enabled at NewebPay; this is one of the few cases where the vendor's 客服 (02-2786-3655, cs@newebpay.com, 08:00–23:00) is the only path. Record it as a **dated external wait** with the question and what it blocks (S14.1); keep building everything else. Do not repeat the probe in a loop — the query API locks for **4 hours** after too many not-found lookups (`TRA10071`, NDNF-1.2.5 p.95) and refunds lock for 1 hour (`TRA10702`) *(lesson)*.
 - **LINE Pay / wallets / BNPL / recurring are not toggles at all** — they are the forms in §3a-bis. The console may show nothing for them until NewebPay has enabled the product. Send the form, record the date, keep building; the readiness card carries the wait. A probe (`probe_mpg.php LINEPAY`) before enablement returns a refusal — that is expected, not a bug.
@@ -277,6 +278,7 @@ Feed the result into the four-corner table (S15): customer sees / operator sees 
 | AES-128 (copied from ECPay code) | decrypt fails or, worse, "works" in a stub | AES-256-CBC, hex |
 | Acknowledgement string assumed | retries or silent stop | read the manual; the merchant returns nothing specified |
 | Toggle on, product not enabled at NewebPay | `MPG02003` on every checkout | synthetic probe; dated 客服 wait |
+| Wrong HashKey/HashIV, or TradeSha over plaintext | `MPG03009` 交易資料 SHA 256 檢查不符合 | `probe_mpg.php --selftest`, re-copy keys, match env |
 | Polling `QueryTradeInfo` for unknown orders | **4-hour lock** `TRA10071` | bounded queries only |
 | Repeated refund calls | 1-hour lock `TRA10702` | idempotent refund state |
 | Static IP bought for LINE Pay | money spent for nothing | via NewebPay, none needed; **logistics** needs one |
