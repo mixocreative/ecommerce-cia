@@ -1,8 +1,22 @@
-# ecommerce-cia — Commerce Integrity Auditor｜電商完整性稽核 Skill
+# ecommerce-cia — Commerce Integrity Auditor｜台灣電商金流與系統完整性稽核 Skill
 
-[![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-D97757)](#install安裝) [![Codex skill](https://img.shields.io/badge/OpenAI_Codex-skill-000000)](#install安裝) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
+[![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-D97757)](#install安裝) [![Codex skill](https://img.shields.io/badge/OpenAI_Codex-skill-000000)](#install安裝) [![Taiwan Focused](https://img.shields.io/badge/Taiwan-電商／金流／發票-blue.svg)](#providers支援的金流商) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
 
 **English 🇬🇧 · 繁體中文 🇹🇼** — every section is written in both, English first, 中文接在後面。
+
+> 🚀 **專為台灣電商情境打造的 AI 稽核助手**：掃描藍新 NewebPay、綠界 ECPay、LINE Pay、PAYUNi、TapPay 串接邏輯。抓出「測試全綠卻在線上掉單、庫存鎖死、後台開關沒作用」的跨系統隱形 Bug！
+
+---
+
+### 💡 一句話說明它能幹嘛？ (TL;DR)
+
+一般的 Code Review / Linter 只看**語法有沒有寫錯**，而 `ecommerce-cia` 盯的是**真正的錢與庫存流向**。
+
+它能幫你做到：
+1. **老手稽核 (Audit Mode)**：抓出跨系統連鎖反應（如：ATM 轉帳開關沒寫入結帳邏輯、過期訂單退庫存壓掉已付款訂單、綠界/藍新 Callback 驗簽錯誤）。
+2. **新手引導 (Setup Mode)**：從零帶你串接台灣金流，手把手檢查 Domain、固定 IP、HTTPS，並發射實機探針 (Live Probe) 驗證金鑰！
+
+---
 
 A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce system as a **viable system** in Stafford Beer's sense, and hunts the defect class that only such a view can see: **cross-boundary invariant violations**, also called **integration-level** or **emergent defects**, in the paths money and stock actually take.
 
@@ -292,7 +306,7 @@ When the person asking is not an engineer, the skill switches voice, not doctrin
 
 **Claude Code, as a plugin (recommended)｜推薦透過 Claude Code Plugin 安裝：**
 
-```
+```bash
 claude plugin marketplace add mixocreative/ecommerce-cia
 claude plugin install ecommerce-cia@mixocreative
 ```
@@ -306,13 +320,13 @@ The skill is now a runbook (`SKILL.md`) plus reference files and tools, so clone
 
 **Claude Code, as a skill directory｜手動放置 Skill 目錄：**
 
-```
+```bash
 git clone https://github.com/mixocreative/ecommerce-cia ~/.claude/skills/ecommerce-cia
 ```
 
 **OpenAI Codex：**
 
-```
+```bash
 git clone https://github.com/mixocreative/ecommerce-cia ~/.codex/skills/ecommerce-cia
 ```
 
@@ -324,7 +338,7 @@ Install the companion [cia](https://github.com/mixocreative/cia) alongside it; t
 
 ## Use｜使用方式
 
-```
+```text
 /ecommerce-cia
 pre-launch audit, Screen tier
 我想用藍新金流收款，怎麼開始？
