@@ -88,7 +88,10 @@ Sandbox proves: UPP, HashInfo/GCM, `NotifyURL` for cards, **ATM/CVS via 模擬�
 |---|---|
 | Reusing AES-CBC code from ECPay/NewebPay | PAYUNi is **GCM** with a tag; hex of `cipher:::base64(tag)` |
 | `HashInfo` built with `HashKey=`/`HashIV=` labels | it is `key + cipher + iv`, nothing else |
-| `MerTradeNo` reused for a retry | refused for 10 minutes — generate a new one |
+| `MerTradeNo` reused for a retry | refused for 10 minutes (`UPP01007`) — tell the buyer to wait ten minutes, **do not suffix the number**: 交易查詢 answers by `MerTradeNo` and returns every attempt as `Result[]`; read the paid row first. A suffixed number hides money from the settlement audit |
+| A pickup order frozen after one hosted-page visit | that is NewebPay's rule (order number unique forever); a PAYUNi page abandoned must stay payable — freeze only when a consignment exists |
+| Keys typed from a screenshot | prove them with 交易查詢 for a nonexistent order: `QUERY03001` inside a verified envelope is the proof, `DEF01007` means a glyph is wrong (l/I, O/0) |
+| 貨態 push only | set the console URL under 物流設定 **and** run a tracer on 物流單查詢 every 30 min; 81 / 52 / 82 are the desk rows |
 | `NotifyURL` on port 8080 / tunnel port | never called; 80/443 only |
 | Treating `Status=SUCCESS` as paid | `TradeStatus` must be `1`; `0` is a code issued |
 | Assuming a `1|OK`-style ack | not documented — test it, record it |
