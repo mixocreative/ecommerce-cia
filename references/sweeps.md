@@ -474,6 +474,14 @@ with a front-end developer; *"S22 cell 4.3 is a GAP"* does not.
    a null check, an early return carrying a refusal reason, a match arm that renders something else.
    **Enumerate them and ask which has a fixture.** Highest-yield pass and pure grep - a conditional
    surface inside an existing page is the exact thing a page-level coverage ratchet cannot see.
+   **And check what the fixture renders.** A preview that draws its own HTML beside the real page
+   is a *hand-drawn twin*: it passes the ratchet, it looks rendered, and a theme written against
+   it lands on markup the real page does not have. One catalogue had 32 admin previews and 23
+   were twins - the order list and every order-detail state among them. Rule: **a preview renders
+   the production renderer with fixture data, or it is UNVERIFIED**; assert by reflection that
+   each scenario's renderer is a production page or controller class, never by eye. A twin is a
+   wireframe - fine before the page exists, a liability the day it does - and its hub entry must
+   say so.
 2. **Walk the enums as statecharts.** **State coverage**: has each case a rendered surface?
    **Transition coverage**: has each edge one where it matters? The edges that run *backwards* -
    cancelled-then-paid, delivered-then-returned, refunded-then-charged-back - are where surfaces go
@@ -732,5 +740,5 @@ screens are still being built.
 
 ### S22 report line
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
