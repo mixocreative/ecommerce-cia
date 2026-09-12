@@ -181,6 +181,18 @@ class ProbeTests(unittest.TestCase):
                 self.assertEqual(r_.returncode, 0, r_.stderr)
                 self.assertNotIn(FAKE_ENV["LINEPAY_CHANNEL_SECRET"], r_.stdout)
 
+    def test_no_capture_and_capture_void_dry_runs(self):
+        env = {**os.environ, **FAKE_ENV}
+        with tempfile.TemporaryDirectory() as d:
+            r = run([PHP, str(TOOLS / "probe_request.php"), "--no-capture", "--dry-run"], env=env, cwd=d)
+            self.assertIn('"options":{"payment":{"capture":false}}', r.stdout)
+            c = run([PHP, str(TOOLS / "probe_request.php"), "--capture", "2026091302381765610", "--dry-run"], env=env, cwd=d)
+            self.assertIn('/v3/payments/authorizations/2026091302381765610/capture  (env=sandbox, body/query {"amount":1,"currency":"TWD"})', c.stdout)
+            v = run([PHP, str(TOOLS / "probe_request.php"), "--void", "2026091302381765610", "--dry-run"], env=env, cwd=d)
+            self.assertIn("/authorizations/2026091302381765610/void", v.stdout)
+        src = (TOOLS / "probe_request.php").read_text(encoding="utf-8")
+        self.assertIn("'2103'", src)  # live: capture:false on a sandbox merchant
+
     def test_probe_source_carries_the_live_learned_codes(self):
         # 1169 (confirm before approval), 1172 (second confirm), 1165 (second refund), 1150 (details before confirm):
         # all observed live 2026-09-13 - see tests/RUNS.md

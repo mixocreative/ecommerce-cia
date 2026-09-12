@@ -306,7 +306,7 @@ All under `tools/newebpay/` in this skill; stdlib Python and plain PHP, no depen
 | `fetch_manuals.py [--download DIR] [--record FILE]` | §1 | lists every document on the production download page by kind (manual / form / guide / terms / module), downloads the manuals, appends dated citation lines to the locations file |
 | `probe_mpg.php [METHOD] [--dry-run]` | §6a, §9 | one synthetic MPG request per method: PASS / FAIL (`MPG02003` = vendor-side) / UNKNOWN; refuses production unless `--i-mean-production`; never prints keys. `--selftest` reproduces the **manual's own worked example** (`manual-example.json`: NDNF-1.2.5 §4.1 key / IV / plaintext → `TradeInfo` 448 hex and `TradeSha`) byte-for-byte — the proof that the codec is NewebPay's, not merely round-trip-consistent |
 | `callback.php verify` / `make` / `selftest` | §7, §8 | verifies a real callback body (TradeSha over the ciphertext, then decrypt) or **makes a signed callback** from a JSON payload so the `NotifyURL` handler is testable locally before the sandbox posts anything; `selftest` also verifies and decodes the manual's Step-5 signed callback (`PaymentType=CREDIT`) |
-| `readiness.py [--init]` | §13 | the readiness card from `docs/integrations/newebpay-readiness.yaml`; exit 1 while anything is `missing`; flags a `wait` with no owner/date |
+| `readiness.py [--init [--provider newebpay\|ecpay\|linepay\|payuni]]` | §13 | the readiness card from `docs/integrations/<provider>-readiness.yaml`; exit 1 while anything is `missing`; a `wait` without who + since date also blocks |
 
 ## 12. If you are a platform, not a shop
 

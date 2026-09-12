@@ -25,6 +25,8 @@
  *   php tools/linepay/probe_request.php --confirm <transactionId> [--amount N]   # POST .../confirm after the customer approved (0110)
  *   php tools/linepay/probe_request.php --refund <transactionId> [--amount N]    # POST .../refund (omit --amount for full)
  *   php tools/linepay/probe_request.php --details <transactionId>  # GET /v3/payments?transactionId=
+ *   php tools/linepay/probe_request.php --no-capture               # request with options.payment.capture=false (authorise only)
+ *   php tools/linepay/probe_request.php --capture <transactionId> [--amount N] | --void <transactionId>
  * Exit 0 PASS, 2 FAIL (code named), 3 UNKNOWN, 1 configuration error. Prints the Channel ID length only, never
  * the secret, never the signature.
  * Reference: https://developers-pay.line.me/online-api-v3/request-payment (read 2026-09-13).
@@ -44,6 +46,7 @@ const WHY = [
     '1183' => 'Amount below the minimum set for this shop - retry with --amount N.',
     '1184' => 'Amount above the maximum set for this shop.',
     '1198' => 'Duplicate API request - the same request is already being processed (a retry fired inside the read timeout). Set the read timeout to at least 10 s and do not retry blindly.',
+    '2103' => 'Parameter is not allowed - the merchant contract does not include that option (live: options.payment.capture=false on a sandbox merchant). Drop the option or ask LINE Pay to enable it.',
     '2101' => 'Parameter error - a required field is missing or malformed. Compare --dry-run output with the reference page.',
     '2102' => 'JSON data format error - the body is not valid JSON (or Content-Type is not application/json).',
     '9000' => 'Internal error at LINE Pay - retry later; if it persists, it is theirs, not yours.',
@@ -55,13 +58,16 @@ $cid = env('LINEPAY_CHANNEL_ID'); $sec = env('LINEPAY_CHANNEL_SECRET'); $mode = 
 $base = rtrim(env('LINEPAY_CALLBACK_BASE'), '/');
 $dry = in_array('--dry-run', $args, true);
 $ver = in_array('--v4', $args, true) ? 'v4' : 'v3';
-$amount = 1; $check = null; $confirm = null; $refund = null; $details = null; $amountGiven = false;
+$amount = 1; $check = null; $confirm = null; $refund = null; $details = null; $capture = null; $void = null; $amountGiven = false;
+$noCapture = in_array('--no-capture', $args, true);
 for ($i = 0; $i < count($args); $i++) {
     if ($args[$i] === '--amount' && isset($args[$i + 1])) { $amount = (int) $args[$i + 1]; $amountGiven = true; }
     if ($args[$i] === '--check' && isset($args[$i + 1])) { $check = $args[$i + 1]; }
     if ($args[$i] === '--confirm' && isset($args[$i + 1])) { $confirm = $args[$i + 1]; }
     if ($args[$i] === '--refund' && isset($args[$i + 1])) { $refund = $args[$i + 1]; }
     if ($args[$i] === '--details' && isset($args[$i + 1])) { $details = $args[$i + 1]; }
+    if ($args[$i] === '--capture' && isset($args[$i + 1])) { $capture = $args[$i + 1]; }
+    if ($args[$i] === '--void' && isset($args[$i + 1])) { $void = $args[$i + 1]; }
 }
 
 $problems = [];
@@ -110,11 +116,13 @@ if ($check !== null) {
     exit(in_array($code, ['0000', '0110', '0123'], true) ? 0 : ($code === '' ? 3 : 2));
 }
 
-if ($confirm !== null || $refund !== null || $details !== null) {
+if ($confirm !== null || $refund !== null || $details !== null || $capture !== null || $void !== null) {
     // confirm: the amount and currency MUST equal the request's; the probe requested --amount (default 1) TWD.
     // refund: refundAmount omitted = full refund. details: GET with the query string signed.
     if ($confirm !== null) { $method = 'POST'; $path = "/{$ver}/payments/{$confirm}/confirm"; $payload = json_encode(['amount' => $amount, 'currency' => 'TWD']); }
     elseif ($refund !== null) { $method = 'POST'; $path = "/{$ver}/payments/{$refund}/refund"; $payload = $amountGiven ? json_encode(['refundAmount' => $amount]) : '{}'; }
+    elseif ($capture !== null) { $method = 'POST'; $path = "/{$ver}/payments/authorizations/{$capture}/capture"; $payload = json_encode(['amount' => $amount, 'currency' => 'TWD']); }
+    elseif ($void !== null) { $method = 'POST'; $path = "/{$ver}/payments/authorizations/{$void}/void"; $payload = '{}'; }
     else { $method = 'GET'; $path = "/{$ver}/payments"; $payload = 'transactionId=' . $details; }
     printf("%s %s%s  (env=%s, body/query %s)
 ", $method, HOSTS[$mode], $path, $mode, $payload);
@@ -131,6 +139,10 @@ if ($confirm !== null || $refund !== null || $details !== null) {
         if ($confirm !== null) { echo "PASS — payment confirmed; payInfo above is the money proof (BALANCE / CREDIT_CARD / POINT).
 "; }
         if ($refund !== null) { echo "PASS — refunded; refundTransactionId above.
+"; }
+        if ($capture !== null) { echo "PASS — captured; the authorisation is now a payment.
+"; }
+        if ($void !== null) { echo "PASS — authorisation voided; nothing will settle.
 "; }
         exit(0);
     }
@@ -153,6 +165,7 @@ $req = [
     ]],
     'redirectUrls' => ['confirmUrl' => $base . '/order/linepay/confirm', 'cancelUrl' => $base . '/order/linepay/cancel'],
 ];
+if ($noCapture) { $req['options'] = ['payment' => ['capture' => false]]; }
 $payload = json_encode($req, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 $path = "/{$ver}/payments/request";
 printf("POST %s%s  (env=%s, api=%s, orderId=%s, amount=%d TWD, channel id %d chars, secret %d chars)\n", HOSTS[$mode], $path, $mode, $ver, $orderId, $amount, strlen($cid), strlen($sec));

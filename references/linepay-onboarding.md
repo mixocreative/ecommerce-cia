@@ -107,13 +107,17 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 4. `LINEPAY_ENV=sandbox`, `LINEPAY_CALLBACK_BASE=https://<tunnel or domain>`.
 5. Sandbox transactions are visible in the merchant center's **sandbox menu** (FAQ) — that is where "did it land" is answered.
 
-### 5a. Approving a sandbox payment — what the page really does *(live, 2026-09-13)*
+### 5a. Approving a sandbox payment — the page has two shapes *(live, 2026-09-13)*
 
-`info.paymentUrl.web` opens `sandbox-web-pay.line.me/web/payment/wait…`, which on a desktop browser shows a **decoy**: "Please update to the latest version of LINE / LINE must be installed". Ignore it. The page's script polls `/web/payment/check/<reserveId>` every 3 s and, on the first poll, **opens a 320×560 pop-up** `/web/sandbox/payment/<sandboxMerchantKey>/<reserveId>` — the simulator, with the amount, the product names and one **PAY NOW** button ("This simulation does not actually select a method of payment or make actual payments"). Chrome blocks that pop-up by default, so nothing seems to happen.
+`info.paymentUrl.web` opens `sandbox-web-pay.line.me/web/payment/wait…` → `waitPreLogin`. The same sandbox served **two different pages** within one hour, so the guide covers both; the AI reads the page (or `curl -A Mozilla` it) and says which one the user is looking at:
 
-- **Allow pop-ups for `sandbox-web-pay.line.me`**, or open the pop-up URL from the page source directly. Click PAY NOW → "Payment completed" → `--check` flips to `0110`.
-- **No LINE login is needed** for the online sandbox: the simulator has no login step. The `test_…@line.pay` payer account the sandbox e-mail hands out is not used on this path.
-- **A phone fails**: the same simulator URL on iOS Safari answered 無法處理您的申請 (generic error); the desktop user-agent works. Test on the PC.
+**Shape A — pop-up simulator.** The visible page is a decoy ("Please update to the latest version of LINE / LINE must be installed"). Its script polls `/web/payment/check/<reserveId>` every 3 s and on the first poll **opens a 320×560 pop-up** `/web/sandbox/payment/<sandboxMerchantKey>/<reserveId>` with the amount, the product names and one **PAY NOW** button ("This simulation does not actually select a method of payment or make actual payments"). Chrome blocks the pop-up, so nothing seems to happen: **allow pop-ups for `sandbox-web-pay.line.me`** or open the pop-up URL from the page source. PAY NOW → "Payment completed" → `--check` = `0110`. No LINE login at all on this path.
+
+**Shape B — LINE web login / QR.** The page shows "Your payment will be processed in the LINE Pay app when you log in with your LINE account or scan the QR code", a **LINE Log in** button (`access.line.me/dialog/oauth/weblogin` → back to `waitPostLogin`) and a QR code. This is where the **sandbox payer account** from the sandbox e-mail (`test_…@line.pay` + password) is used: click LINE Log in, sign in with it, approve the amount. The user types that login; the AI never does.
+
+- The payer test account is a password — it goes into the LINE login form and nowhere else; never paste it into a chat, a file or a ticket.
+- **A phone fails** on Shape A: the simulator URL on iOS Safari answered 無法處理您的申請 (generic error); the desktop user-agent works. Test on the PC.
+- **Capture-separated is a contract feature**: `options.payment.capture=false` on the sandbox merchant → `2103 Parameter is not allowed [capture:false]`. Do not design an authorise-then-capture flow until the merchant agreement includes it; `--no-capture` on the probe shows the answer in one call.
 - **Never call confirm before `--check` says `0110`**: a premature confirm returned `1169` *and then the reservation died* — the next `--check` was `0122 payment failed` and the customer could no longer approve it. New request needed.
 - `--details` on an unconfirmed reservation → `1150` (details lists confirmed payments only); after confirm → `payStatus: CAPTURE`, `payInfo[].method: CREDIT_CARD` in the simulator.
 
@@ -187,6 +191,7 @@ One end-to-end order: request → open `paymentUrl.web` in the browser tool → 
 | Reusing `orderId` on retry | `1172` | unique per request |
 | Retrying confirm inside the read timeout | `1198`, then `1145` | wait ≥ 40 s; check status; idempotent handler |
 | Confirm before the customer approved | `1169`, then the reservation dies (`0122`) | poll `--check` for `0110` first; a dead reservation needs a new request |
+| `options.payment.capture=false` on a merchant without the feature | `2103 Parameter is not allowed` | authorise-then-capture is contractual; ask LINE Pay, then `--no-capture` to prove it is on |
 | Sandbox payment page shows "update LINE" | tester installs LINE, tries a phone, gives up | it is a pop-up simulator: allow pop-ups on `sandbox-web-pay.line.me`, PAY NOW on a PC; no LINE login |
 | Sandbox `test_…@line.pay` account | typed into every page, in chat | not needed for the online simulator; never paste it anywhere |
 | `0000` from `/check` read as success | order marked paid before the customer authenticated | on `/check`, `0000` = not yet; `0110` = confirm now; `0123` = completed |
@@ -207,7 +212,8 @@ All under `tools/linepay/`; stdlib Python and plain PHP. Tests: `python tests/te
 | `detect.py [dir]` | §1 | direct vs via vs offline signals, env key *names*, confirm handlers; says `setup-direct` / `audit` / `via-aggregator (…)` / `not-linepay` |
 | `fetch_docs.py --latest` / `--page` / `--fetch DIR` | §2 | versions in the nav, endpoints per version, change-log head; pages as text |
 | `sign.php headers METHOD /path [payload]` / `selftest` | §7 | the three headers for any call; selftest prints a fixed-input MAC that the Python test recomputes independently |
-| `probe_request.php [--dry-run] [--v4] [--amount N] [--check id] [--confirm id] [--refund id] [--details id]` | §6, §8, §9 | one 1 TWD request: PASS / named `returnCode` / UNKNOWN; production refused without `--i-mean-production`; secret and signature never printed; `--check` reads the five status codes; `--confirm` / `--refund` / `--details` finish the walk — all live-verified |
+| `probe_request.php [--dry-run] [--v4] [--amount N] [--no-capture] [--check id] [--confirm id] [--capture id] [--void id] [--refund id] [--details id]` | §6, §8, §9 | one 1 TWD request: PASS / named `returnCode` / UNKNOWN; production refused without `--i-mean-production`; secret and signature never printed; `--check` reads the five status codes; `--confirm` / `--refund` / `--details` finish the walk (live-verified); `--no-capture` + `--capture` / `--void` for the authorise-then-capture contract (sandbox answers `2103` until enabled) |
+| `../newebpay/readiness.py --init --provider linepay` | §12 | the LINE Pay readiness card template; same renderer and wait/missing rules as NewebPay's |
 | `../explain_error.py linepay:<code>` | any | meaning, cause, next action; bare four-digit codes that NewebPay 物流 also uses print both readings |
 
 ---
@@ -227,4 +233,4 @@ Waits on others: merchant review (LINE Pay, since <date>) · agency for keys (�
 Next three actions, in order: 1 … 2 … 3 …
 ```
 
-A ❌ or ⏳ with no owner and no date is a finding against the guide, not the user.
+A ❌ or ⏳ with no owner and no date is a finding against the guide, not the user. `python tools/newebpay/readiness.py --init --provider linepay` writes this card as a file and renders it with the same rules as the NewebPay one.
