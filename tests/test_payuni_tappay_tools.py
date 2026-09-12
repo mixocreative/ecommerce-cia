@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PHP = shutil.which("php")
+TOOLS = ROOT / "tools" / "payuni"
 sys.path.insert(0, str(ROOT / "tools" / "payuni"))
 sys.path.insert(0, str(ROOT / "tools"))
 import detect  # noqa: E402
@@ -72,6 +73,31 @@ class PhpTests(unittest.TestCase):
             self.assertTrue(any("NOT paid" in n for n in out["notes"]))
             bad = run([PHP, str(ROOT / "tools/payuni/crypto.php"), "decrypt"], env={**env, "PAYUNI_AES_IV": "6543210987654321"}, cwd=d, input=body)
             self.assertEqual(bad.returncode, 2)
+
+    def test_probe_decrypts_the_not_enabled_autoform(self):
+        # live 2026-09-13: PAYUNi refuses a method the console has not enabled by auto-posting an encrypted result to
+        # ReturnURL. Build one with the tool's own crypto and check the probe names the code and the vendor message.
+        key, iv = "k" * 32, "i" * 16
+        with tempfile.TemporaryDirectory() as d:
+            enc = run([PHP, str(TOOLS / "crypto.php"), "encrypt"], env={**os.environ, "PAYUNI_AES_KEY": key, "PAYUNI_AES_IV": iv}, cwd=d,
+                      input=json.dumps({"Status": "UPP02073", "Message": "此支付工具未啟用，LinePay，請聯繫商店", "MerID": "S1", "MerTradeNo": "X", "TradeAmt": "30"}, ensure_ascii=False))
+            self.assertEqual(enc.returncode, 0, enc.stderr)
+            j = json.loads(enc.stdout.strip().splitlines()[0])
+            ei, h = j["EncryptInfo"], j["HashInfo"]
+            body = f"<form name='autoForm' method='POST' action='https://x/return'><input type='hidden' name='Status' value='UPP02073'><input type='hidden' name='MerID' value='S1'><input type='hidden' name='Version' value='2.0'><input type='hidden' name='EncryptInfo' value='{ei}'><input type='hidden' name='HashInfo' value='{h}'></form>"
+            src = (TOOLS / "probe_upp.php").read_text(encoding="utf-8")
+            self.assertIn("autoForm", src)
+            self.assertIn("未啟用", src)
+            # exercise the classifier by feeding the body through a tiny harness that reuses the tool's regex + decrypt
+            harness = Path(d) / "h.php"
+            harness.write_text("<?php require '" + str(TOOLS / "lib.php").replace("\\", "/") + "'; $key='" + key + "'; $iv='" + iv + "'; $body=file_get_contents($argv[1]);"
+                               "if (preg_match(\"/name='autoForm'.*?name='Status' value='([A-Z0-9]+)'.*?name='EncryptInfo' value='([^']+)'.*?name='HashInfo' value='([0-9A-F]+)'/s\", $body, $am) === 1) {"
+                               "$ok = hash_equals(payuniHash($am[2], $key, $iv), $am[3]); $dec = $ok ? payuniDecrypt($am[2], $key, $iv) : []; echo $am[1], ' ', $dec['Message'] ?? 'NOHASH'; }", encoding="utf-8")
+            (Path(d) / "body.html").write_text(body, encoding="utf-8")
+            out = run([PHP, str(harness), str(Path(d) / "body.html")], cwd=d)
+            self.assertEqual(out.stdout.strip(), "UPP02073 此支付工具未啟用，LinePay，請聯繫商店", out.stderr)
+        self.assertIn("[PAYUNi]", explain_error.explain("UPP02073"))
+        self.assertIn("toggle", explain_error.explain("UPP02073"))
 
     def test_probe_dry_run_redacts_and_checks_port(self):
         with tempfile.TemporaryDirectory() as d:

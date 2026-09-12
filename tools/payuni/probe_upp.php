@@ -67,6 +67,7 @@ curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_q
 $body = (string) curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
 if ($body === '' && $err !== '') { fwrite(STDERR, "curl error: {$err}\n"); exit(3); }
 printf("HTTP %d, %d bytes\n", $status, strlen($body));
+if (($dump = getenv('PAYUNI_PROBE_DUMP')) !== false && $dump !== '') { file_put_contents($dump, $body); }
 // Verified live 2026-09-13: the payment page embeds `window.JS_INFO = {"success": bool, "message": "...", "data": [...]}`.
 // Fake credentials -> success:false, message 商店不存在. That object is the verdict; the brand name is on every page.
 $why = ['DEF01007' => 'HashInfo mismatch: AES key/IV do not match this MerID on this environment.', 'DEF01005' => 'shop not found on this environment (sandbox vs production MerID).', 'DEF01002' => 'decrypt failed: wrong key/IV or envelope shape.', 'API00010' => 'EncryptInfo format error.', 'API00011' => 'HashInfo format error.'];
@@ -82,6 +83,22 @@ if (preg_match('/window\.JS_INFO\s*=\s*(\{.*?\});/s', $body, $jm) === 1 && ($inf
         default => 'read the message; error codes are on docs #/7/156 and #/7/44.',
     };
     echo "FAIL — PAYUNi refused (JS_INFO.success=false): {$msg}. {$hint}\n";
+    exit(2);
+}
+// Verified live 2026-09-13 on a real sandbox shop: a method the console has not enabled is refused by an auto-submitting
+// form back to ReturnURL carrying Status + an encrypted EncryptInfo whose Message reads 此支付工具未啟用，<method>，請聯繫商店
+// (UPP02073 LinePay, UPP02049 愛金卡). That is PAYUNi's MPG02003: a console/vendor enablement, not a code problem.
+if (preg_match("/name='autoForm'.*?name='Status' value='([A-Z0-9]+)'.*?name='EncryptInfo' value='([^']+)'.*?name='HashInfo' value='([0-9A-F]+)'/s", $body, $am) === 1) {
+    $sigOk = hash_equals(payuniHash($am[2], $key, $iv), $am[3]);
+    $dec = $sigOk ? payuniDecrypt($am[2], $key, $iv) : [];
+    $msg = (string) ($dec['Message'] ?? '(HashInfo did not verify - not decrypted)');
+    if (str_contains($msg, '未啟用')) {
+        echo "FAIL — {$am[1]}: {$msg}. {$flag} is not enabled for this shop: switch it on in 商店資料 → 商業條件及支付工具設定 (or it is vendor-side — file the form, date the wait), then probe again.
+";
+        exit(2);
+    }
+    echo "FAIL — {$am[1]} posted back to ReturnURL: {$msg}
+";
     exit(2);
 }
 if (preg_match('/\b(DEF\d{5}|API\d{5})\b/', $body, $m) === 1) {

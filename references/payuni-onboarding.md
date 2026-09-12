@@ -35,7 +35,7 @@ Signals: `payuni.com.tw`, `sandbox-api.payuni.com.tw`, `/api/upp`, `EncryptInfo`
 | `Credit=1` | card 一次付清 (+ `CreditInst=3,6,…`, `CreditUnionPay`, `ApplePay`, `GooglePay`, `SamsungPay`) | 1–199,999 | console; 3D via `API3D=1` or shop setting; wallets simulated in sandbox | test cards p.374; `Cardholder=1` for 3D name |
 | `ATM=1` | 虛擬帳號 (single-use) | 15–49,999 | console | `ExpireDate` ≤ today+180; 模擬繳費 in sandbox |
 | `CVS=1` | 超商代碼 (7-ELEVEN ibon) | **30–20,000** | console | `ExpireDate` ≤ today+7 or the page hides CVS |
-| `LinePay=1` | LINE Pay | per LINE Pay | **sandbox: any Channel ID/Secret** — no vendor wait to test; production: real LINE Pay channel | the friendliest LINE Pay sandbox of the three gateways |
+| `LinePay=1` | LINE Pay | per LINE Pay | **console toggle first** (商店資料 → 商業條件及支付工具設定): a fresh sandbox shop refuses it with `UPP02073 此支付工具未啟用，LinePay，請聯繫商店` *(live 2026-09-13)*; once on, the sandbox accepts any Channel ID/Secret (p.374); production: real LINE Pay channel | still the friendliest LINE Pay sandbox — the wait is a toggle, not a form |
 | `ICash=1` | icash Pay | per icash | **application, PAYUNi reviews** | |
 | `Aftee=1` | AFTEE 先享後付 | 20–49,999 | application | test phones p.374 |
 | `JKoPay=1` | 街口支付 | per 街口 | application | |
@@ -63,8 +63,9 @@ No documented merchant IP allowlist for UPP or its notifies; **IP binding only f
 
 1. `.env`: `PAYUNI_MER_ID`, `PAYUNI_AES_KEY` (32), `PAYUNI_AES_IV` (16), `PAYUNI_ENV=sandbox`, `PAYUNI_CALLBACK_BASE=https://…` (443).
 2. `php tools/payuni/crypto.php selftest` — proves AES-256-GCM + `:::` + HashInfo round-trip and that a tampered cipher fails the hash.
-3. `php tools/payuni/probe_upp.php Credit` — one UPP request per flag; PASS = PAYUNi's payment page; FAIL = a `Status` other than `SUCCESS` with the code (`DEF01007` = keys/hash, `DEF01005` = MerID unknown here, `API00010/11` = envelope shape).
-4. Console toggles per method; icash / AFTEE / 街口 by application; **LINE Pay works in the sandbox immediately** — say so, it is the one place a first shop is not waiting on anyone.
+3. `php tools/payuni/probe_upp.php Credit` — one UPP request per flag. *(live 2026-09-13 on a fresh sandbox shop)* **PASS** = PAYUNi's payment page with `JS_INFO.success=true` (Credit, ATM, CVS out of the box); **FAIL, keys** = `JS_INFO.success=false` `Hash比對不符合` (a wrong IV) or `商店不存在` (wrong MerID / environment); **FAIL, not enabled** = PAYUNi does not render a page at all — it auto-submits a form back to `ReturnURL` with `Status=UPP020xx` and an encrypted `EncryptInfo` whose `Message` is `此支付工具未啟用，<method>，請聯繫商店` (`UPP02073` LinePay, `UPP02049` 愛金卡, `UPP02050` AFTEE, `UPP02109` 街口, `UPP02063` ApplePay); the probe verifies `HashInfo`, decrypts and prints it. `DEF01007` / `DEF01005` / `API00010/11` are the JSON-API refusals.
+4. Console toggles per method (商店資料 → 商業條件及支付工具設定) — **including LINE Pay**, which a new sandbox shop has off; icash / AFTEE / 街口 by application. The loop is the same as NewebPay's: flip → probe → PASS or a named `UPP020xx`.
+4a. **Copy keys with the console's 複製 buttons, never by eye**: the Hash Key mixes `l`, `I` and `1` in one face; a key read off a screenshot cost a `Hash比對不符合` round *(lesson, 2026-09-13)*.
 5. ATM / CVS: place the order, then press **模擬繳費** in the sandbox console (交易動態明細) to fire the 付款完成 notify — the async path *is* testable here, unlike ECPay stage.
 
 ## 7. Wire it — in the order things go wrong
@@ -97,4 +98,4 @@ Sandbox proves: UPP, HashInfo/GCM, `NotifyURL` for cards, **ATM/CVS via 模擬�
 
 ## 11. Harness
 
-`tools/payuni/`: `detect.py`, `fetch_docs.py` (ShowDoc JSON API), `crypto.php selftest|encrypt|decrypt|hash`, `probe_upp.php [FLAG] [--dry-run]`. `tools/explain_error.py` knows `DEF01002/05/07`, `API00010/11`. Readiness card: `tools/newebpay/readiness.py` with `payuni.*` rows.
+`tools/payuni/`: `detect.py`, `fetch_docs.py` (ShowDoc JSON API), `crypto.php selftest|encrypt|decrypt|hash`, `probe_upp.php [FLAG] [--dry-run]` (PASS / keys refusal / not-enabled `UPP020xx` decrypted from the ReturnURL auto-form; `PAYUNI_PROBE_DUMP=file` keeps the raw response). `tools/explain_error.py` knows `DEF01002/05/07`, `API00010/11`, `UPP02049/50/63/73/109`. Readiness card: `tools/newebpay/readiness.py --init --provider payuni`.
