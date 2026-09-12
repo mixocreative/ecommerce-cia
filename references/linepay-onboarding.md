@@ -118,6 +118,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 - The payer test account is a password — it goes into the LINE login form and nowhere else; never paste it into a chat, a file or a ticket.
 - **A phone fails** on Shape A: the simulator URL on iOS Safari answered 無法處理您的申請 (generic error); the desktop user-agent works. Test on the PC.
 - **Capture-separated is a contract feature**: `options.payment.capture=false` on the sandbox merchant → `2103 Parameter is not allowed [capture:false]`. Do not design an authorise-then-capture flow until the merchant agreement includes it; `--no-capture` on the probe shows the answer in one call.
+- **Reservations expire unapproved**: a v4 request left unapproved for ~50 minutes came back `0121` on `--check` *(live 2026-09-13)*. Create the request right before the customer (or the tester) is ready to approve; a stale `paymentUrl.web` is a dead link.
 - **Never call confirm before `--check` says `0110`**: a premature confirm returned `1169` *and then the reservation died* — the next `--check` was `0122 payment failed` and the customer could no longer approve it. New request needed.
 - `--details` on an unconfirmed reservation → `1150` (details lists confirmed payments only); after confirm → `payStatus: CAPTURE`, `payInfo[].method: CREDIT_CARD` in the simulator.
 
@@ -191,6 +192,7 @@ One end-to-end order: request → open `paymentUrl.web` in the browser tool → 
 | Reusing `orderId` on retry | `1172` | unique per request |
 | Retrying confirm inside the read timeout | `1198`, then `1145` | wait ≥ 40 s; check status; idempotent handler |
 | Confirm before the customer approved | `1169`, then the reservation dies (`0122`) | poll `--check` for `0110` first; a dead reservation needs a new request |
+| Payment URL handed over long after the request | `0121` — expired before anyone approved | request at the moment of checkout, not at cart time; regenerate on retry |
 | `options.payment.capture=false` on a merchant without the feature | `2103 Parameter is not allowed` | authorise-then-capture is contractual; ask LINE Pay, then `--no-capture` to prove it is on |
 | Sandbox payment page shows "update LINE" | tester installs LINE, tries a phone, gives up | it is a pop-up simulator: allow pop-ups on `sandbox-web-pay.line.me`, PAY NOW on a PC; no LINE login |
 | Sandbox `test_…@line.pay` account | typed into every page, in chat | not needed for the online simulator; never paste it anywhere |

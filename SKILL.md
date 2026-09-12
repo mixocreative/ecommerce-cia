@@ -24,7 +24,7 @@ This file holds routing, discovery, the seven-step protocol, the autonomy contra
 > | **The detector** | the settlement reconcile, capture sweep or parcel trace examined nothing — or stopped running — and printed the same clean line either way | **S20** |
 > | **The report** | the discrepancy reached a log, an alert table, an exit code: anywhere but the order list and the order page | §0.10, S16 step 5 |
 > | **The screen** | the situation has **no surface at all**, or one nobody has ever rendered, or one no person can dismiss - so the operator cannot decide, and "ignore" happens by default instead of by choice | **S22** |
-> | **The proof** | the test that would have caught it passes vacuously, runs too late in the suite to be reached, or measures the runner's environment instead of the code | **S21** |
+> | **The proof** | the test that would have caught it passes vacuously, runs too late in the suite to be reached, measures the runner's environment instead of the code, or proves the codec agrees only with itself | **S21** |
 >
 > The test, applied to anything: **describe the failure, then describe what an operator would see.
 > If those two descriptions are the same on a good day and a bad day, that is a finding — grade it,
@@ -292,7 +292,7 @@ Index — the sweep, what it hunts, and the VSM channel it walks:
 | **S18** Provider-contract matrix (+ S18.1 carrier validator, artefact over FAQ) | sampled where it should have been enumerated; service-variant confusion | System 4 read per cell |
 | **S19** Host capability vs provider requirement | environment constraint never crossed | System 4 requirement × launch host |
 | **S20** Liveness of the safety net | blind instrument / dead watchdog | System 3\* itself |
-| **S21** The suite is an instrument too | vacuous or too-late proof, runner contamination, secrets in diffs | System 3\* itself |
+| **S21** The suite is an instrument too | vacuous or too-late proof, runner contamination, secrets in diffs, a codec proven only against itself | System 3\* itself |
 | **S22** Surface completeness: step × outcome × audience (+ S22.1–S22.7) | unrendered / undesigned surface; caught ≠ handled | System 1 → operator / customer screen |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term in the taxonomy, the sweeps are the first thing that runs.
