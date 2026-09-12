@@ -1,6 +1,6 @@
-# LINE Pay — Setup Guide: direct Online API, or through NewebPay / ECPay / PAYUNi
+# LINE Pay — Setup Guide: direct Online API, or through NewebPay / PAYUNi
 
-Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project names LINE Pay, or a user asks for it. LINE Pay is the one method in Taiwan that a shop can reach **two ways**, and the first question decides everything after it: **direct** (your server calls LINE Pay's Online API with your own Channel ID and Channel Secret) or **via a gateway** (NewebPay `LINEPAY=1`, ECPay, PAYUNi `LinePay=1` — LINE Pay is one flag on that gateway's hosted page). Most first shops should take the gateway route; this guide says why, and then covers the direct route completely for the shops that need it.
+Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project names LINE Pay, or a user asks for it. LINE Pay is the one method in Taiwan that a shop can reach **two ways**, and the first question decides everything after it: **direct** (your server calls LINE Pay's Online API with your own Channel ID and Channel Secret) or **via a gateway** (NewebPay `LINEPAY=1`, PAYUNi `LinePay=1` — LINE Pay is one flag on that gateway's hosted page). **Not ECPay**: its AIO has no LINE Pay flag (`developers.ecpay.com.tw/2864.md`, read 2026-09-13 — `ChoosePayment` offers Credit, ApplePay, WebATM, ATM, CVS, BARCODE, TWQR 行動支付, BNPL, WeiXin and `DigitalPayment` = 綠界's own 電子支付/電子錢包); a shop on ECPay that wants LINE Pay integrates it directly or adds a second gateway. Most first shops should take the gateway route; this guide says why, and then covers the direct route completely for the shops that need it.
 
 **Sources.** LINE Pay's developer site is the authority: `https://developers-pay.line.me` (Docusaurus; English / 中文 / 한국어; no PDF, no login). Read fresh at §2 and cite the page path. Everything below that is not a page citation is marked *(lesson)*. Read at source 2026-09-13: the reference lists **Online API v3 and v4** (v4 added November 2025 for Taiwan's 電子支付機構 rules; same authentication, same endpoints under `/v4`, plus `info.paymentProvider` on confirm / capture / details and `options.regPayRequest` on request — change log). Japan-specific content was removed May 2025.
 
@@ -10,7 +10,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 
 ## 0. Direct or via a gateway — decide first
 
-| | Via NewebPay / ECPay / PAYUNi | Direct Online API |
+| | Via NewebPay / PAYUNi | Direct Online API |
 |---|---|---|
 | Contract | one gateway contract covers cards, ATM, 超商 and LINE Pay | a separate LINE Pay merchant agreement (`https://pay.line.me/tw` → 商家申請), separate review |
 | Credentials | none from LINE; the gateway's keys | your own **Channel ID + Channel Secret** from the LINE Pay Merchant Center |
@@ -21,7 +21,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 | Refunds | through the gateway's refund API / console | `POST /v3/payments/{transactionId}/refund`, full or partial |
 | Pick it when | a first shop, one statement wanted, LINE Pay is one method among several | LINE Pay is the main method (LINE-native brand, LIFF shop, LINE 官方帳號 commerce), you want `paymentUrl.app` deep links, pre-approved (regKey) payments, or the gateway's LINE Pay wait is blocking launch |
 
-**Ask:** "Is LINE Pay one of several ways to pay, or the way to pay?" Several → the gateway route; go to that provider's guide (`newebpay-onboarding.md` §2 row `LINEPAY`, `payuni-onboarding.md` `LinePay=1`, `ecpay-onboarding.md`) and stop here — the only LINE-specific facts there are *who enables it* and *that a probe returns a refusal until they do*. The way → continue.
+**Ask:** "Is LINE Pay one of several ways to pay, or the way to pay?" Several → the gateway route; go to that provider's guide (`newebpay-onboarding.md` §2 row `LINEPAY`, `payuni-onboarding.md` `LinePay=1`) and stop here — the only LINE-specific facts there are *who enables it* and *that a probe returns a refusal until they do*. The way → continue.
 
 *(lesson, mixoweb 2026-09)* A shop that started on NewebPay waited on NewebPay's 客服 to enable LINE Pay in the sandbox. That wait is real and dated; it is not a reason to buy a static IP or to start a direct integration mid-project. Record it on the readiness card and keep building.
 
@@ -32,7 +32,7 @@ Loaded by `ecommerce-cia` in **setup mode** (SKILL.md §0.15) when a project nam
 `python tools/linepay/detect.py [dir]` — prints JSON, never secret values.
 
 - **direct** signals: `sandbox-api-pay.line.me`, `api-pay.line.me`, `/v3/payments/…` or `/v4/payments/…`, `X-LINE-Authorization`, `X-LINE-ChannelId`, env keys `LINEPAY_*` / `LINE_PAY_*` / `CHANNEL_ID` + `CHANNEL_SECRET`
-- **via** signals: NewebPay `LINEPAY => 1`, ECPay `ChoosePayment` with LINE Pay, PAYUNi `LinePay`
+- **via** signals: NewebPay `LINEPAY => 1`, PAYUNi `LinePay`; an ECPay `ChoosePayment` that names LINE Pay is flagged as **suspect** — ECPay's AIO has no such value, so the code is promising a method the gateway will not render (S17 hosted-surface control)
 - **offline API** signals (`/v2/payments/oneTimeKeys`, `/v4/payments/oneTimeKeys`) mean a POS / in-store flow, not e-commerce — a different guide; say so
 - direct + a confirm handler found → **audit mode** (walk request → confirmUrl → confirm as one channel; S15/S16/S17 apply); direct without → **setup-direct**; via → that gateway's guide; brand only → §0 question
 
@@ -216,7 +216,7 @@ All under `tools/linepay/`; stdlib Python and plain PHP. Tests: `python tests/te
 
 ```
 LINE Pay readiness — <shop> — <date>
-Route: direct Online API v4 | via NewebPay (LINEPAY) | via PAYUNi | via ECPay
+Route: direct Online API v4 | via NewebPay (LINEPAY) | via PAYUNi (LinePay)
 Reference: developers-pay.line.me read <date> · versions v3 + v4 · change log Nov 2025
 Sandbox: account ✅ (<e-mail>) · Channel ID/Secret ✅ in .env (gitignored) · personal LINE account for the test page ✅
 Probe: request PASS ✅ (transactionId stored as string) · 1104/1106 ❌ none
