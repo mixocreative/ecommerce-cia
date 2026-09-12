@@ -696,7 +696,59 @@ of thousands of cells and will never be walked. So:
   the axes taken at full depth and those taken pairwise, so the next reader knows what was not walked.
 
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'.`
+### S22 closure rule — the authority's error table *is* the outcome column
+
+**Added 2026-09-12, from the owner completing the sweep's own statement:** *"every api or return
+should have a ui or admin response on ui, and every combination of user possible behaviour or
+situation of purchase cycle should have a catch on UI or admin… each combination may need a theming
+of layout or flag design… to make sure no api response or flow got missed or unattended to on
+screen and by system handling."*
+
+That is the sweep's closure condition and it fixes the sweep's worst weakness. *"Enumerate the
+outcomes"* invites invention, and an invented list is a sampled list wearing a suit. **It does not
+need inventing: every provider has already enumerated its outcomes, exhaustively, in the error table
+at the back of its manual.** Transcribe it.
+
+**So S18 and S22 join here.** S18 reads the authority for the *contract*; S22 reads the same
+authority's **error table** for the *outcome column*, and the join is one row per code:
+
+| Provider code | Meaning, verbatim | **Handled** | **Surfaced** | **Designed** |
+|---|---|---|---|---|
+
+**The three columns fail independently, which is why one column is not enough:**
+
+- **Handled** — the code reaches a deterministic branch. Not a `default`, not a fallback to a
+  neighbouring meaning, not silence. *A code mapped onto another code's meaning is worse than an
+  unhandled one, because it is confidently wrong.*
+- **Surfaced** — a human sees it, on a screen, per S22's four tests. A log line, a digest, a cron
+  exit code and a table row with no screen all fail here. This is the SRE **actionable alerting**
+  rule: an alert that does not tell a human what to do is noise.
+- **Designed** — it has a visual form somebody chose: which flag, which colour, which severity,
+  which position, blocking or not. **An error rendered as raw text in the default font is handled
+  and surfaced and still fails**, because the operator cannot tell at a glance whether it is urgent,
+  and the customer cannot tell whether they still have to do something.
+
+**This is also what makes theming estimable rather than open-ended.** The designer does not need a
+layout per code — they need one per **surface kind**. Count the kinds, not the codes: blocking
+refusal, non-blocking warning, informational note, badge on a list row, panel on a detail page,
+empty state, disabled control with a reason. **Every code maps to exactly one kind, and the kinds
+are a dozen.** Report both numbers: *N codes across K kinds* — the first is the audit's workload,
+the second is the designer's.
+
+**The same closure applies to the other direction — user actions.** Every action a user can take
+that the system can refuse is an outcome with the same three columns: an invalid coupon, a
+quantity beyond stock, an address the carrier will not serve, a method unavailable for the
+destination, a session that expired mid-checkout, a double submit, a back-button replay. The
+enumeration comes from the **render-guard census and the error-path inventory** (passes 1 and 3
+above) rather than from a vendor manual, but the rule is identical: **handled, surfaced, designed.**
+
+**What "no gap" means, stated so it can be checked:** every row of every authority's error table,
+and every refusal the system itself can produce, has all three columns filled. Anything else is
+`UNVERIFIED` and is a task. *A provider code with no branch is a bug; a branch with no screen is a
+silence; a screen with no design is a message nobody reads in time.*
+
+
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds, handled H, surfaced F, designed D.`
 
 
 
