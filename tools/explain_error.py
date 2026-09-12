@@ -52,6 +52,23 @@ CODES: dict[str, tuple[str, str, str, str, str]] = {
     "1114": ("NewebPay 物流", "Prepaid logistics balance is empty.", "預付費用 not funded, so labels cannot be issued.", "Fund 預付費用 in the console (帳務中心). Put 'prepaid balance' on the readiness card.", "mixoweb DEPLOY.md"),
     "2105": ("NewebPay 物流", "Too many order numbers in one call.", "getShipmentNo (B53) takes at most 10 MerchantOrderNo per call.", "Batch by 10.", "NDNS-1.0.0 p.19"),
     "2106": ("NewebPay 物流", "Too many labels in one print call.", "Per-call label caps differ by chain (7-ELEVEN 18, 全家 8, 萊爾富 18, OK 18).", "Batch per chain within the cap.", "NDNS-1.0.0 p.21"),
+    # ---- PAYUNi UPP (docs.payuni.com.tw #/7/156, #/7/44; read 2026-09-13) ----
+    "DEF01007": ("PAYUNi", "HashInfo does not match.", "AES key/IV wrong for this MerID on this environment, or HashInfo built with labels - it is sha256(key + EncryptInfo + iv), nothing else.",
+                 "Run tools/payuni/crypto.php selftest, re-copy the AES Key (32) / IV (16) from the PAYUNi console, confirm PAYUNI_ENV matches.", "docs #/7/156"),
+    "DEF01005": ("PAYUNi", "Shop not found (商店不存在).", "The MerID does not exist on this environment - sandbox and production shops are separate.",
+                 "Confirm PAYUNI_MER_ID and PAYUNI_ENV together. Verified live 2026-09-13: fake credentials return the page with JS_INFO.success=false and this message.", "docs #/7/156; sandbox response"),
+    "DEF01002": ("PAYUNi", "Decrypt failed.", "Wrong key/IV, or the envelope is not hex(cipher:::base64(tag)) AES-256-GCM.",
+                 "crypto.php selftest; compare against docs #/7/29 PHP example.", "docs #/7/156"),
+    "API00010": ("PAYUNi", "EncryptInfo format error.", "Not hex, or missing the ':::' tag separator.", "Rebuild with tools/payuni/crypto.php encrypt.", "docs #/7/156"),
+    "API00011": ("PAYUNi", "HashInfo format error.", "Not 64 upper-hex.", "strtoupper(sha256(key . EncryptInfo . iv)).", "docs #/7/156"),
+    "API00009": ("PAYUNi", "The same data is already being processed.", "MerTradeNo reused within 10 minutes, or a double submit.",
+                 "Generate a new MerTradeNo per attempt; treat as a duplicate, not a failure.", "docs #/7/34, #/7/156"),
+    # ---- TapPay (docs.tappaysdk.com reference; read 2026-09-13) ----
+    "915": ("TapPay", "Unknown error.", "In the sandbox this is the deliberate failure card 4242 4202 3507 4242; in production, a bank-side error.",
+            "Sandbox: expected, use 4242 4242 4242 4242 for success. Production: query by rec_trade_id, do not retry blindly.", "reference.html"),
+    "10003": ("TapPay", "Card error.", "Declined / invalid card (sandbox failure card 4242 4216 0218 4242).", "Show the customer a card-refused message; nothing to fix server-side.", "reference.html"),
+    "10005": ("TapPay", "Bank system error.", "Issuer/acquirer outage (sandbox failure card 4242 4222 0418 4242).", "Retry later with a NEW prime; never reuse a prime.", "reference.html"),
+    "10006": ("TapPay", "Duplicate transaction.", "You already charged this - the same order was submitted twice.", "Treat as success of the earlier charge; look it up by order number via /tpc/transaction/query.", "reference.html"),
     # ---- ECPay AIO (developers.ecpay.com.tw; mixoweb AioCapabilityProbe) ----
     "10200079": ("ECPay", "This payment method is not activated for your merchant (沒有開通此付款方式).", "The method is off in 廠商後台, or ECPay has not activated the product for this MerchantID.",
                  "廠商後台 → 系統開發管理 → 付款方式管理 (or 廠商基本資料 → 付款方式): confirm it is 啟用. Re-run tools/ecpay/probe_aio.php. Still failing → vendor-side; contact ECPay with the MerchantID and code, record the date.", "mixoweb AioCapabilityProbe"),
@@ -67,6 +84,8 @@ CODES: dict[str, tuple[str, str, str, str, str]] = {
 }
 
 LOOKUP = {
+    "PAYUNi": "https://docs.payuni.com.tw/web/#/7/156 (通用) and #/7/44 (UPP)",
+    "TapPay": "https://docs.tappaysdk.com/tutorial/zh/reference.html",
     "NewebPay": "NDNF-1.2.5 error tables (MPG p.~90, query p.~95) from https://www.newebpay.com/website/Page/content/download_api",
     "NewebPay 物流": "NDNS-1.0.0 p.31-32",
     "ECPay": "https://developers.ecpay.com.tw/?p=2878 (result codes) and the 交易訊息代碼一覽表 linked from it",
@@ -78,7 +97,9 @@ def explain(code: str) -> str:
     if c in CODES:
         gw, meaning, cause, action, src = CODES[c]
         return f"{c} [{gw}]\n  What it means : {meaning}\n  Likely cause  : {cause}\n  Do this       : {action}\n  Source        : {src}\n"
-    fam = "NewebPay" if re.match(r"^(MPG|TRA|CHK)", c) else ("ECPay" if re.match(r"^10\d{6}$", c) else ("NewebPay 物流" if re.match(r"^[124]\d{3}$", c) else "unknown"))
+    fam = ("NewebPay" if re.match(r"^(MPG|TRA|CHK)", c) else "PAYUNi" if re.match(r"^(DEF|API)\d{5}$", c)
+           else "ECPay" if re.match(r"^10\d{6}$", c) else "TapPay" if re.match(r"^(915|1000\d)$", c)
+           else "NewebPay 物流" if re.match(r"^[124]\d{3}$", c) else "unknown")
     return f"{c}: not in this table. Look it up: {LOOKUP.get(fam, 'the vendor manual you downloaded (never memory)')}. If you find it, add it here with the source.\n"
 
 
@@ -87,7 +108,7 @@ def main(argv: list[str]) -> int:
         print(__doc__); return 1
     if argv == ["-"]:
         text = sys.stdin.read()
-        found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
+        found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|DEF\d{5}|API\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
         if not found:
             print("no known code pattern in the text"); return 1
         argv = found
