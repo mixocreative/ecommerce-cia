@@ -1,6 +1,6 @@
 # ecommerce-cia — Commerce Integrity Auditor for Taiwan e-commerce
 
-**The only AI coding skill built around how Taiwanese shops actually take money and ship parcels: 藍新 NewebPay, 綠界 ECPay, 超商取貨付款, 電子發票, 個資法 — with live-verified probes, a fool-proof setup guide for first-time builders, and an audit that finds the defects a green test suite cannot.**
+**The only AI coding skill built around how Taiwanese shops actually take money and ship parcels: 藍新 NewebPay, 綠界 ECPay, 統一金流 PAYUNi, TapPay, 超商取貨付款, 電子發票, 個資法 — with live-verified probes, a fool-proof setup guide for first-time builders, and an audit that finds the defects a green test suite cannot.**
 
 [繁體中文 README](README.md) · Works with Claude Code · Codex · Cursor · any agent that reads `SKILL.md`
 
@@ -50,6 +50,7 @@ Everything below was run against real endpoints on 2026-09-12 and is logged in [
 | `tools/newebpay/probe_mpg.php` on a real NewebPay sandbox shop | CREDIT · WEBATM · VACC · CVS · BARCODE · LINEPAY · ESUNWALLET → **PASS** (server-side `payType` confirms); a product not enabled → `MPG02003`; a wrong HashIV → `MPG03009` |
 | `tools/ecpay/probe_aio.php` on ECPay's public stage merchant | Credit, BNPL → **PASS**; wrong keys → `10200073` |
 | `tools/ecpay/callback.php selftest` | reproduces ECPay's published `CheckMacValue` worked example byte-for-byte |
+| `tools/payuni/probe_upp.php` against PAYUNi's sandbox | refusal path exact (`JS_INFO.success=false` 商店不存在); AES-256-GCM envelope self-tested |
 | `tools/newebpay/fetch_manuals.py` | reads the production download page (403 to `curl`) and exposes **65 documents** the visible tab hides — including the application forms behind every "why is this method still off" |
 | Cold runs by a fresh agent | setup Q1 · setup 4-turn · plain-language audit · paired — **0 false positives**, 16/16 defects on the fixture shop |
 
@@ -66,12 +67,17 @@ references/
                                  sandbox registration, console activation + probes, wiring, go-live, gotchas
   ecpay-onboarding.md            綠界 from zero: markdown-twin docs, public stage keys, CheckMacValue,
                                  1|OK, SimulatePaid, DoAction production-only, two logistics families
+  payuni-onboarding.md           統一金流 from zero: AES-256-GCM envelope, UPP flags and caps, 7-ELEVEN
+                                 logistics on the same page, 模擬繳費, LINE Pay sandbox with any channel
+  tappay-onboarding.md           TapPay: tokenising SDK, Pay by Prime, wallets, 3DS notify, no 超商
   jurisdictions.md               EU · Japan · US · UK at the same depth
   global-compliance.md           terms & privacy across 13 regimes (GDPR, 個資法, PIPA, APPI, LGPD…)
   doctrine.md / domains.md / theory.md / reporting.md
 tools/
   newebpay/  detect · fetch_manuals · probe_mpg · callback (verify|make) · readiness
   ecpay/     detect · fetch_docs · probe_aio · callback (verify|make|sign|selftest)
+  payuni/    detect · fetch_docs (ShowDoc API) · crypto (GCM selftest|encrypt|decrypt) · probe_upp
+  tappay/    probe_prime (dry-run, --prime, --query)
   explain_error.py               MPG02003? 10200079? 1106? → meaning, cause, the one next action
 tests/
   fixture-shop/                  a PHP shop with 16 known defects + an answer key
@@ -94,12 +100,12 @@ Use the vendor skill for the API calls. Use this one for everything around them.
 
 ## Roadmap
 
-- PAYUNi 統一金流 and TapPay onboarding guides (in progress)
+- A PAYUNi sandbox shop to prove the PASS path (refusal path is verified)
 - Japan and EU adapters at Taiwan depth (jurisdictions exist; provider guides do not yet)
 - A Codex-runtime cold run to mirror the Claude ones
 
 ## Credits and provenance
 
-The doctrine grew out of shipping a real Taiwanese shop (NewebPay + ECPay, 超商取貨付款, hand-written 統一發票) and writing down every lesson the manuals did not contain. Every number in the guides is marked *verify-current*; every rule that came from a real defect is marked *(lesson)*. The sibling skill [`cia`](../cia) carries the universal, non-commerce half of the same method.
+The doctrine grew out of shipping a real Taiwanese shop (NewebPay + ECPay; PAYUNi and TapPay from their documentation, 超商取貨付款, hand-written 統一發票) and writing down every lesson the manuals did not contain. Every number in the guides is marked *verify-current*; every rule that came from a real defect is marked *(lesson)*. The sibling skill [`cia`](../cia) carries the universal, non-commerce half of the same method.
 
 License: MIT.
