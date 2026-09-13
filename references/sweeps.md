@@ -833,6 +833,23 @@ shape; "its whole class gets re-walked" means every worker with a `failed` count
 row, then extend the deadline" on three paths - a crash between the statements leaves a customer
 holding a live number under the shop's shorter clock; the fix was not a transaction but making the
 sweep read the row's own expiry, so the second statement stopped being load-bearing.
+
+**"Handled" needs a surface too, and an audit table with no page is not one (2026-09-14, S22
+after-resolve).** The exceptions panel had a "Mark handled" button that asked *what did you do
+about it?* and sent the answer to the credential audit log - a table whose admin page was still a
+wireframe. So the closing was recorded and invisible: the next person to open the order saw
+nothing, and a problem dealt with looked exactly like a problem that never happened. The matrix
+had said `OK` for the exception row because the *open* state rendered; nobody had asked what the
+screen shows one second after the button. **Rule: for every operator action that closes a state,
+walk the screen after the click** - the loop is closed when the closing is visible where the
+problem was, with who, when and what they did; a write to a table nobody reads is the report
+storey of silence wearing a success notice. Second, the ratchet lesson: a coverage test keyed on
+Page classes or scenario enums cannot see a *conditional section inside a covered page* - the
+panel that renders in one state only is exactly the surface nobody previews. Mark such sections
+(`data-panel="…"`) and ratchet on the markers: every marker on disk must be rendered by some
+scenario. Third, S14.1 again: nine plan rows read "patch ready" while the patches had been merged
+for two days, and the gate check ("every row ticked") would have been answered wrong by anyone
+reading the plan instead of `git log -S`. **Drift check runs against the commits, not the prose.**
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
