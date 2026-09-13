@@ -814,6 +814,25 @@ with a fake ledger proves nothing about the column. And when a walk runs green o
 machine, read its `out_of_order` lines as findings: a 門市關轉 after 到店 was refused as a
 backward step by an ordering rule written for another carrier's vocabulary, the letter still went
 out because the event row is written first, and only the alarm was missing.
+
+**An `OK` in the surface matrix cites a renderer; only S15 proves the row reaches it (2026-09-13,
+Walk tier, S22 × S15).** The instruction cells - the "how to pay" mail, the order-page panel, the
+admin panel - were `OK` with a preview fixture each, and empty in production for the primary
+gateway: its 取號完成 post was read for the store block only and the number acknowledged and
+thrown away; the shop's own 30-minute card clock then cancelled an order the vendor had given
+days. Two HIGHs behind one `OK`. **Rule: a matrix cell is `OK` only when the S15 row for that
+state names the write that fills it** - the fixture proves the screen, the four-corner walk proves
+the data. And the class re-walk that followed found the same post's lost-in-the-browser case had
+no advancer at all, though the vendor's query carried the number the whole time (`PayInfo`,
+§4.3.2 註2): **when a browser POST is the only carrier of a fact, the vendor's query is read for
+the same fact and a poller writes it.** Second lesson from the same evening, S20: **a class fix
+applied to the provider under audit is not a class fix.** The blind-run finding of the morning
+went onto the two workers of the new provider and not the six older ones with the identical
+shape; "its whole class gets re-walked" means every worker with a `failed` counter, listed by
+`grep`, not the ones in the diff. Third, §7 crash recovery on a two-statement intent: "write the
+row, then extend the deadline" on three paths - a crash between the statements leaves a customer
+holding a live number under the shop's shorter clock; the fix was not a transaction but making the
+sweep read the row's own expiry, so the second statement stopped being load-bearing.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
