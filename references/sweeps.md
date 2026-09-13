@@ -803,6 +803,17 @@ nothing can ask.
 Two HIGHs and a vacuous test in forty minutes, none of which needed a database, a browser or a
 sandbox; the DB tests written for the fixes are queued for the slow filter and named as unrun
 (S8). Do not wait for the environment to be free to read the code.
+**The first provider sized the column (2026-09-13, S21 × the third-provider checklist).** A ledger
+column was `VARCHAR(8)` because the first gateway's action codes were one letter; the second
+gateway's `newebpay_close_refund` is twenty-one and had never been written by any DB test - the
+first production card refund on the primary gateway would have thrown "Data too long" at the
+claim. The third gateway's test was the first to write it. **When a new integration joins, grep
+every `VARCHAR(n)` with n ≤ 16 on every table it writes to, and for every money path on the
+*existing* providers ask which DB test drives it end to end through the store** - a unit test
+with a fake ledger proves nothing about the column. And when a walk runs green on a state
+machine, read its `out_of_order` lines as findings: a 門市關轉 after 到店 was refused as a
+backward step by an ordering rule written for another carrier's vocabulary, the letter still went
+out because the event row is written first, and only the alarm was missing.
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
