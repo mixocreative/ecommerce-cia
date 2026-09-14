@@ -1,6 +1,6 @@
 # §0.9 Mandatory Sweeps — Cross-Boundary Invariant Violations a Green Suite Does Not Catch
 
-Loaded by `ecommerce-cia` at Step 3, read in full, every run. Sweeps S1–S22 each end in one report line; a sweep with no line in the report was not done. Each sweep line names its sites, not a count: a path list (`path:line` or `path` per site) that the reader can open. `swept, 0 findings, 14 sites` is a claim; the fourteen paths are the evidence, and a line without them is the vacuous pass this skill exists to catch (S8), filed by the auditor. **Add one quoted line from one of those sites** — the predicate, the catch, the setting read, verbatim with its `path:line` — as proof the site was read and not merely listed by a grep.
+Loaded by `ecommerce-cia` at Step 3, read in full, every run. Sweeps S1–S24 each end in one report line; a sweep with no line in the report was not done. Each sweep line names its sites, not a count: a path list (`path:line` or `path` per site) that the reader can open. `swept, 0 findings, 14 sites` is a claim; the fourteen paths are the evidence, and a line without them is the vacuous pass this skill exists to catch (S8), filed by the auditor. **Add one quoted line from one of those sites** — the predicate, the catch, the setting read, verbatim with its `path:line` — as proof the site was read and not merely listed by a grep.
 
 Every item below was a real commerce gap that sat under a green fast suite, a clean static analyser and a clean linter, and was found only by a second auditor tracing the code by hand. None is optional. Each sweep produces either a numbered finding or an explicit "swept, 0 findings, N sites inspected" line in the Step 7 report. A sweep with no line in the report was not done.
 
@@ -54,6 +54,8 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 | **Blind instrument / dead watchdog** | the settlement reconcile, the capture sweep, the parcel trace or the retention purge stopped running or verified nothing, and the report looked identical to a clean one | S20 | System 3\* with no liveness signal — the channel that reports on the others, unmonitored itself |
 | **Unrendered / undesigned surface** | a state the system can reach has no screen, or one nobody has rendered, or one that cannot be dismissed by a person - so an exception is caught, logged, and decided by nobody | S22 | System 1 producing an event System 3 has no channel to see |
 | **Vacuous or too-late proof** | a test asserting emptiness passes because the subject returns nothing for an unrelated reason; or the guard exists but sits so deep in a slow suite that nobody reaches it | S21 | System 3\* instrument that reports without measuring |
+| **Order-dependent outcome / unhandled arrival** | two arrivals that can interleave leave a different final state depending on which came first; or an arrival that can come twice, late, early or never has no handler for that case | S23 | System 2 ordering absent; System 4 arrival with no System 1 branch |
+| **Self-agreeing fake** | the only test on a boundary feeds the parser a fixture the parser's author wrote, so both sides of the contract are ours; or a fixture with no authority citation or version | S24 | System 3\* measuring System 1 against itself instead of System 4 |
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
@@ -104,6 +106,17 @@ For every payload that crosses a boundary into this system (gateway callback, we
 ## S12 — Cascade, partial failure and retry storm
 
 For every outbound call (gateway query, logistics API, mail, storage, queue) and every inbound retry source (provider re-sends a notification, cron re-runs, customer refreshes), answer: what happens when the call fails half-way, times out, or succeeds after the caller gave up? Is there a per-step timeout? Is retry bounded with backoff, and is the retried action idempotent? Is there a circuit breaker or a degrade path (offer fewer methods, queue for later) rather than a crash or an unbounded loop? A retry that repeats a non-idempotent write, or a failure in one step that silently leaves an earlier step's side effect in place, is a finding. Trace the chain end to end and state which downstream effect the upstream failure produces. **A wait with no ceiling is a leak.** Any order, parcel or payment that waits for an external signal the environment cannot guarantee (a callback the sandbox cannot emit, a store-to-store status push with no documented retry, a counter payment) must have a ceiling that routes to a human queue — never an automatic reversal, because the parcel may be at the counter — and a sweep that lists what is waiting. State the ceiling and the queue; "the callback will come" is not a design (§3 fulfilment rule 9). **A browser-returned result is not a server channel.** Gateways deliver a result twice: once to the customer's browser (a return URL, a `ClientBackURL` / `ReturnURL` form post) and once server-to-server (a `NotifyURL`), with different fields at different moments. Anything dispatch depends on — a consignment number, the chosen store, a virtual account — must reach the shop by the notify channel or a poll of the vendor's query API; a design that takes it only from the browser post loses it the moment the tab closes (§3 fulfilment rule 12).
+
+
+**S12.1 — the failure-mode table.** Naming the failure is half the sweep; the other half is the
+row. For every outbound call and every step of a money flow write one row: **failure mode**
+(timeout, 5xx, refused, half-written, crash between step *k* and *k+1*, late success after the
+caller gave up), **effect** (which downstream state is now wrong, in the system's own words —
+"customer charged, no order row"), **detection** (which detector notices, and its liveness — S20),
+**surface** (where a person sees it — S22; "log line" is not a surface), **recovery** (retry with
+the idempotency key, compensate, or route to a human queue — S16; never an automatic reversal of
+money). A row with an empty detection or surface cell is the finding, whatever the recovery says.
+The table goes in the report; the six perturbations of S23 feed its rows for every inbound arrival.
 
 ## S13 — Orphan capability / designed-but-unbuilt
 
@@ -866,3 +879,86 @@ screens are still being built.
 
 Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
+## S23 — Sequence and event-flow. A FLOW IS A SEQUENCE OF ARRIVALS, AND EVERY ARRIVAL CAN COME TWICE, LATE, EARLY, OUT OF ORDER OR NEVER
+
+S15 walks one object through four corners and asks whether they agree *at each state*. This sweep
+walks the same flows in **time**: who sends what to whom, in what order, and what happens when the
+order is not the one the code was written for. A state machine review (doctrine §5/§6 in the
+commerce skill; S16 here) says which transitions exist; this sweep says which *arrivals* cause them
+and proves each arrival is safe in every order it can actually come.
+
+**Method.**
+
+1. **Draw the sequence, one per cross-boundary flow.** Columns are actors: the user's browser, this
+   system's request handler, the database, each provider (payment, logistics, mail), each worker or
+   cron, the operator's screen. One line per message, carrying the field that identifies the object
+   (order id, provider transaction id, idempotency key) and the state write it causes:
+   `browser → app: POST /checkout [order: draft→pending]`, `provider → app: notify [payment: pending→paid]`.
+   Text is fine; the diagram goes **in the report**, one per money flow at Screen tier, every flow
+   at Walk. A sequence that exists only in the auditor's head is not evidence (S18).
+2. **List every arrival this system does not control** — a callback, a webhook, a browser return
+   post, a queue message, a cron tick, a provider query response, an admin click during a pending
+   operation — and for each one fill six cells: **duplicate** (the same message twice), **out of
+   order** (against every other arrival that can race it), **late** (after the ceiling, after the
+   caller gave up, after a human already acted), **early** (before the state it presumes — the
+   notify that lands before the local row is committed), **missing** (never comes; S12's ceiling),
+   **malformed** (S11). Cite the file:line that handles each cell, or write `UNHANDLED`.
+3. **Interleaving pairs.** For every two arrivals that can interleave — browser return vs server
+   notify; callback vs admin cancel; reconciler vs callback; two workers on one row; a retry vs the
+   original — name the lock, the compare-and-set predicate (S2) or the ordering rule that makes the
+   outcome the same in either order. If the final state depends on which came first, that is a
+   finding graded on the money or state consequence, even when each handler is correct alone.
+4. **Cross-reference, do not duplicate.** The six perturbations here are the trigger list of the
+   commerce skill's §6 transition audit and the timeout / retry / reordering rows of doctrine §7:
+   fill them once, here, and cite this sweep there.
+
+**Grading.** A money-path arrival with no handler for duplicate or out-of-order: HIGH. An
+interleaving pair whose outcome depends on order: HIGH on a money path, MEDIUM elsewhere. A late
+arrival with no ceiling: file under S12 and cross-reference. A flow with no diagram in the report:
+the sweep did not run on it; report `UNVERIFIED`, never "swept".
+
+### S23 report line
+
+Report line format: `S23 — F flows diagrammed (of F' on the map); A external arrivals × 6 perturbations = N cells; handled H, UNHANDLED U, UNVERIFIED V; interleaving pairs P, order-independent Q, order-dependent D (each a finding)`.
+
+## S24 — Contract tests at every boundary. A FAKE THAT AGREES WITH THE PARSER PROVES THE PARSER AGREES WITH ITSELF
+
+S11 asks whether a boundary validates what crosses it; S18 asks whether the authority was read per
+field; S21 says a codec proven only against itself proves nothing. This sweep asks the question
+those three leave open: **for each boundary, what test binds our side to the other side's actual
+contract, and where did that test's fixture come from?**
+
+**Method.**
+
+1. **Enumerate the boundaries** — S11's `producer → consumer` list, both directions: inbound
+   (callback, webhook, query response, import file, queue message) and outbound (the request we
+   build, the form we post, the file we export). Internal boundaries count too: page → service,
+   worker → table, module → module.
+2. **Classify the tests on each boundary**, one letter per side:
+   - **(a)** none;
+   - **(b)** unit test with a hand-written fixture derived from our own parser or builder — the
+     self-agreeing codec, S21; it is not a contract test;
+   - **(c)** fixture transcribed field by field from the authority document, with the citation
+     (manual, version, page or section) in the test;
+   - **(d)** a recorded real body from the sandbox or production, redacted, dated, with the provider
+     version it came from;
+   - **(e)** a live probe against the sandbox, run in this session, its output in the report.
+   Only **c, d, e** are contract tests. Every money boundary needs at least **c** inbound (the
+   handler fed a real-shaped signed body, never the local method called directly — S15) and at
+   least **c** outbound (the request builder asserted against the vendor's field table: required
+   fields, lengths, character set, encoding, signature, amount format).
+3. **Consumer-driven on internal boundaries.** The consumer's test states the fields it reads; the
+   producer's test asserts it emits them under those names; a rename breaks both (S9). A page that
+   reads `resolution_note` from an array a service builds has a contract with that service whether
+   or not anyone wrote it down.
+4. **Version-pin every fixture.** A fixture that does not say which contract version it was
+   transcribed from cannot be re-verified when the vendor revs (doctrine §1.3), and is an
+   `UNVERIFIED` cell in S18's matrix from the day the vendor publishes a newer manual.
+
+**Grading.** A money boundary at (a) or (b) only, either direction: HIGH. An internal boundary at
+(a) on a path that writes state: MEDIUM. A fixture at (c) or (d) without version and citation:
+LOW, and the S18 cell it supports drops to `UNVERIFIED`.
+
+### S24 report line
+
+Report line format: `S24 — B boundaries (I inbound, O outbound, N internal); per boundary the class a–e per side (table); money boundaries below c: M (each HIGH); internal at a on a state-writing path: K; fixtures without version or citation: F`.

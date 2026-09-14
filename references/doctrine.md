@@ -311,7 +311,13 @@ Record the assumption or unresolved context explicitly.
 
 ---
 
-# 4. Critical Business Invariants
+# 4. Critical Business Invariants — the register every finding cites
+
+Write these out, numbered, in the report before grading anything, in the shop's own vocabulary
+and with the ones §3's profile adds (COD collection, hand-written invoices, per-locale delivery).
+**Every finding names the invariant it breaks by number**; one that names none is not graded.
+S23 (sequence) and S24 (contract tests) judge an interleaving or a fixture by the invariant it can
+break, not by whether the code looks racy.
 
 These invariants take priority over implementation style.
 
@@ -601,7 +607,7 @@ For every important transition, identify:
 17. Customer-visible result
 18. Admin-visible result
 
-Then deliberately test:
+Then deliberately test — this is the S23 arrival × perturbation grid, filled once there and cited here, with the sequence diagram it comes from:
 
 - duplicate trigger
 - concurrent trigger
