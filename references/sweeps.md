@@ -414,6 +414,17 @@ Method:
 
 **The sentence to carry out of this sweep:** *a green report from an instrument nobody has proved is looking is not evidence of health — it is evidence of a report.*
 
+**S20.1 — advancers are watched like detectors (2026-09-14).** Step 1 says *enumerate the detectors*,
+and a roll call that did exactly that reported twelve of twelve watched for liveness the day before
+an audit found the one scheduled job nothing watched: the sweep that cancels unpaid orders and
+returns their stock. It is not a detector — it detects nothing, it *advances* state — so it was
+outside the list, marked non-critical, with no heartbeat, and outside the in-app fallback that
+backed up the payment workers. A lost crontab line on a new host would have held stock for orders
+nobody will pay, for ever, with no screen saying so. **Enumerate every scheduled job whose absence
+changes money, stock or a customer's promised state, detector or not, and demand the same three
+things of each: a liveness signal something reads, a screen, and a place in the fallback if one
+exists.** The question is not "what does this job find" but "what stops happening when it stops".
+
 Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
 
 ## S21 — The suite is an instrument too. A PASSING ASSERTION THAT SOMETHING IS EMPTY PROVES NOTHING UNTIL SOMETHING PROVES IT CAN BE NON-EMPTY
