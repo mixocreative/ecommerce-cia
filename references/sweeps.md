@@ -863,6 +863,21 @@ panel that renders in one state only is exactly the surface nobody previews. Mar
 scenario. Third, S14.1 again: nine plan rows read "patch ready" while the patches had been merged
 for two days, and the gate check ("every row ticked") would have been answered wrong by anyone
 reading the plan instead of `git log -S`. **Drift check runs against the commits, not the prose.**
+
+**A flake with no evidence in its failure message is the proof storey dying quietly (2026-09-14,
+S21 / S12.1).** A CLI-worker test had failed "about one run in three" for a month with the message
+`processed=0 stop=no_available_jobs`, and the gap register said *not investigated to root* with
+three guesses and two cheap fixes, "neither done because the flake is harmless". It failed once
+more at the end of a seven-hour run, on the commit that was to be the gate, with the visibility
+wait that was supposed to close guess one already in place — so guess one was wrong and the other
+two were still guesses. Twenty-five isolated re-runs passed, which proves only that the failure
+needs the seven hours. **Rule: a test that spans a boundary (subprocess, second connection,
+container, clock) asserts with the other side's view in the message** — the row as the server
+holds it next to the server's own clock, the process list, the exit code and stderr — so that the
+first recurrence is the investigation and not another retry. A retry that passes is not a root
+cause; "harmless" is the word the register uses for a defect it has stopped looking at. File such
+a test under S12.1 as a failure mode of the *proof* (detection: the message; surface: the
+register row; recovery: never "re-run until green").
 | A field the operator cannot use | disabled, **with the reason beside it** |
 
 **Improve only where the domain genuinely differs**, and say why in the commit: a 字軌 invoice book,
