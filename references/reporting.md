@@ -81,6 +81,19 @@ Unique audit finding identifier.
 
 CRITICAL / HIGH / MEDIUM / LOW / INFORMATIONAL
 
+**The floor, from two fixture runs (2026-09-15) that graded one level low on four of ten and three
+of sixteen rows:** a defect on a money or safety path is graded by **what happens to the money or
+the person when it fires**, not by how small the code is. *Money lost, doubled, or recorded as
+paid when it was not — with no notice* is **CRITICAL**, even when the fix is one predicate: an
+`UPDATE … WHERE id = ?` that lets a payment be overwritten as expired, a `catch` that answers the
+provider "received" while the write failed, a verify that returns true on its own exception. *A
+person cannot see or act on a money state* (an unrendered terminal state, an alarm that reaches
+a log) is **HIGH**, never MEDIUM. *A detector that cannot tell blind from clean* on a money path
+is **HIGH**. *A test that proves nothing* on a money path is **HIGH**, because every earlier green
+it produced was a claim. MEDIUM is for defects with a working fallback or a person already in the
+loop; LOW is for what costs nothing when it fires. When in doubt between two grades on a money
+path, the higher one is right — an under-graded money defect is the one that ships.
+
 ## Confidence
 
 CONFIRMED / HIGH-CONFIDENCE / POSSIBLE
