@@ -88,3 +88,14 @@ Name walks by the matrix row they prove (`w26-ja-golden.spec`), not by the page.
 no horizontal overflow at 390 × 844; focus ring visible on the first interactive control; every
 form field labelled; the locale switch lands on the same route in the other locale. These are
 the checks §0.6 Step 4 / 5 already names — the page object is where they live once.
+
+## 11. The boundaries only a browser crosses (2026-09-16)
+
+A headless walk posts from the application's own language and never meets a Content-Security-
+Policy, a cookie flag, a CORS refusal, a mixed-content block or a form the browser will not
+submit. A shop's checkout carried a `form-action` that allowed two gateways and not the third —
+the launch gateway — so the Pay button would have done nothing on the real page, and five
+headless walks of that gateway were green. **Before a gateway is called walked, one real browser
+has posted its real form once, and the response headers of the page that posts it have been
+read.** Put that click in the smoke folder, per gateway, and read the CSP, cookie and referrer
+headers on the checkout route as part of it (doctrine §8.2 in `cia`).
