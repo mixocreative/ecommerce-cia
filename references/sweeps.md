@@ -66,6 +66,15 @@ For every value persisted at a moment in time (payment deadline, reserved stock,
 ## S2 — Select-then-act predicate loss (TOCTOU race)
 
 For every worker, cron, or batch that SELECTs candidate rows and then mutates them one by one (expire unpaid, release stock, void invoice, revoke entitlement, retry notification), read the per-row UPDATE/DELETE. The mutation's WHERE clause must re-state the full selection predicate, not only the status column. A predicate that is checked at SELECT and dropped at UPDATE is a time-of-check/time-of-use finding: a callback that lands between the two steps (deadline extension, payment arrival, manual hold) is silently ignored.
+**S2.1 — the identity a limit counts (2026-09-15).** A per-address limit that does not normalise
+the address counts `me@x`, `Me@x` and `me+1@x` as three people; a bot rotates the alias per try.
+Lower-case and strip the `+alias` before counting (keep the original for delivery). A per-IP
+limit behind a proxy counts every visitor as one — read the proxy's client header from a
+*trusted* proxy only, and note which throttles share the assumption. A per-product limit
+("two per customer" on a drop) that lives in the form is no limit at all; it is a `WHERE` in
+the placement, and it needs the identity it counts written down: account, verified phone, or
+card fingerprint.
+
 
 ## S3 — Catch-block failure posture (fail-open default)
 
@@ -189,6 +198,18 @@ Method, per money-or-goods flow:
 6. **Report the unattended set** as a table: state, what should have advanced it, what the operator would see, how they would ever find out, and what it costs per occurrence. An empty table is a real result; an absent table means the sweep was not run.
 
 **Grading.** Money or goods that can be lost with no signal: **CRITICAL**. An order that can sit forever but is recoverable once noticed: **HIGH**. A notice that exists only in a log, or in a table with no screen: **HIGH** — by the owner's rule that is not a notice. A notice on a screen nobody has a reason to open: **MEDIUM**.
+**S16.2 — the dispute row (from the chargeback guides, 2026-09-15).** A chargeback is work that
+arrives from outside with a deadline nobody in the shop set: the acquirer's window to answer
+(7–10 days is common), after which the money is gone by default. Three things the S16 table must
+show for it, whether or not a "chargeback path" exists in the code: **(a) the evidence is
+collected at placement, not when the dispute lands** — the consent text id, the address, the
+client address and user agent, the delivery scan, the download record; sixty days later none of
+it is obtainable; **(b) the response deadline is a ceiling with a notice**, on the desk, at
+T minus a few days, not an email to an unread inbox; **(c) a repeat disputer is a flag** on the
+next order from the same address or card fingerprint. A shop whose answer is "the acquirer writes
+and we answer by hand" has the ceiling in a person's memory - say so in the S22 row, as
+`UNVERIFIED`, never as handled.
+
 
 Report line format: `S16 — N flows × M non-terminal states; K silent deaths, J notices that reach no screen; unattended-state table in the report.`
 
@@ -386,6 +407,17 @@ Method:
 **Grading.** A requirement the launch host provably cannot meet, on a money or fulfilment path: **CRITICAL**. One it can meet only unreliably — a shared egress IP that may rotate: **HIGH**, because intermittent failures are the ones nobody reproduces and the shop keeps taking orders through them. An unknown on a money path: **HIGH** until answered. Satisfied but undocumented, so the next host move loses it: **MEDIUM**.
 
 **The rule this leaves behind:** when an audit hands the owner a task, it must also record *what makes the task possible* and check that. Otherwise the deploy checklist reaches 100% on a host where one of its boxes was never tickable.
+**S19.1 — the capacity probe.** A host-capability table says what the host *can* do; a load
+probe says what it does at the shop's expected peak. Before launch, and before any sale the shop
+announces: drive the catalogue, the cart and the checkout up to the vendor form at 1×, 2× and 3×
+the expected peak on **the launch host's shape** (a shared-cPanel PHP-FPM pool and a shared MySQL
+saturate long before the application does) with test-mode payment tokens only, tagged test data
+(`@test-load.invalid`) for cleanup, realistic think time between steps, and the database watched
+for lock waits and connection exhaustion while it runs — the application tier can look fine with
+the database on its knees. The report names the request rate at which the first error appeared,
+or says the probe was not run. A launch with no number here is a launch planned around a
+capacity nobody measured.
+
 
 Report line format: `S19 — R provider requirements extracted and cited; E environments crossed (launch + planned); satisfied/not-satisfied/unknown = A/B/C; table in the report.`
 
@@ -424,6 +456,31 @@ nobody will pay, for ever, with no screen saying so. **Enumerate every scheduled
 changes money, stock or a customer's promised state, detector or not, and demand the same three
 things of each: a liveness signal something reads, a screen, and a place in the fallback if one
 exists.** The question is not "what does this job find" but "what stops happening when it stops".
+
+**Studied against three public collections (2026-09-15) — `finsilabs/awesome-ecommerce-skills`
+(178 shop-ops guides), `jmr85/e2e-agent-skills` (Playwright conventions),
+`DominikCLK/eCommerce-tests` (a worked Playwright shop suite).** What they had that this skill
+did not: the *shape* of a rendering walk (page objects, session reuse, artefacts on failure only,
+selector priority — now `references/browser-walks.md`); the capacity probe as a pre-launch step
+(S19.1); business rates and CSP violation reports as detectors (S20.2); the dispute row's three
+facts (S16.2); the identity a limit counts (S2.1); audit rows that carry the state before as well
+as after (doctrine §8, cia). What this skill has that they do not: the sweeps themselves — a
+guide says "make handlers idempotent"; a sweep says *which* handler, *which* key, and what the
+operator sees when it is not. The two are not rivals; the guides say what good looks like, the
+sweeps find where it is not.
+**S20.2 — symptoms, not causes; business rates as detectors (2026-09-15).** The monitoring guides
+say the thing the roll call can miss: a dashboard can be green while revenue is down. Two
+detectors belong on the roll call that are not jobs at all: **the business rate** — orders per
+day against the last weeks, payment success rate, the mix of decline reasons (`insufficient
+funds` is the customer; `do not honor` in a cluster is the issuer or fraud) — with a floor that
+raises a notice when the shop goes quieter than it has ever been on that weekday; and **the
+symptom probe** — a scheduled synthetic walk to the vendor form from outside the host, so a
+3 a.m. outage is found by a robot and not by the morning's first customer. Alert on the
+symptom (success rate below a floor for longer than a blip), link the runbook, and start with
+three alerts, not thirty. And one signal that is a detector in disguise: **a Content-Security-
+Policy violation report from a payment page** is a Magecart alarm — route it to a person, not
+a log.
+
 
 Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
 
