@@ -561,6 +561,7 @@ is missing in a word they will recognise.**
 | Combinatorics | **state-space explosion**, answered by **pairwise / all-pairs / n-wise coverage** (Combinatorial Test Design) | The honest answer to *"all combinations"*: the full cross-product is infeasible and nobody runs it. See the depth rule below |
 | SRE | **actionable alerting** - the Google SRE rule that an alert which does not tell a human what to do is **noise**, not signal - plus **runbook coverage** and **observability gap** | Exactly why a log line and a digest mail fail this sweep. The industry already decided this and wrote it down |
 | Product / internal | **operator experience**, **internal-tooling debt**, **back-office UX** | The vocabulary for arguing the work is worth doing, to somebody who thinks admin screens do not need design |
+| Front-end / templating | **Kitchen Sink page** — one view rendering every template variation side by side on extreme mock data; **fixture-driven sandbox** — production templates fed a quarantined set of mock or seed records; **data-driven component harness** — real templates against a controlled matrix of states | The shape of a preview hub, and its three promises: **zero theming drift** (the real template and the real stylesheet stack, so nothing looks right in isolation and breaks in the live layout), **proactive state coverage** (text-wrap, overflow and grid collapse found before a customer's data finds them), **clean separation** (test data never in the inventory or customer tables). The third is why the fixtures are in-memory objects and not a demo table: quarantine without a third data store |
 | Reaching the states | **fault injection**, **state injection**, fixtures and mocks; **chaos engineering** at the infrastructure tier | How the untestable-looking states get rendered without waiting for a real outage |
 
 **Use these words in findings.** *"The refund-refused path has no error state and no story"* lands
@@ -1049,6 +1050,21 @@ for its happy path and none for the branch that broke; a render test costs a hun
 and would have named it the same commit. **Enumerate everything; fixture what is themed; render-test
 the rest; write down the remainder.** Counting unrendered branches as findings by default makes the
 list look like a backlog of defects, and it is not — it is a map with three colours.
+
+**The kitchen-sink half — extreme data, not only extreme states (owner, 2026-09-16).** The parameter
+diff finds *which* branches render; it says nothing about *what* they render on. A page proven on
+"Demo Ceramic Cup, NT$380, qty 2" has not been proven on a 60-character Japanese title, a 99-line
+basket, NT$9,999,999, an address of five lines, twelve parcels, an emoji in a note, an empty
+string where a name should be. Those are the kitchen-sink values, and they belong to the same
+fixtures: **a second persona on every story** — `?persona=extreme` — that swaps the demo values for
+the longest, largest, emptiest and most foreign ones the schema allows, rendered through the same
+page class and the same stylesheet. The same three dispositions apply, and the render test is
+where most extreme values land: it costs nothing to assert that a 99-line basket does not throw.
+**Keep the extremes in the fixture layer, not in a demo table.** A table is a third data store to
+migrate, seed and keep in step with the schema, it cannot produce the states the *code* decides
+(a gate state, a gateway redirect, a missing token), and the quarantine it promises the in-memory
+fixture already gives. Where the shop needs a database walk with dummy rows, that is the dev
+store and the demo persona cookie, which already exist.
 
 **When to run it.** Before theming, as a gate, alongside the twin ratchet — because every branch
 without a story becomes a theme defect a customer finds; and again whenever a render method
