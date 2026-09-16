@@ -495,6 +495,11 @@ mail, from a wrapper script or from the process that forked it, the liveness sig
 reads (column H) is not the job's own, and a dead wrapper reads as a job that never ran. The
 unambiguous shape is one signature: *worker gone, no worker-written marker* — that, and only
 that, means the worker died.
+**And know what the worker's marker looks like at each moment.** PHPUnit's `--log-junit` file
+is created *empty* when the run starts and written when it ends; a watcher that treated the
+file's existence as the end fired thirty seconds into a seven-hour run. The start of a marker
+and the end of a marker are different facts — an empty file, a closing tag — and the watcher
+names which one it is waiting for.
 
 
 Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
