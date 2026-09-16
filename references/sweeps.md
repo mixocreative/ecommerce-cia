@@ -481,6 +481,21 @@ three alerts, not thirty. And one signal that is a detector in disguise: **a Con
 Policy violation report from a payment page** is a Magecart alarm — route it to a person, not
 a log.
 
+**S20.3 — the receipt is written by the worker, never by its parent (2026-09-16).** A seven-hour
+test run was launched through a wrapper that, when the run returned, appended `EXIT=<code>` to the
+log — the line the handoff said to look for. The session that launched it was cleared; the
+wrapper died and the worker did not. The run finished green, the tool's own summary line was in
+the log, and `EXIT=` never came. The watcher polling for it reported *process gone, no exit line*
+on a passing run. **Any end-of-run marker written by a launcher, supervisor, cron wrapper, shell
+`&&`, CI step or parent shell is a watchdog that can die before the thing it watches. Read the
+marker the worker writes itself** — the test runner's summary, a JUnit or JSON result file, a
+row the job commits on its last line — **and treat the parent's marker as a bonus.** Apply the
+same test to every scheduled job in the roll call: if its "finished OK" line comes from cron's
+mail, from a wrapper script or from the process that forked it, the liveness signal something
+reads (column H) is not the job's own, and a dead wrapper reads as a job that never ran. The
+unambiguous shape is one signature: *worker gone, no worker-written marker* — that, and only
+that, means the worker died.
+
 
 Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
 
