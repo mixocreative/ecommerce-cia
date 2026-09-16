@@ -1,0 +1,4 @@
+#!/bin/sh
+# The RUNBOOK's gate, run: a doctrine change ships only if the newest scored fixture run is no
+# worse than the one before it. Install: cp tools/pre-push .git/hooks/pre-push (tools/install-hooks.sh).
+python tools/score.py --gate || exit 1

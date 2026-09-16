@@ -215,6 +215,7 @@ A detector with no coverage number, no liveness watcher or no order screen is a 
 6c. Detector roll call (S20): ✅ D detectors, all report coverage separately from findings, all watched for liveness, all escalate to an order screen; outermost check: <named>  (or ❌ B blind-capable / H unwatched / E unescalated — table in report). **Missing line = the shop's safety net was never checked for whether it is still looking.**
 7. Fixes applied autonomously this run: N (list path:line + one-line why)  |  Fixes escalated to owner: M (list + why the §0.8 boundary blocked them)
 8. Tier: Screen | Walk | Full — elapsed: N minutes (tier budget: 2–4 h | 1–2 d | open)
+9. Skill score: <the line `python tools/score.py` prints — this skill's own last scored fixture run, so the reader knows what the instrument found when it was last tested>
 ```
 
 Anything skipped → say why. Never claim "handoff ready" / "green-light" / "ready for launch" without listing what wasn't verified in this session. The report is honest by construction: a `⏭` is not a failure, but claiming green when a `⏭` exists IS a failure of the audit.
