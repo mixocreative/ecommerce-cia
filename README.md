@@ -72,6 +72,39 @@ What it does, in order: draws the org chart of your shop's code first (who is ca
 >
 > 它執行的步驟非常乾脆：先幫你的電商程式碼畫出一張組織架構圖（釐清誰是收銀員、倉管、店長跟會計），接著仔細體檢他們之間的每一條溝通管道，最後直接點名哪裡的溝通斷鏈了、發生在哪個檔案、第幾行、該怎麼修正。
 
+## Objections, answered｜三個常見質疑
+
+Three objections engineers raise when they first meet this skill, and the honest answer to each.
+
+**1. "You are mixing code review with testing. They are separate stages for a reason."**
+They stay separate here too: tests run in Step 1 and again in full in Step 3; review is a person or
+a review tool. This skill is a *third* thing — a **cross-boundary invariant audit** — for the defect
+that neither stage asks about: every function correct on its own, the failure in the channel
+between two of them. A setting nothing reads, a watchdog that reports "0 problems" whether or not
+it looked, a page that throws on every request while its guard test sits 4,500 tests deep in a
+seven-hour suite. Review checks style and logic; tests check behaviour; neither asks *"who reads
+this value?"* S21 ("the suite is an instrument too") is not a merge of the two — it audits the
+tests for passes that prove nothing. **This skill does not replace review or tests, and says so.**
+
+**2. "This is prompting dressed up in academic words."**
+Prompting does not produce a numbered sweep list with an answer key. The fixture harness
+(`tests/`) plants ten defects under a green suite and scores each cold run: hits, near-misses,
+misses, false positives. That number moves when the doctrine moves; a prompting habit cannot be
+scored. Where the objection is right is the vocabulary: `S5`, `System 3*`, `S22.8` are noise to a
+reader who has not seen the map, which is why §0.15 / §0.16 bind every user-facing message to plain
+words, and why this README says it in plain engineering terms first:
+*this is a checklist of ways a system fails between its parts, walked along a map of who
+controls what, with a test that proves the checklist still finds what it was written to find.*
+
+**3. "Day-to-day coding does not need a systems model. CI/CD and discipline are enough."**
+For a script, yes — which is why the audit has tiers, and Screen is two to four hours, not a
+week. The case for it is code written *with* an AI: a day of agentic development creates ten
+times the boundaries a person would, and "write a bit, test a bit" fails exactly at the
+boundaries. CI catches regressions; it does not catch a feature that was designed and never
+wired (S13), a control that reaches no decision (S5), or a detector that went blind (S20).
+Invariants written at the source are what make AI-generated code *checkable* — the auditor has
+something to hold the output to, instead of reading it and hoping.
+
 ## Watch it run｜直接看實機演示
 
 ![/cia demo](docs/demo.gif)
