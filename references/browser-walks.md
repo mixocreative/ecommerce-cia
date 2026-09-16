@@ -45,6 +45,23 @@ that session loads it. Never type a password in a walk body — and never a pass
 typed at all where the project's rules reserve credentials for a person; the setup step is where
 the documented dev credential lives, once.
 
+
+## 4a. Seed and state, borrowed from the Cypress Real World App (2026-09-17)
+
+- **Reseed between walks, not between sessions.** The RWA reseeds its database before every
+  end-to-end test; a walk that inherits the previous walk's orders asserts on a state nobody
+  chose. Our equivalent is the preview fixtures for rendering walks and the documented reset +
+  seed flow for route walks; a walk names which one it stands on.
+- **Set up by API, assert by UI.** Log in and create the starting state through the API or a
+  seed (`cy.session` + programmatic login in the RWA), then open the browser only for the step
+  under test. A walk that clicks through registration to test the order page is testing
+  registration five hundred times.
+- **API walks and UI walks are separate directories** (`tests/api`, `tests/ui`) with separate
+  budgets; an API walk is seconds and runs on every commit, a UI walk is minutes and runs before
+  a release.
+- **An empty seed is a mode**, not an accident (`start:empty`): the day-one shop with no orders,
+  no products and no customers is a state every list page must render (S22 step 4).
+
 ## 5. Evidence on failure, silence on success
 
 Trace, video and screenshot **retained on failure only**. A green walk leaves a line; a red one
