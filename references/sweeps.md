@@ -127,6 +127,26 @@ the idempotency key, compensate, or route to a human queue — S16; never an aut
 money). A row with an empty detection or surface cell is the finding, whatever the recovery says.
 The table goes in the report; the six perturbations of S23 feed its rows for every inbound arrival.
 
+**S12.2 — the failure shapes a cache and a chain of calls have names for (2026-09-17, from the
+Taobao architecture-evolution notes).** Wherever the map shows a cache in front of the catalogue,
+the cart or the session store, ask for the four by name — **penetration** (a product that never
+existed, asked for forever, every miss a database read), **breakdown** (one hot product expiring
+while a thousand requests wait on it), **avalanche** (many keys expiring together because a deploy
+set them together), **hotspot** (one product so hot that one node carries the shop) — and for each,
+what the shop does: a negative entry, a single-flight rebuild, staggered TTLs, a local tier. A
+cache with none of these is a database with a delay in front of it. Wherever the map shows a chain
+of calls — the checkout calling the gateway calling the bank — ask two things the retry-storm text
+assumes and never states: **each hop's timeout is shorter than its caller's** (the reverse means
+the checkout gives up first, the gateway keeps charging, and the money paths meet §8h), and
+**concurrency toward a slow dependency is bounded** (a bulkhead), so one slow gateway cannot hold
+every php worker and take the catalogue down with it. **And the degradation table, which is the
+shop's own version of this sweep**: one row per dependency — gateway, carrier, search, mail, the
+cache, the image store — *it is down → what the customer sees → what the operator sees → what
+still sells*. "The gateway is down → the Pay button explains and the order waits → a red panel
+on the order list → the catalogue and the basket" is a design; "→ a 500 → nothing → nothing" is
+a finding graded on the money it loses. A row nobody can fill is a dependency nobody has thought
+about failing.
+
 ## S13 — Orphan capability / designed-but-unbuilt
 
 Three greps, one table. (a) For every class under the admin, control, settings or catalogue roots (payment-method matrix, carrier catalogue, shipping chains, fee tables), grep for a caller outside its own file and its tests; a control class with no page, controller or module that renders it is an orphan. (b) For every table column and enum added by a migration (`shipping_method`, `pickup_store_*`, `cod_*`, fee columns), grep for a writer in runtime code — checkout, admin, worker — not only a test; a column nobody writes is scaffolding, and scaffolding that a later reader treats as data is a finding. **Grep the identifier alone and read every hit — never the identifier plus an SQL keyword on the same line.** A column written by a multi-line `UPDATE … SET` whose `SET` sits six lines above the column name is invisible to `grep 'col.*SET'`, and most non-trivial SQL is multi-line. One pass reported a live column as having no writer anywhere and was one sentence from filing it as an orphan with five consumers treating it as scaffolding. **A false orphan costs exactly what a missed one does**, because it sends the next session to rebuild something that already works — so confirm an absence by reading the hits, not by trusting a narrower pattern that returned none. (c) For every design document, master plan or handoff note under `docs/` that names a component (a checkout method picker, a carrier admin page, an eligibility engine), check that the component exists on disk **or** that the gap register carries one row naming it as unbuilt with its blocker (vendor account family, 測標 approval, owner decision). Report each orphan with its three states — designed / coded / wired — and the owner-side blocker if any. A capability that is designed and coded but not wired, and whose absence the register does not record, is the most expensive shape of commerce gap: every document says shipping is handled and the customer has no way to choose how.
@@ -421,6 +441,20 @@ capacity nobody measured.
 
 Report line format: `S19 — R provider requirements extracted and cited; E environments crossed (launch + planned); satisfied/not-satisfied/unknown = A/B/C; table in the report.`
 
+**S19.2 — the next-stage ladder (2026-09-17).** The Taobao notes read as fourteen stages, each
+the answer to the previous stage's ceiling: one box → web and database apart → a cache → a
+distributed cache → read replicas → **stateless application with a shared session store** →
+load balancers and CDN → the store split by domain → services → discovery and a config centre
+→ queues → containers → orchestration. A shop on one box is at stage one, and that is the right
+stage for its traffic; the sweep is not to recommend the ladder — that is vanity engineering —
+but to **audit stage N against what stage N+1 will break.** Every design that only works because
+there is one php-fpm, one disk, one clock or one box is a finding *now* if the launch plan names
+a move: the checkout's double-submit guard as a file-session lock (§8ax — a second worker or a
+Redis session store and two orders can post), a stock decrement that is a read-then-write on one
+connection, uploads on the local disk, the settlement cron on one host, an outbound IP the
+carrier allowlisted that the next host will not have (§8ab). Write each with the stage that breaks
+it and the plan's date for that stage; a finding with no such date is post-launch and says so.
+
 ## S20 — Liveness of the safety net itself. ZERO FINDINGS AND ZERO LOOKING ARE THE SAME REPORT UNLESS SOMEBODY DESIGNED THEM APART
 
 The First Law — *"Nothing should die silently!!"* — applied to the watchdogs themselves.
@@ -501,6 +535,16 @@ file's existence as the end fired thirty seconds into a seven-hour run. The star
 and the end of a marker are different facts — an empty file, a closing tag — and the watcher
 names which one it is waiting for.
 
+
+**S20.4 — liveness is not readiness (2026-09-17).** Orchestrators separate two probes for a
+reason, and a shop's safety net should too: **liveness** — the process is running and its
+heartbeat is fresh — and **readiness** — it may take work, because what it depends on is
+reachable. A worker that is alive and whose gateway is unreachable is *live and not ready*: the
+right response is to stop taking that work and say so, not to restart it and not to count it
+green. The maintenance door is the application's own readiness switch — closed on purpose — and a
+health page that says "up" while the door is closed, or "up" while the database is gone, is a
+liveness answer to a readiness question. For every detector and worker on the roll call, ask which
+of the two its signal is, and whether anything asks the other.
 
 Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
 
