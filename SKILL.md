@@ -293,7 +293,7 @@ Index — the sweep, what it hunts, and the VSM channel it walks:
 | **S19** Host capability vs provider requirement | environment constraint never crossed | System 4 requirement × launch host |
 | **S20** Liveness of the safety net | blind instrument / dead watchdog | System 3\* itself |
 | **S21** The suite is an instrument too | vacuous or too-late proof, runner contamination, secrets in diffs, a codec proven only against itself | System 3\* itself |
-| **S22** Surface completeness: step × outcome × audience (+ S22.1–S22.7) | unrendered / undesigned surface; caught ≠ handled | System 1 → operator / customer screen |
+| **S22** Surface completeness: step × outcome × audience (+ S22.1–S22.8; S22.8 = the render-parameter diff) | unrendered / undesigned surface; caught ≠ handled | System 1 → operator / customer screen |
 | **S23** Sequence and event-flow: every external arrival × duplicate / out-of-order / late / early / missing / malformed, interleaving pairs | order-dependent outcome; unhandled arrival | System 4 → System 1 in time, System 2 ordering |
 | **S24** Contract tests at every boundary: classes a–e per side, fixtures cited to the authority and version-pinned | self-agreeing fake; boundary with no contract test | System 3\* binding System 1 to System 4's actual contract |
 

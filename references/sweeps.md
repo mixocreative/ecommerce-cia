@@ -973,9 +973,79 @@ is this, and if none, what does the domain require that the established one coul
 answer of *"it just grew that way"* is a finding, and it is the cheapest kind to fix while the
 screens are still being built.
 
+### S22.8 — The parameter diff: a page's render signature is its story list, and the fixture call sites are the stories written (2026-09-16)
+
+**How this was found and lost before it was found again — both halves are the lesson.** The Walk
+run three days earlier *had* found part of it: *"S22 UNVERIFIED ×9 — the customer's order page in
+eight reversal / refusal states + account-required — open — the next fixture batch."* Then the
+plan row for that sweep was ticked with those words written inside the tick, and the batch never
+became a row of its own. **Closure rule, added here because step 5's "treat UNVERIFIED as a task"
+never said where the task must live: an UNVERIFIED cell lands as a row in the plan the project
+resumes from — not in the audit report, not inside a ticked row — before the sweep's own row may
+be ticked. A ticked row carrying open cells is the vacuous pass of planning (S8).** The other half
+was never in scope at all: the matrix is step × *outcome*, so it holds the failure states of money
+steps and has no cell for the *ideal* state of an ordinary page — the account page's order list,
+the cart's saved addresses, the catalogue's category tree, a coupon that was accepted. No failure,
+no cell, never looked at. That is what the diff below covers and the matrix cannot. Then the owner
+asked whether *every combination of the checkout page* could be previewed, and the answer was no: the checkout review
+had three fixtures and the account gate — three identity states and a disabled Pay, the largest
+block on the page — had never been rendered by any of them. The order page's `render()` takes
+**seventeen** parameters; the previews pass **four**. The account page's signed-in previews pass
+empty lists for orders, downloads and addresses, so the sections every customer opens the page
+for had never been drawn. The reason the guard-grep missed it: a guard on a *parameter* that
+every caller leaves at its default is invisible to a grep that reads the page alone. **You have
+to read the page and the fixtures together.**
+
+**The method, mechanical, and it is a diff:**
+
+1. For every page or component class the preview hub renders, list the **render method's
+   parameters** — especially the optional, nullable and defaulted ones, because a default is a
+   branch nobody has to choose — and every `if` / `match` / early return inside it that adds,
+   swaps or removes a section.
+2. For every fixture that calls it, list the **arguments actually passed**, non-default only.
+3. **The set difference is the unrendered list**, page by page, and the count goes in the
+   report as *parameters P, passed non-default by any fixture Q*. Seventeen and four is a
+   finding; "render guards found R, with a fixture X" is not, because it lets a page with a
+   single fixture count every guard as covered.
+
+**Four shapes found the same morning that a page-level or guard-level pass cannot see:**
+
+- **The mislabelled story.** A fixture whose label promises one state and whose HTML shows
+  another. `Order — pending bank transfer` passed no transfer panel and no redirect, so it rendered
+  the *pay-unavailable* branch — a disabled button and an apology — and the ratchet, the
+  reflection check and the eye all passed it. A twin fails by drawing its own markup; a mislabelled
+  story fails by drawing the wrong real markup. **Assert per scenario that the rendered HTML
+  carries the marker of the state the label names** — a class, a heading, a copy key — never
+  only that it rendered.
+- **The hub's own pointers.** The theming hub is the operator's map of what can be themed. One row
+  linked to a scenario with no fixture (the hub said *Download — active*, the page said *No
+  fixture*); seven rows named template files that do not exist. A shape test — five columns per
+  row — passed. **The map is a control (S5): every link resolves to a fixture, every file named
+  exists, or the row is a dead control in the audit instrument itself.** Three lines of
+  `file_exists` and `catalog::has()`.
+- **No class, no story.** Four templates (redeem, free download, find order, stock notification)
+  build their `<main>` inline in the template file, each with form / success / error states.
+  They cannot be fixtured at all, so every state on them is UNVERIFIED **by construction**, and
+  the fix is extraction to a page class, not a fixture. Grade as S22 does — MEDIUM until
+  themed, then HIGH the day a theme lands on markup nobody previewed.
+- **One conversation, two faces, neither drawn.** The customer ↔ shop message thread on an order
+  renders on the customer's order page and on the operator's order page; both fixtures left it
+  null. The S22 audience column applies to *conversations* too: a thread is a surface with two
+  audiences, and a fixture for one side is not a fixture for the other.
+
+**When to run it.** Before theming, as a gate, alongside the twin ratchet — because every branch
+without a story becomes a theme defect a customer finds; and again whenever a render method
+gains a parameter, because a new optional parameter is a new unwritten story by definition. The
+cheapest ratchet: a test that, per page class, counts parameters passed non-default across all
+fixtures and refuses to go down.
+
+**Words for the finding** (S22.1 applies): *"the account gate has no story"*, *"the order page
+renders four of seventeen props"*, *"the pending-transfer story is mislabelled"*, *"the redeem
+page has no component, so no story is possible"*.
+
 ### S22 report line
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); per page class, render parameters P / passed non-default by any fixture Q (S22.8), mislabelled stories M, hub rows with a dead pointer D, templates with no page class N; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
 ## S23 — Sequence and event-flow. A FLOW IS A SEQUENCE OF ARRIVALS, AND EVERY ARRIVAL CAN COME TWICE, LATE, EARLY, OUT OF ORDER OR NEVER
 
