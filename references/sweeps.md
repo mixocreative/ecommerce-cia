@@ -202,6 +202,22 @@ Method, per money-or-goods flow (checkout → payment → fulfilment → collect
 
 Report line format: `S15 — walked N flows × M states across customer/admin/logistics/gateway; four-corner table in the report; K disagreements, J unanswerable states, R reachability findings; E2E matrix: W written / U unwritten.`
 
+**S15.3 — inventory has three verbs, and each has an event (2026-09-17, from Sylius and Medusa).**
+Two mature shops agree on the shape and neither calls it "decrement". Sylius's order workflow
+fires `HoldInventory` when the order is placed, `SellOrderInventory` when it is paid, `GiveBackInventory`
+when it is cancelled; Medusa creates a *reservation item* at placement, subtracts reserved from
+stocked **at fulfilment** (not at payment), deletes the reservation then, and on a return
+increments stock again *unless the item is dismissed or damaged*. So the four-corner walk asks, per
+SKU: **hold** — which event, and is it idempotent on a duplicate placement; **sell / subtract** —
+which event, and does a shop that subtracts at payment then ship from a count that no longer
+matches the shelf; **give back** — on cancel, on expiry, on a refused payment, and is the reversal
+keyed to the same reservation so it cannot run twice; **return** — restocked or not, decided by a
+person, and the "damaged" answer recorded. Two more from the same sources: Medusa gates every
+verb on a per-variant `manage_inventory` flag, so ask which SKUs opt out and whether their walk
+still ends somewhere (S16); Saleor names `OVERSOLD_ITEMS` as an *order event with a surface*, so
+the state where the count went negative anyway is a row, not an exception. Our own invariants
+9, 11 and 12 say what must hold; this table says which event proves each.
+
 ## S16 — Terminal-state accountability. EVERY ORDER AND EVERY PARCEL MUST END SOMEWHERE A PERSON CAN ACCOUNT FOR
 
 Where S15 asks whether the four corners *agree*, this asks whether the object ever *ends*, and whether anybody is told when it ends badly. The owner's instruction, which is really an audit rule: *"No delivery or transaction should allow go dead quietly with loose ends, all ends must be tied and traceable"*, and *"anything system cannot handle must hv badge or flag in admin panel of order management page to let admin handle and notice."*
@@ -287,6 +303,38 @@ gets a **"tell them" checkbox, defaulted on, with the unchecking recorded — wh
 customer who was never told must be distinguishable from one somebody decided not to tell. The
 checkbox writes *intent*; the sending stays with whatever durable sweep already sends, because a
 send-inside-the-click makes the customer's message depend on the operator's browser staying open.
+
+**S16.3 — the aggregate is resolved, never written (2026-09-17, from Sylius).** Sylius keeps
+five machines on one order — the order, its checkout, its payment aggregate, its shipping
+aggregate, and one per payment and per shipment — and the two aggregates are *resolved* by
+listeners (`ResolveOrderPaymentStateListener`, `ResolveOrderShippingStateListener`) from the
+child rows every time a child moves: `partially_paid`, `partially_shipped`, `partially_refunded`
+are computed, never set by a form. That is the rule this shop already lives by for delivery
+("derived, not stored") stated for every parent status: **a status that summarises children is a
+function of the children, recomputed on every child transition, and any code path that writes it
+directly is a finding** — because the first time a child moves without the parent following, the
+customer and the operator read two different orders (S15). The same listener list also reverses
+what placement did: `DecrementPromotionUsages` on cancel undoes `IncrementPromotionUsages` on
+place, and `SetImmutableNames` snapshots the product's name at placement. Ask of every counter
+placement increments — coupon uses, stock, loyalty points — which event decrements it, and of
+every fact the receipt prints — name, variant label, price — whether it is the order's copy or a
+live join (invariant 17).
+
+**S16.4 — every transition names its preconditions, and every precondition has a sentence the
+person sees (2026-09-17, from Vendure).** Vendure's default order process refuses transitions with
+named reasons, and the list is a checklist for any shop: *to payment* — not when the basket is
+empty, not without a customer, not without a shipping method, not with insufficient stock, not
+with a product that became unavailable; *to shipped / delivered* — not without authorised (or
+settled) payments, only when some or all items are shipped / delivered; *to cancelled* from a
+shipped state — only when every fulfilment is cancelled. Two things the list teaches. First, the
+guard belongs on the **transition**, not on the button: a guard on the button is S17 (a control
+whose enforcement point is outside the system) the moment a second client exists. Second, every
+refusal has a message key, which is S22 in one line: a guard with no sentence is a refusal the
+customer meets as a page that does nothing. Vendure also has what most shops lack: **modification
+after payment as a state** (`Modifying` → `ArrangingAdditionalPayment`), an `OrderModification`
+row with the lines changed, the surcharges, the `priceChange`, and a link to *either* a payment
+or a refund. Ask whether this shop can change a paid order at all; if it can, whether the change
+is a row with a money link or an edit nobody can account for (S16 step 5, §8h).
 
 ## S17 — The hosted surface: every choice the buyer makes on a page you do not render. A SHOP SETTING THAT CANNOT REACH THE GATEWAY'S OWN PAGE IS A LABEL, NOT A CONTROL
 
@@ -1170,6 +1218,20 @@ the sweep did not run on it; report `UNVERIFIED`, never "swept".
 ### S23 report line
 
 Report line format: `S23 — F flows diagrammed (of F' on the map); A external arrivals × 6 perturbations = N cells; handled H, UNHANDLED U, UNVERIFIED V; interleaving pairs P, order-independent Q, order-dependent D (each a finding)`.
+
+**S23.2 — the arrival vocabulary a payment boundary needs (2026-09-17, from Saleor).** Saleor's
+transaction events are one grid: four actions (authorize, charge, refund, cancel) × four moments
+(**request**, **success**, **failure**, **action required**) plus three that arrive after success
+and reverse it — `authorization_adjustment`, `charge_back`, `refund_reverse` — and an `info`
+row. Its order charge status admits `overcharged`, its order status admits `expired`, and every
+order records its *origin* (checkout, draft, reissue, bulk) and whether it was
+`placed_automatically_from_paid_checkout`. Hold the S23 grid to that vocabulary: for every action
+the shop can take against a gateway, the **request** is an arrival too (it can be sent twice), a
+**failure** is not a **cancel**, an **action-required** is a state the customer must be shown
+(S22), and a **reversal after success** — the chargeback, the refund the bank reversed — is an
+arrival the schema must be able to hold without pretending the earlier success did not happen.
+`overcharged` is the honest name for what a duplicate capture produces; a schema that cannot say
+it will say `paid`.
 
 ## S24 — Contract tests at every boundary. A FAKE THAT AGREES WITH THE PARSER PROVES THE PARSER AGREES WITH ITSELF
 
