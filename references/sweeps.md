@@ -1033,6 +1033,23 @@ to read the page and the fixtures together.**
   null. The S22 audience column applies to *conversations* too: a thread is a surface with two
   audiences, and a fixture for one side is not a fixture for the other.
 
+**Disposition, not score — the owner's correction the same day.** The sweep's deliverable is the
+enumerated list with a decision per branch, and a grade only where the owner asks for one or the
+branch sits on a money path. Three dispositions, and every branch gets exactly one:
+
+| Disposition | When | What exists afterwards |
+|---|---|---|
+| **story** | somebody will theme or design against it | a hub fixture, labelled, marker-asserted |
+| **render test** | nobody themes it, but it must not throw and must draw the state it claims | a fast-suite test that renders the branch once with the non-default arguments and asserts its marker — no hub row, no fixture data beyond the call |
+| **none** | the branch cannot occur, or its output is a single line the base styles already cover | the reason, written next to the branch, so the next reader does not re-derive it |
+
+The point of the second row is the owner's: *make sure nothing is broken for those who do not
+need a fixture preview*. A page that threw a `TypeError` on every request for days had a fixture
+for its happy path and none for the branch that broke; a render test costs a hundred milliseconds
+and would have named it the same commit. **Enumerate everything; fixture what is themed; render-test
+the rest; write down the remainder.** Counting unrendered branches as findings by default makes the
+list look like a backlog of defects, and it is not — it is a map with three colours.
+
 **When to run it.** Before theming, as a gate, alongside the twin ratchet — because every branch
 without a story becomes a theme defect a customer finds; and again whenever a render method
 gains a parameter, because a new optional parameter is a new unwritten story by definition. The
@@ -1045,7 +1062,7 @@ page has no component, so no story is possible"*.
 
 ### S22 report line
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); per page class, render parameters P / passed non-default by any fixture Q (S22.8), mislabelled stories M, hub rows with a dead pointer D, templates with no page class N; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); per page class, render parameters P / passed non-default by any fixture Q (S22.8), branches dispositioned story S / render-test R / none N with reasons, mislabelled stories M, hub rows with a dead pointer D, templates with no page class N; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
 ## S23 — Sequence and event-flow. A FLOW IS A SEQUENCE OF ARRIVALS, AND EVERY ARRIVAL CAN COME TWICE, LATE, EARLY, OUT OF ORDER OR NEVER
 
