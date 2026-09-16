@@ -1143,21 +1143,35 @@ contract, and where did that test's fixture come from?**
 2. **Classify the tests on each boundary**, one letter per side:
    - **(a)** none;
    - **(b)** unit test with a hand-written fixture derived from our own parser or builder — the
-     self-agreeing codec, S21; it is not a contract test;
+     self-agreeing codec, S21; it is not a contract test for any external compatibility claim;
    - **(c)** fixture transcribed field by field from the authority document, with the citation
      (manual, version, page or section) in the test;
    - **(d)** a recorded real body from the sandbox or production, redacted, dated, with the provider
      version it came from;
    - **(e)** a live probe against the sandbox, run in this session, its output in the report.
    Only **c, d, e** are contract tests. Every money boundary needs at least **c** inbound (the
-   handler fed a real-shaped signed body, never the local method called directly — S15) and at
-   least **c** outbound (the request builder asserted against the vendor's field table: required
-   fields, lengths, character set, encoding, signature, amount format).
-3. **Consumer-driven on internal boundaries.** The consumer's test states the fields it reads; the
+    handler fed a real-shaped signed body, never the local method called directly — S15) and at
+    least **c** outbound (the request builder asserted against the vendor's field table: required
+    fields, lengths, character set, encoding, signature, amount format).
+3. **For import/export, protocol and ecosystem compatibility, build the producer × consumer
+   matrix.** Any shop that claims to open, save, sync, import, export, embed, upload, receive or
+   send a format or protocol must name the independent producers and consumers it is compatible
+   with: payment gateways, logistics providers, tax/invoice providers, marketplace feeds,
+   product-feed consumers, POS/ERP systems, spreadsheet apps, webhook senders, browser/mobile OS
+   versions, SDK versions, plugin hosts, hardware firmware, or partner services. A round-trip
+   through our own writer and reader is class **b** for that claim, even when it is byte-perfect;
+   it proves only that our two halves share one assumption. At Screen tier, every externally-
+   claimed commerce boundary needs at least one **c/d/e** fixture from an independent producer or
+   consumer, and the report names the omitted producers as `UNVERIFIED`. If no independent fixture
+   exists, the product either narrows the claim ("our-exported files only", "provider X only",
+   "sandbox shape only") or raises a finding for an unsupported compatibility promise. The
+   Mixomesh failure class is general: a third-party producer used a valid wrapper shape our
+   self-round-trip never emitted, so the suite proved only the dialect we wrote.
+4. **Consumer-driven on internal boundaries.** The consumer's test states the fields it reads; the
    producer's test asserts it emits them under those names; a rename breaks both (S9). A page that
    reads `resolution_note` from an array a service builds has a contract with that service whether
    or not anyone wrote it down.
-4. **Version-pin every fixture.** A fixture that does not say which contract version it was
+5. **Version-pin every fixture.** A fixture that does not say which contract version it was
    transcribed from cannot be re-verified when the vendor revs (doctrine §1.3), and is an
    `UNVERIFIED` cell in S18's matrix from the day the vendor publishes a newer manual.
 
@@ -1167,4 +1181,4 @@ LOW, and the S18 cell it supports drops to `UNVERIFIED`.
 
 ### S24 report line
 
-Report line format: `S24 — B boundaries (I inbound, O outbound, N internal); per boundary the class a–e per side (table); money boundaries below c: M (each HIGH); internal at a on a state-writing path: K; fixtures without version or citation: F`.
+Report line format: `S24 — B boundaries (I inbound, O outbound, N internal); per boundary the class a–e per side (table); external producer × consumer matrices: P, independent fixtures C/D/E, UNVERIFIED producers U; money boundaries below c: M (each HIGH); internal at a on a state-writing path: K; fixtures without version or citation: F`.
