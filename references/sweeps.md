@@ -1189,6 +1189,15 @@ page has no component, so no story is possible"*.
 
 Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); per page class, render parameters P / passed non-default by any fixture Q (S22.8), branches dispositioned story S / render-test R / none N with reasons, mislabelled stories M, hub rows with a dead pointer D, templates with no page class N; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
 
+*Step 6, from a six-day blind spot (2026-09-18).* **Assert the linked assets, not only the page.**
+An admin panel served every page with a 200 and every stylesheet with a 403 for six days: the
+root of the install had moved and every derived asset URL landed under a directory the web server
+denies on purpose. Every test and every headless walk read the page's markup and status; none
+fetched what the markup linked. A rendering walk on a surface people use ends by fetching every
+`<link rel="stylesheet">` and `<script src>` the page emits and holding each to a 200 — the page
+is not rendered until what it links arrives. Cheap to add (one loop over the HTML), and the only
+check that sees a page that is technically served and practically unusable.
+
 ## S23 — Sequence and event-flow. A FLOW IS A SEQUENCE OF ARRIVALS, AND EVERY ARRIVAL CAN COME TWICE, LATE, EARLY, OUT OF ORDER OR NEVER
 
 S15 walks one object through four corners and asks whether they agree *at each state*. This sweep
