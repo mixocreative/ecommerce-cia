@@ -1198,6 +1198,15 @@ fetched what the markup linked. A rendering walk on a surface people use ends by
 is not rendered until what it links arrives. Cheap to add (one loop over the HTML), and the only
 check that sees a page that is technically served and practically unusable.
 
+*Step 7, from the same morning (2026-09-18).* **Run the surface, then read it.** S22's grid is
+filled from source: which class renders which state. It was filled correctly for a shop whose
+every preview loaded the wrong stylesheets, whose admin had no stylesheet at all, and whose
+invoice desk answered 500 on the data the operator sees — three findings, zero of them visible
+to reading, all three visible to one logged-in script that fetches every listed surface and
+what it links (SKILL.md, the runtime walk, now with a receipt line in the report). A cell is
+`OK` in this grid only after the walk fetched it; before that it is `RENDERS-IN-SOURCE`, which
+is the honest name for what reading proves.
+
 ## S23 — Sequence and event-flow. A FLOW IS A SEQUENCE OF ARRIVALS, AND EVERY ARRIVAL CAN COME TWICE, LATE, EARLY, OUT OF ORDER OR NEVER
 
 S15 walks one object through four corners and asks whether they agree *at each state*. This sweep
