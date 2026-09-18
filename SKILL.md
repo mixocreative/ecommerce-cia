@@ -185,6 +185,29 @@ A cell, flow or site the tier excluded is reported as `UNVERIFIED`, never omitte
 - Focus ring visible on interactive controls.
 - Every form has labels (a11y).
 
+**What the walk fetches, beyond the page (2026-09-18, from three misses in one morning).** A page
+that answers 200 with the right markup is not rendered until what it links arrives, so for every
+route walked: **(a)** fetch every `<link rel="stylesheet">` and `<script src>` the markup emits and
+hold each to a 200 — an admin served 200 pages and 403 stylesheets for six days because the
+install's root had moved and every derived asset URL landed under a denied directory; **(b)** fetch
+every `<img src>` and hold it to a 200 and a non-zero natural size; **(c)** read the application's
+error log before and after the walk and treat any growth as a finding with the route that caused
+it — two bookkeeping pages answered 500 on demo data because a dev seeder wrote a string no enum
+had, and no test runs the seeder; **(d)** where the project has a preview / theming / storybook
+surface, walk **every row of it**, logged in, and diff the stylesheet list the preview loads against
+the list the real template loads — 95 previews rendered the right page class inside the wrong
+shell, on the base stylesheet alone, and the parameter diff was green because the class was right.
+**(e)** A seeder or fixture loader that writes an enum-backed column is a writer under test (S21):
+the operator sees the seeder's rows, the suite sees its own. Ten minutes of script; none of it is
+visible to reading the source.
+
+**The walk is not optional at Screen tier.** Three defects above survived two Screen runs that
+enumerated every sweep from source and never made a request; the reports said "Screen" and no
+line said the walk was skipped. So the report carries a **runtime-walk receipt** (report line
+below): routes fetched, assets fetched, error-log delta, preview rows walked — or `SKIPPED:
+<reason>`, which downgrades the run to a code review in the first line. A Screen that never made a
+request is a code review.
+
 **Step 6 — Sandbox gateway walk (10–30 min). THE AGENT RUNS THIS.** One checkout per gateway using the project's sandbox credentials (never ask the owner for creds — file discovered in 0.5; if the `.env` lacks them, copy the documented block in yourself per §0.8). Drive the checkout through the browser automation from Step 5, or through the project's headless walk scripts if it ships them (e.g. `tools/dev/walk-*-headless.php`). Test card numbers come from the vendor's public sandbox page, read fresh each run — never stored in the repo. For every gateway: place one order, verify callback lands (poll the notification endpoint / inbox table, don't wait for a human to click), order flips `pending → paid`, digital goods grant entitlement + issue download token, physical goods flip to `processing`, refund path fires (if the sandbox supports refund; some don't — that's expected, not a bug). Capture DB rows / callback logs / screenshots as artefacts referenced from Step 7 report.
 
 **Step 6b — Host-capability reconciliation (10 min). THE AGENT PRODUCES THE TABLE.** Run S19: every precondition the gateways and carriers impose on the *host* (fixed or allowlisted egress IP, inbound webhook reachability, TLS floor, cron granularity, background processes, persistent disk, clock window, timezone, non-443 outbound), cited to its manual page, crossed against **the host the shop actually launches on and its plan** — and against any host it is planning to move to, since a requirement satisfied on one and not the other is a migration that silently breaks fulfilment.
@@ -216,6 +239,7 @@ A detector with no coverage number, no liveness watcher or no order screen is a 
 7. Fixes applied autonomously this run: N (list path:line + one-line why)  |  Fixes escalated to owner: M (list + why the §0.8 boundary blocked them)
 8. Tier: Screen | Walk | Full — elapsed: N minutes (tier budget: 2–4 h | 1–2 d | open)
 9. Skill score: <the line `python tools/score.py` prints — this skill's own last scored fixture run, so the reader knows what the instrument found when it was last tested>
+10. Runtime walk receipt: <routes fetched N / assets fetched M, all 200 | which not> · error-log delta: <0 lines | the lines> · preview rows walked: <N of N | none exists> — or `SKIPPED: <reason>` (then the first line says code review, not Screen)
 ```
 
 Anything skipped → say why. Never claim "handoff ready" / "green-light" / "ready for launch" without listing what wasn't verified in this session. The report is honest by construction: a `⏭` is not a failure, but claiming green when a `⏭` exists IS a failure of the audit.
