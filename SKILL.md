@@ -200,6 +200,17 @@ shell, on the base stylesheet alone, and the parameter diff was green because th
 **(e)** A seeder or fixture loader that writes an enum-backed column is a writer under test (S21):
 the operator sees the seeder's rows, the suite sees its own. Ten minutes of script; none of it is
 visible to reading the source.
+**(f)** Status and markup do not prove layout. For every route walked, measure the page wrapper
+— `getBoundingClientRect()` of `<main>` (or whatever the project's shell is) against
+`documentElement.clientWidth` — and the first content child's left and right gutters against each
+other; unequal gutters or a wrapper narrower than the viewport is a finding. Two corollaries: a
+change to a shared wrapper or base rule is probed on the pages that **combine** it with other
+layout classes, never on the pages that use it alone; and a screenshot is not a measurement —
+capture scaling and device-pixel ratio can paint a stripe past the scrollbar on every page, so read
+the numbers. Every shop page — basket, checkout review, receipt, account, the legal pages — once sat pinned to the left edge in a fixed-width box for eleven days
+with every route 200, every asset 200 and the error log silent, because a shared wrapper went
+`width:100%; margin:0` while each page still stacked a framework container and an inline
+`max-width` on it, and the commit had probed the two pages that carried neither.
 
 **The walk is not optional at Screen tier.** Three defects above survived two Screen runs that
 enumerated every sweep from source and never made a request; the reports said "Screen" and no
