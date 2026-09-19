@@ -6,7 +6,7 @@ The skill's own S8 applies to the skill: a doctrine edit nobody has run is a wri
 
 ```
 fixture-shop/              a PHP shop with 11 planted defects and 2 correct controls
-fixture-shop/tests/EXPECTED.md   the answer key: sweep, path:line, minimum grade
+EXPECTED-fixture-shop.md      the answer key: sweep, path:line, minimum grade — kept OUTSIDE the fixture on purpose
 RUNS.md                    one row per run (append; never rewrite history)
 ```
 
@@ -15,7 +15,7 @@ RUNS.md                    one row per run (append; never rewrite history)
 1. **Fresh session.** Open a new Claude Code (or Codex) session with `tests/fixture-shop` as the working directory. No project memory, no CLAUDE.md — the fixture must be audited cold, the way a new shop would be.
 2. **Trigger.** Say exactly: `pre-launch audit, Screen tier`. Two things are under test before any sweep runs: the §0.3a gate must PASS on criterion 1 (`src/Gateway/`) and the discovery block must say so; and the run must declare its tier.
 3. **Let it run.** Do not answer questions the skill should answer itself (§0.8). If it asks the owner for something the fixture contains, that is a finding against the skill — record it.
-4. **Score against `EXPECTED.md`:**
+4. **Score against `EXPECTED-fixture-shop.md`** (the scorer reads it; the auditor never does — it sits beside this file, outside the fixture, because two cold runs on 2026-09-19 leaked it through the S6 deferred-work grep the doctrine itself prescribes over `tests/`; an answer key inside the audited tree is a key the auditor will hit)**:**
    - **Hit** — the planted row is reported under the right sweep, with a `path:line` inside the cited range and a grade at or above the minimum.
    - **Near** — right site, wrong sweep or grade one level low. Counts half.
    - **Miss** — not reported, or reported only as a count with no path.

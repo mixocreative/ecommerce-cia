@@ -5,7 +5,7 @@ test file and contains eleven planted defects, one per sweep the skill claims to
 plus two controls that are correct and must be reported as verified, not flagged.
 
 **Do not fix anything in this directory.** It is the test, not the product. The answer
-key is `tests/EXPECTED.md`; the procedure is `../RUNBOOK.md`.
+key is `../EXPECTED-fixture-shop.md`, outside this directory; the procedure is `../RUNBOOK.md`.
 
 Layout:
 

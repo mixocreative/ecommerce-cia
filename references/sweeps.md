@@ -63,6 +63,8 @@ When the user asks for "code integrity", "audit", "review the wiring", "trace st
 
 For every value persisted at a moment in time (payment deadline, reserved stock, offered payment methods, price, tax rate, shipping quote, coupon eligibility), enumerate every later reader of the same concept. Classify each reader as "reads the snapshot" or "re-reads live settings/config". Any pair where a later reader re-reads live while an earlier writer froze a snapshot is a finding, because the two can disagree after an admin change or a config edit. Example: a reservation deadline computed from settings at placement, then a payment page that re-reads the enabled methods on every GET and offers a days-long method against a 30-minute hold.
 
+**S1.1 — arithmetic on a configurable value (three cold runs missed it, 2026-09-19).** For every quantity a job *derives* from a setting — `window − 12h` for a reminder, `hold_days − 1`, a cap times a rate — evaluate the expression at the edges the admin screen will actually accept (0, 1, the default, ten times the default). A result that goes negative, zero, or throws — a `DateInterval('PT-4H')` when the window is under twelve hours — is a finding at **MEDIUM**, and **HIGH** when the job then records the effect it did not produce (a `reminder_sent_at` stamped after the throw path, or with no send). The admin screen let the value in; the job is where it fails.
+
 ## S2 — Select-then-act predicate loss (TOCTOU race)
 
 For every worker, cron, or batch that SELECTs candidate rows and then mutates them one by one (expire unpaid, release stock, void invoice, revoke entitlement, retry notification), read the per-row UPDATE/DELETE. The mutation's WHERE clause must re-state the full selection predicate, not only the status column. A predicate that is checked at SELECT and dropped at UPDATE is a time-of-check/time-of-use finding: a callback that lands between the two steps (deadline extension, payment arrival, manual hold) is silently ignored.
@@ -79,6 +81,16 @@ card fingerprint.
 ## S3 — Catch-block failure posture (fail-open default)
 
 For every `catch` in a payment, checkout, entitlement, refund or inventory path, write one line: what is caught, what the code does next, and whether that is fail-open (proceeds as if the read succeeded) or fail-closed (refuses the action). Fail-open on a configuration or feature-flag read in a money path is a finding unless an owner decision in project memory or an ADR names that exact choice and its reason. "Default on because that was the pre-migration behaviour" is a reason to record, not a reason to keep. **A secret derived from the environment's identity is a time bomb.** Any salt, key or token with a computed fallback — `hash(hostname)`, `hash(__DIR__)`, the container id, an ephemeral machine name — silently changes when the environment is rebuilt, and everything hashed against it stops verifying with no error anywhere. Check three things for each: production fails closed when it is unset rather than computing one; the value survives a container recreation; and every process that reads it (web, CLI tool, worker, test) computes the *same* one. A password written by a host-side CLI that cannot verify inside the container is this defect, and it reads as "wrong password" forever. Fail-open is not one posture: name the axis. On a **display or read path** (a listing, a search, a recommendation) fail-open to an empty or degraded result may be the right System 5 policy, provided the degradation is visible on a screen (S22) and counted by a detector (S20). On a **money, entitlement, permission, or configuration path** fail-open is a finding unless an owner decision or ADR names that exact choice and its reason. Grade the two axes separately, and say which one each `catch` sits on.
+
+**Grading.** A `catch` on a payment path that answers the provider success — `return true`, a 200,
+silence — while the verification or the write did not complete is **CRITICAL**: the provider
+stops retrying and the money is recorded nowhere. That includes a catch-all `\PDOException` (or
+any broad class) around a callback write where only the duplicate-key code means "already
+applied"; a database outage must fail closed so the gateway re-sends. Two cold runs graded this
+HIGH and one filed it under S11 because the trigger was a malformed body — the malformed body is
+S11's cause; the posture that acknowledges it is S3's finding, and it is CRITICAL. Fail-open on a
+configuration or flag read in a money path, where the wrong value is at least visible in
+behaviour, is **HIGH**.
 
 ## S4 — Vendor field semantics from the spec, not from the mapper (semantic drift)
 
@@ -233,7 +245,7 @@ Method, per money-or-goods flow:
 5. **Then check the notice lands where the operator already works.** Usually the missing half. An alert table with no page, a log line, a digest email, a status nothing filters on — none is a notice. The test is whether the condition becomes visible on the **order list and the order page**, which is the screen a shopkeeper opens every day. The owner's own words: a badge or a flag on the order management page. A handler that exists on a page nobody opens is a dead control (S6) wearing a different hat.
 6. **Report the unattended set** as a table: state, what should have advanced it, what the operator would see, how they would ever find out, and what it costs per occurrence. An empty table is a real result; an absent table means the sweep was not run.
 
-**Grading.** Money or goods that can be lost with no signal: **CRITICAL**. An order that can sit forever but is recoverable once noticed: **HIGH**. A notice that exists only in a log, or in a table with no screen: **HIGH** — by the owner's rule that is not a notice. A notice on a screen nobody has a reason to open: **MEDIUM**.
+**Grading.** Money or goods that can be lost with no signal: **CRITICAL** — and the first case of that is the zero-row precondition update on an authentic callback (S16.1 rule 2): the money is at the gateway, the order stays unpaid or expired, the 200 is sent, and no badge exists. Two cold runs graded that HIGH; it is CRITICAL, because the customer has paid and every screen says they have not. An order that can sit forever but is recoverable once noticed: **HIGH**. A notice that exists only in a log, or in a table with no screen: **HIGH** — by the owner's rule that is not a notice. A notice on a screen nobody has a reason to open: **MEDIUM**.
 **S16.2 — the dispute row (from the chargeback guides, 2026-09-15).** A chargeback is work that
 arrives from outside with a deadline nobody in the shop set: the acquirer's window to answer
 (7–10 days is common), after which the money is gone by default. Three things the S16 table must
@@ -536,7 +548,7 @@ Method:
 5. **Name the outermost check, and confirm it is outside the shop.** "Who watches the watcher" terminates only by leaving the system: a cron that mails non-zero exits to a person, an external uptime probe, a dead-man's switch a third party trips when the nightly ping stops arriving. A monitor living inside the application shares the application's outages. If there is none, say so plainly — that is the owner's call, and it must be a made one.
 6. **Test the blind case.** Every detector's suite needs "it examined nothing and said so". The test feels like testing the absence of work; it is testing the difference between silence and safety.
 
-**Grading.** A money-path detector that cannot distinguish blind from clean: **HIGH** — every run it has ever made is uninterpretable, including the ones already filed as green. A money-critical scheduled job with no liveness signal: **HIGH**. A detector whose output reaches no order screen: **HIGH**. No outermost check outside the shop: **MEDIUM**, stated plainly rather than buried.
+**Grading.** A money-path detector that cannot distinguish blind from clean: **HIGH** — every run it has ever made is uninterpretable, including the ones already filed as green. A money-critical scheduled job with no liveness signal: **HIGH** — and a heartbeat that is written and read by nothing *is* no liveness signal (grade the job HIGH, not the missing reader MEDIUM); "no outermost check" at MEDIUM is the separate question of what watches from outside the shop. A detector whose output reaches no order screen: **HIGH**. No outermost check outside the shop: **MEDIUM**, stated plainly rather than buried.
 
 **The sentence to carry out of this sweep:** *a green report from an instrument nobody has proved is looking is not evidence of health — it is evidence of a report.*
 
@@ -889,6 +901,8 @@ findings; *"confusing"* is not a finding, *"this control has two scopes and neit
 
 **The rule: a control that acts on a set must make the set visible, unambiguous, and current.**
 
+**The largest invisible mode is the environment.** Sandbox and production are two modes of every screen, and if nothing shows which one a row came from, a test order and a live one are indistinguishable to the operator. Look for one switch read in one place (an `APP_ENV`, a `gateway_mode`, an endpoint table keyed by it) and shown in the admin header; a shop whose return URLs, endpoints and merchant keys are hard-coded has **no switch**, and that is a finding at **MEDIUM** on its own, before any sandbox walk is attempted. Report it in the S22 line as `environment mode switch: <path:line | NONE>`; a cold run that omits the item has not looked.
+
 Three questions, per control that acts on more than one thing:
 
 1. **What exactly will this act on** — the rows I can see, or everything matching a filter I set
@@ -1187,7 +1201,7 @@ page has no component, so no story is possible"*.
 
 ### S22 report line
 
-Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); per page class, render parameters P / passed non-default by any fixture Q (S22.8), branches dispositioned story S / render-test R / none N with reasons, mislabelled stories M, hub rows with a dead pointer D, templates with no page class N; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH).`
+Report line format: `S22 — F flows; S steps × O outcomes × A audiences = N cells, money paths at full depth and the rest pairwise (say which); K OK, G GAP, U UNVERIFIED; render guards found R, with a fixture X of R, of which T are hand-drawn twins (each UNVERIFIED); per page class, render parameters P / passed non-default by any fixture Q (S22.8), branches dispositioned story S / render-test R / none N with reasons, mislabelled stories M, hub rows with a dead pointer D, templates with no page class N; enum state coverage S/S', transition coverage T/T'; provider codes C across K surface kinds; caught A, classified L, raised R, closable X, designed D; outcomes needing follow-up that are only logged: N (each HIGH); environment mode switch: <path:line | NONE>.`
 
 *Step 6, from a six-day blind spot (2026-09-18).* **Assert the linked assets, not only the page.**
 An admin panel served every page with a 200 and every stylesheet with a 403 for six days: the
