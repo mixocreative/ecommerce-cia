@@ -312,7 +312,7 @@ Index — the sweep, what it hunts, and the VSM channel it walks:
 | **S2** Select-then-act predicate loss | TOCTOU race | System 1 → System 1 across time, no System 2 coordinator |
 | **S3** Catch-block failure posture | fail-open default | System 5 policy default |
 | **S4** Vendor field semantics from the spec | semantic drift | System 4 ↔ vendor |
-| **S5** Admin control to runtime consumer | dead control | System 3 → System 1 command channel |
+| **S5** Admin control to runtime consumer (+ S5.1 a retired caller) | dead control | System 3 → System 1 command channel |
 | **S6** Deferred-work comments | promised channel never built | System 3 → System 1 |
 | **S7** Skipped tests are unverified | vacuous pass | System 3\* → System 3 |
 | **S8** A written test is not a run test | vacuous pass | System 3\* → System 3 |
@@ -320,16 +320,16 @@ Index — the sweep, what it hunts, and the VSM channel it walks:
 | **S10** Environment truth before diagnosis | diagnosis without probe | System 3\* without independent channel |
 | **S11** Boundary contract / schema drift | unvalidated ingress | System 4 ingress |
 | **S12** Cascade, partial failure, retry storm | no anti-oscillation, no breaker | System 2 / System 5 |
-| **S13** Orphan capability / designed-but-unbuilt | promise with no channel | System 3 → System 1 |
+| **S13** Orphan capability / designed-but-unbuilt (+ S13.1 a second hand-rolled map) | promise with no channel | System 3 → System 1 |
 | **S14** Scope shadow (+ S14.1 launch plan as scope claim) | audit narrower than the map | System 3\* narrower than system |
 | **S15** Four-corner walk: customer × admin × shipment × gateway — **most important; first when time is short** | corner disagreement, unreachable capability | all four corners |
 | **S16** Terminal-state accountability (+ S16.1 queues and bulk actions) | silent death of the work | System 1 with no advancer, no notice |
 | **S17** The hosted surface | a setting that cannot reach the provider's page | System 3 → System 4 |
 | **S18** Provider-contract matrix (+ S18.1 carrier validator, artefact over FAQ) | sampled where it should have been enumerated; service-variant confusion | System 4 read per cell |
 | **S19** Host capability vs provider requirement | environment constraint never crossed | System 4 requirement × launch host |
-| **S20** Liveness of the safety net | blind instrument / dead watchdog | System 3\* itself |
+| **S20** Liveness of the safety net (+ S20.5 a receipt is dated, not standing) | blind instrument / dead watchdog | System 3\* itself |
 | **S21** The suite is an instrument too | vacuous or too-late proof, runner contamination, secrets in diffs, a codec proven only against itself | System 3\* itself |
-| **S22** Surface completeness: step × outcome × audience (+ S22.1–S22.8; S22.8 = the render-parameter diff) | unrendered / undesigned surface; caught ≠ handled | System 1 → operator / customer screen |
+| **S22** Surface completeness: step × outcome × audience (+ S22.1–S22.9; S22.8 = the render-parameter diff, S22.9 = dead `data-action` buttons) | unrendered / undesigned surface; caught ≠ handled | System 1 → operator / customer screen |
 | **S23** Sequence and event-flow: every external arrival × duplicate / out-of-order / late / early / missing / malformed, interleaving pairs | order-dependent outcome; unhandled arrival | System 4 → System 1 in time, System 2 ordering |
 | **S24** Contract tests at every boundary: classes a–e per side, external producer × consumer matrix, fixtures cited to the authority and version-pinned | self-agreeing fake; boundary with no contract test; compatibility claim tested only against our own dialect | System 3\* binding System 1 to System 4's actual contract |
 
