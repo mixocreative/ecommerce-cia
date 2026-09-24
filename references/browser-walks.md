@@ -128,13 +128,29 @@ A state-delta walk is four steps, and it is the runtime twin of the four-corner 
 Pick one quantity the system exists to get right - in a shop the stock of one SKU, in a queue
 the depth, in a ledger the balance, in a runner the claim on a job:
 
-1. **Read it at every observer, before.** The customer-facing page, the operator screen, the
-   stored row, and the provider's own view where one exists. Record all of them. **Disagreement
-   at step 1 is already a finding** and the walk stops until it is filed - a walk that starts
-   from an inconsistent world proves nothing about the operation.
-2. **Perform the operation through the front door.** The real form, the real endpoint, the real
-   button, with the real session. Not a service call the customer could never make: a walk that
-   calls `StockReducer::reduce()` has proved the reducer, not the shop.
+1. **Read it at every observer, before.** An observer is anything that *claims to know* the
+   quantity, and every system has three or four:
+
+   | System | The observers |
+   |---|---|
+   | A shop | the customer's page, the operator's screen, the stored row, the provider's own view |
+   | A job runner | the status page, the operator's CLI, the job row, the worker's own memory |
+   | An API service | the response body, the metrics counter, the stored row, the upstream's view |
+   | A CLI or library | the printed output, the exit code, the file or database it wrote, the lock it holds |
+   | A document or content system | the rendered page, the editor's screen, the stored record, the search index |
+
+   Record all of them. **Disagreement at step 1 is already a finding** and the walk stops until
+   it is filed - a walk that starts from an inconsistent world proves nothing about the
+   operation. The rule that makes this worth doing: **no system has fewer than three observers,
+   and the one teams forget is the operator's.** A check of the page and the database with no
+   operator screen has two corners, and the missing one is where a system most often lies to the
+   people running it.
+2. **Perform the operation through the front door.** Whatever the front door is here: the real
+   form and the real button in a web app; the documented command with the documented flags in a
+   CLI; the published endpoint with a real token in a service; the public function with the
+   arguments a caller would pass in a library. Not an internal call nobody outside could make -
+   a walk that calls `StockReducer::reduce()` has proved the reducer, not the shop, and one that
+   calls the scheduler's private `_claim()` has proved neither the queue nor the worker.
 3. **Read it at every observer, after.**
 4. **Assert the delta, not the value.** Write the arithmetic into the walk - `5 -> buy 2 -> 3`,
    at the page, at the screen, and in the row. A value assertion passes by luck on a fixture
@@ -160,7 +176,26 @@ a shipped system:
 | Out-of-order notification | "paid" arrives after "expired" | the terminal state is the correct one, and the loser is visible to a person |
 | Operator edit mid-flight | someone sets the quantity by hand while an order is unpaid | the two writers do not silently overwrite each other |
 | Variant vs parent | move one variant's quantity | the parent's displayed availability agrees |
-| Floor | drive the quantity toward zero from several directions at once | it never goes below zero, and the refusal is a sentence a customer can read |
+| Floor | drive the quantity toward zero from several directions at once | it never goes below zero, and the refusal is a sentence a person can read |
+
+**The same nine rows outside a shop.** The names above are a shop's because that is where they
+were learned, and every one of them is a general shape. Read the middle column, not the noun:
+
+| Row | In a job runner | In an API service | In a CLI or library |
+|---|---|---|---|
+| Over-quantity | claim more workers than the pool holds | request beyond the documented page size or rate | an argument past the documented maximum |
+| Last unit, twice, at once | two workers claim the same queued job | two requests mutate one record concurrently | two processes take one lock or one output file |
+| Abandonment | a worker dies mid-job | a client disconnects mid-write | the process is killed between two writes |
+| Failure of the outside step | the job's external call fails | the upstream returns 5xx | the network or disk write fails |
+| Duplicate arrival | the same message delivered twice | a client retries with the same idempotency key | the command run twice on the same input |
+| Out-of-order arrival | a stale status update lands after a newer one | a webhook arrives after its own cancellation | a resumed run writes over a newer result |
+| Operator edit mid-flight | someone requeues by hand while a worker holds it | an admin endpoint writes during a request | a person edits the file the tool is rewriting |
+| Child versus parent | a sub-task's state against its batch's | a nested resource against its collection's count | a partial output against the manifest |
+| Floor | the queue depth never goes negative and an empty claim is visible | a counter never goes negative and a refusal is a documented status | no negative or impossible value is written, and the refusal is on stderr with a non-zero exit |
+
+A system that genuinely has no analogue for a row says so on that row - `N/A`, with the reason -
+which is a sentence, not an omission. A row quietly absent from the table is the audit claiming
+the system is simpler than it is.
 
 Every row the tier excludes becomes an `UNVERIFIED` cell in the evidence ledger
 (`reporting.md`), named - never a row quietly missing from the table.
