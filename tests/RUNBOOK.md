@@ -143,6 +143,35 @@ until you looked. The audit prompt says so, and it also forbids the auditor from
 at all inside the snapshot, because the history is right there and one `git log` would end the
 measurement.
 
+### The hard rule in the prompt fences the oracle, not the doctrine
+
+Three cold runs on 2026-09-24 opened their reports by saying they had worked from `SKILL.md`
+alone, because the prompt told them not to read anything under the skills directory - and
+`references/` lives there. They were right to say so, and the receipts line is why it was
+visible rather than mistaken for a doctrine gap. But every one of those runs was weaker than it
+needed to be, and the prompt caused it.
+
+**What the run must not read** is the answer: `tests/corpus/entries/`, `tests/EXPECTED-*.md`,
+`tests/RUNS.md`, and - in a blind-forward run - the repository's own future, which means no
+`git` command at all inside the snapshot.
+
+**What the run must read** is the doctrine: `references/*.md`, in full, per §0.13.
+
+So phrase it as a fence around the oracle:
+
+```
+HARD RULES:
+- Do not read `tests/corpus/entries/`, `tests/EXPECTED-*.md` or `tests/RUNS.md` - those hold
+  the scorer's answer key.
+- (blind-forward only) Do not run any `git` command and do not read `.git/`. The snapshot sits
+  in the middle of the project's history on purpose; one `git log` ends the measurement.
+- You MAY and SHOULD read the skill's own `references/*.md`. They are your instructions, not
+  part of the audited project.
+```
+
+A run that cannot quote the receipts is a run that worked from the index. If the prompt caused
+that, the prompt is the finding.
+
 ## Reading a miss
 
 | Symptom | Usually means |

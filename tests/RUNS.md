@@ -81,12 +81,25 @@ replays what the maintainers did next. `OPEN` is an honest verdict here, not a g
 
 | Date | Repo @ snapshot | Finding | Verdict | What the project did next |
 |---|---|---|---|---|
+| 2026-09-24 | `hackclub/resolution` @ `22884ed1` (60 first-parent commits before the tip) | **F1 CRITICAL** — an unauthenticated `GET /api/auth/login` grants a full `isAdmin: true` session with no credentials whenever `STAGING_MODE === 'true'`, gated by nothing but a string comparison: *"one flipped env var on the Coolify deploy away from an open admin backdoor reachable by a bare GET"* | **CONFIRMED-BY-FUTURE** | Commit `9e080c4`, *"fix: address PR #12 review — migrations, **authz**, billing, SSRF, validation"*, changed that file in both the ways the finding named: it added the production guard that was missing (`if (env.NODE_ENV === 'production') { throw error(500, 'STAGING_MODE is not permitted in production') }`) and it removed the escalation (`isAdmin: true` → `isAdmin: false`, `staging-admin-123` → `staging-user-123`). **The maintainers agreed, later, knowing nothing about this audit.** Found blind, by the cheap model, with no oracle in existence at audit time. 134k tokens. |
+| 2026-09-24 | same snapshot | F2, F3, F5, F6, F9 — a session cookie issued before enrolment can throw; `PATCH {status:'SHIPPED'}` bypassing the `proofUrl` path beside it; no idempotency on ship creation where the index is `index` and not `uniqueIndex`; no check that the caller is enrolled in the season they post to; no test anywhere under `routes/api` | **OPEN** | No later commit has touched those four files. Not a miss — the defects are still there, and an audit ahead of its project is the point of this mode. |
 | 2026-09-24 | `hackclub/resolution` @ `cc63253a` (51 first-parent commits before the tip) | RES-001/002 CRITICAL+HIGH — `onDelete: 'cascade'` from `user` through `workshop` reaches the `ambassadorPayout` ledger and *other* participants' completion and ship records, with no soft delete and no confirmation, from one admin click | **OPEN** — and independently verified | 51 later commits, one of them *"fix: address PR #12 review — migrations, authz, billing, SSRF, validation"*, touched `schema.ts` and **changed no cascade rule**. The chain is still there: `grep` at the snapshot confirms `authorId` cascade at `:61` and the workshop→completion cascade at `:75`–`:76`, exactly as named. Nobody has collected this defect; it is not fixed because nobody has looked. |
 | 2026-09-24 | same snapshot | RES-006 — `validateFormData` coerces any numeric-looking form field to a number before Zod sees it, and has no caller | **OPEN** — independently verified | `grep -rn validateFormData src/` returns **one** line: its own definition. Dead today, a landmine the day it is wired to a route, exactly as the finding says. |
 | 2026-09-24 | same snapshot | RES-008 HIGH — the test hand-copies `computeStartingWeek` from the production module instead of importing it, so the suite proves the copy | **OPEN** — independently verified | `computeStartingWeek` is defined **twice**: `enrollmentService.ts:10` and `enrollmentService.test.ts:5`. A green run there is evidence about the copy. |
 | 2026-09-24 | same snapshot | RES-003 HIGH — `enrollParticipant` finds-then-inserts with no unique-violation handling, so a double-tab OAuth callback races the index | **OPEN** — independently verified | The `findFirst` → branch → insert shape is at `enrollmentService.ts:38-52` as described; the file has had **no later commit at all**. |
 
-**What this first blind-forward run does and does not show, stated before the number can be
+**The mode has now caught a maintainer agreeing, which is what it was built for.** The second
+blind-forward run produced a CRITICAL on an unauthenticated admin bypass, and a later commit by
+the project's own maintainers fixed exactly that, in exactly those two ways, under a subject line
+naming authz. No oracle existed when the audit ran; nobody had characterised the defect; the
+auditor was forbidden from running `git` inside the snapshot and said so. That is the one claim
+the retrospective corpus can never make at any size, and it took two runs to get.
+
+One row is one row. The honest reading is that this mode *can* find a defect nobody had
+collected and be vindicated by the people who owned the code — not that it will do so reliably.
+The five `OPEN` findings beside it are the more common outcome and are not failures.
+
+**What the first blind-forward run did and did not show, stated before the number can be
 misread.** It produced **8 findings on code no oracle existed for**, and of the four spot-checked
 mechanically at the snapshot, **all four claims are exactly true** — the cascade chain, the
 orphan function with one occurrence in the whole tree, the hand-copied test helper, the
