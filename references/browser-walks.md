@@ -306,6 +306,15 @@ Mandatory at Walk and Full tiers for every primary-path S2 site; at Screen tier 
 highest-value one. Prepare the row so the probe is cheap to repeat, and tag its data like any
 other walk (§7) so it can be removed afterwards.
 
+**The reading the probe disproves is recorded, not quietly dropped.** The first cold run of
+`cia`'s fixture (2026-09-24) ended with a short paragraph naming two of its own readings that
+the runtime contradicted — a stale field it had expected to survive a requeue and did not, and
+a database write lock it had expected to mask the race and did not. Neither was filed as a
+finding, because neither was true; both were *stated*. Do the same. An audit that reports only
+what the runtime confirmed has quietly deleted the evidence that its reading is fallible, and
+the next reader cannot tell a method that was tested from one that was lucky. Two lines at the
+end of the runtime section: what you expected, what the system did.
+
 ## 14. Artefacts - what the ledger will accept (2026-09-24)
 
 `reporting.md`'s evidence ledger accepts only artefacts produced by the run. To keep that
