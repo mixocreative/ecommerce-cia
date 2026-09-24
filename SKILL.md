@@ -393,6 +393,47 @@ Every command this audit runs, and every command it writes, is a claim about the
 
 For a chat assistant, recommendation engine, generated descriptions or agentic order handling, run `/cia` §0.10 for the model-boundary modes; this skill adds only the commerce consequence: **no model output may create, modify, refund, or fulfil an order without passing the same validation, idempotency and owner-intent checks as a human-initiated action.**
 
+### 0.12a Build Mode — when the request is *write it*, not *audit it*
+
+The audit answers *"is this wrong?"*. Roughly as often, the request is *"write the stock
+reduction"*, *"make the webhook handler production-ready"*, *"review this before I ship it"* —
+and an auditor with no standard to build to either declines, or writes plausible code and calls
+it done. Plausible is the failure mode: correct-looking code is the cheapest thing an LLM
+produces.
+
+**Enter build mode when** the user asks for an implementation, a rewrite, or a hardening pass on
+an operation that moves money, stock, a claim on work, or an entitlement — or asks whether
+something is "production-ready". Say which mode you are in, as §0.15 requires for setup mode.
+
+**The contract, and it is short because the whole of it is in `references/build-standard.md`:**
+
+1. **Name the operation's primary quantity and its observers** before writing anything. If you
+   cannot say which number must be right afterwards, and who will disagree about it, nothing
+   below matters yet.
+2. **Write the proof before the implementation.** Four properties, four checks: an injected fault
+   after the first write (atomic), two concurrent callers (race-free), the same key twice
+   (idempotent), a refusal and a fault asserted as *different types* (loud). They must fail
+   before the code exists.
+3. **Write it** to the mechanisms in `build-standard.md` §1 — the predicate inside the `UPDATE`,
+   the affected-row count as the decision, the idempotency key under a UNIQUE constraint inside
+   the same transaction, refusals returned and faults raised.
+4. **Run the proof and paste its output.** Not a description of it.
+5. **Fill the evidence ledger row from the artefact**, never from the code you just wrote. The
+   rule that reading never produces PASS applies hardest to an author reading their own work an
+   hour later.
+
+**The worked example is executable, not illustrative.** `ecommerce-cia`'s
+`tools/reference/stock_reduction.php` implements the four properties and
+`prove_stock_reduction.php` proves them in eight checks — including the one most codebases never
+write: a fault injected *after* the decrement and *before* the commit, which is the only check
+that separates an atomic implementation from a transaction-shaped one. Read the proof first.
+
+**What build mode does not do.** It does not decide authorisation, routing, or who is told —
+those belong to the caller, and folding them in is the "one function did everything" defect. And
+it does not end at four properties: §2 of the standard adds the movement row that explains the
+number, the surface the outcome reaches, and a test that can fail.
+
+
 ### 0.13 Reference Index — what to load, and when
 
 Paths are relative to this skill's directory. "Read" means read the whole file; skimming a doctrine file and reporting its chapters as done is S14 scope shadow applied to the audit itself.
@@ -414,6 +455,7 @@ Paths are relative to this skill's directory. "Read" means read the whole file; 
 | `references/stripe-onboarding.md` + `tools/stripe/` | Setup mode (§0.15) when Stripe is used or chosen, and in audit mode whenever `detect.py` finds it | §0 Checkout Sessions vs raw Payment Intents (Stripe's own recommendation, and why it changes the audit's depth) → prerequisites (the sandbox needs **no account**: `npm i -g @stripe/cli`, `stripe sandbox create`) → §2 the status machine and the three facts that cause most shop bugs — a decline returns the intent to `requires_payment_method` rather than to a terminal state, `succeeded` cannot be cancelled, one intent can carry several charges → §2.2 a `requires_capture` intent cannot be refunded at all, only cancelled → §2.3 refund statuses, the seven `failure_reason` values, refunds that fail up to 30 days later, the reversal the customer never sees as a credit → §3 signatures: the `t=,v1=` header, the raw-body rule, the Express middleware-order trap, two `whsec_` secrets that are not interchangeable, the timestamp as the replay defence → §4 idempotency → §5 S19 (no outbound-IP allowlist, unlike the Taiwan providers) → §6 the sweep-by-sweep checklist → §7 tools |
 | `references/linepay-onboarding.md` + `tools/linepay/` | Setup mode (§0.15) when LINE Pay is named — **first question: direct Online API, or via NewebPay / PAYUNi (ECPay's AIO has no LINE Pay flag)** | §0 direct-vs-via table → `detect.py` (direct / via / offline signals) → `fetch_docs.py --latest` from `developers-pay.line.me` (v3 **and v4**) → sandbox account (one per e-mail), Channel ID/Secret from Manage Link Key → S19 (no fixed outbound IP for the Online API; inbound allowlist only for `confirmUrlType=SERVER`) → `probe_request.php` with `--check` / `--confirm` / `--refund` / `--details` (full walk live-verified; sandbox approval is a pop-up simulator, no LINE login; confirm before `0110` kills the reservation) → wiring (HMAC over the exact bytes, `1106`; confirmUrl is GET and means *authenticated*, only confirm means paid; 19-digit `transactionId` as string; `0000` on `/check` = still waiting) → walk incl. double-confirm → go-live → readiness card |
 | `references/browser-walks.md` | Step 5, before the first rendering walk is written | The conventions: headless vs rendering walks, selector priority, page objects, session reuse, artefacts on failure only, no clock waits, isolation, layout, the per-route checks; §12 the state-delta ladder and its nine adversarial rows; §13 the concurrency probe; §14 what each kind of artefact is allowed to prove |
+| `references/build-standard.md` | **Build mode**, before writing an operation that moves money, stock or an entitlement — and in audit mode whenever the report will recommend a rewrite | The four properties of a primary-path write (atomic, race-free, idempotent, loud), the mechanism for each, and **the proof each one needs**; §2 what the operation still owes beyond correctness (an explanation, a surface, a boundary, a test that can fail); §3 the build-mode contract |
 | `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; **§29a the evidence ledger — capability × verdict × artefact, where reading never produces PASS**; §30 five-section final output; §31 must / must-not rules |
 
 Step 3 order, restated: theory → sweeps (step 0 map, then S1–S24, S15 first when time is short) → doctrine → domains (+ adapters) → global-compliance → reporting. Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
