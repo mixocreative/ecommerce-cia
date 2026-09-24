@@ -708,3 +708,8 @@ Controlled eventual consistency is acceptable if:
 - stale states do not remain indefinitely
 
 ---
+
+---
+
+**Reading receipt: _an invariant is a sentence that can be false_.** Quote this phrase on the Step 7 receipts line to show this
+file was read rather than inferred from the skill's index. It appears nowhere else.

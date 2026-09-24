@@ -1,0 +1,9 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/buttermb/delviery
+fix_commit:    2340a19da7f6
+audit_commit:  32a8083cb9745fc7d3738b36012fc463c8361d01
+subject:       fix(inventory): Atomic stock deduction and two-phase order commit
+files:         supabase/functions/api/routes/inventory.ts
+class:         S2
+scope:         supabase/functions/api/routes/
+why_it_counts: A hit must say the deduction is not atomic - that the order commit and the stock write can interleave or partially apply. Reporting the route file for validation or auth issues alone does not count.

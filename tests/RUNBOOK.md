@@ -6,7 +6,8 @@ The skill's own S8 applies to the skill: a doctrine edit nobody has run is a wri
 
 ```
 fixture-shop/              a PHP shop with 11 planted defects and 2 correct controls — audited by READING
-fixture-shop-live/         a runnable PHP+sqlite shop with 8 planted defects and 2 controls — audited by RUNNING
+fixture-shop-live/         a runnable PHP+sqlite shop, 9 defects and 7 controls — audited by RUNNING
+fixture-shop-node/         the same defect classes in Node 22 + node:sqlite — audited by RUNNING, on another stack
 EXPECTED-fixture-shop.md      the answer key for the read fixture — kept OUTSIDE the fixture on purpose
 EXPECTED-fixture-shop-live.md the answer key for the live fixture, same rule
 verify-fixture-shop-live.py   proves every planted live row still reproduces; run it before scoring
@@ -63,6 +64,46 @@ something.
 
 A run that files all eight defects and produces no ledger, no ladder and no probe is recorded as
 what it is: a good code review of a running system nobody ran.
+
+## The second-stack run (`fixture-shop-node`)
+
+Same defect classes, different language. It exists to answer a question the prose could only
+assert — *does this doctrine transfer, or was it written for PHP shops?* — and it is cheap,
+because the answer only needs four rows.
+
+1. `node tests/verify-fixture-shop-node.js` must print `OK: 5 rows reproduce`.
+2. Fresh session with `tests/fixture-shop-node` as the working directory; `pre-launch audit,
+   Screen tier`. The shop is not running; starting it is rung 1 and the agent's job.
+3. Score the four defects and the one control. **The number that matters is transfer**: a run
+   that scores well on `fixture-shop-live` and badly here has found a doctrine tuned to PHP, and
+   that is a finding about the skill rather than about the run.
+4. Record it in `RUNS.md` with `fixture-shop-node` in the tier cell, so the gate compares it
+   only against its own history.
+
+The Node fixture's control is worth reading before scoring: `crypto.timingSafeEqual` **throws**
+on unequal-length inputs, so the length guard in front of it is load-bearing and its absence
+would be a crash, not a weakness. An auditor that flags the guard has not read the API.
+
+## The corpus run — ground truth nobody planted
+
+Everything above scores the skill against defects its own author wrote for it to find, which is
+close to a tautology. `tests/corpus/` is the answer: real repositories, checked out at the commit
+**before** a maintainer's own fix commit, with that commit's diff as the oracle.
+
+```
+python tests/corpus/run.py list
+python tests/corpus/run.py prepare <entry>     # clone at the pre-fix commit; prints the path
+python tests/corpus/run.py oracle <entry>      # SCORER ONLY - never shown to a run
+```
+
+Audit the prepared path cold, at the tier the entry names, then score one question: **did the run
+report the thing the next commit had to fix, for the reason the commit gives?** Record HIT, MISS
+or OUT-OF-SCOPE in `RUNS.md`'s corpus table.
+
+Three rules keep it honest: the auditor never reads `tests/corpus/`; the fix commit is the
+oracle rather than anybody's reading of the code; and a miss is recorded rather than explained
+away, because a miss here is the doctrine's blind spot showing itself on real code. An entry that
+keeps missing is the most valuable row in the harness.
 
 ## Reading a miss
 

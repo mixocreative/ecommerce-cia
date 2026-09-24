@@ -10,13 +10,17 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/Db.php';
 require dirname(__DIR__) . '/src/Checkout.php';
+require dirname(__DIR__) . '/src/StockDesk.php';
+require dirname(__DIR__) . '/src/Availability.php';
 require dirname(__DIR__) . '/src/RefundDesk.php';
 require dirname(__DIR__) . '/src/Admin.php';
 require dirname(__DIR__) . '/src/Jobs.php';
 require dirname(__DIR__) . '/src/Gateway/Callback.php';
 
 use Fixture\Admin;
+use Fixture\Availability;
 use Fixture\Checkout;
+use Fixture\StockDesk;
 use Fixture\Db;
 use Fixture\Gateway\Callback;
 use Fixture\RefundDesk;
@@ -100,6 +104,49 @@ if ($path === '/checkout' && $method === 'POST') {
 
     page('Order placed', '<h1>Order ' . (int) $result['order_id'] . ' placed</h1>'
         . '<p data-order-id="' . (int) $result['order_id'] . '">Pay within 30 minutes.</p>');
+    return;
+}
+
+// The express lane. The legacy /checkout above predates it and is still what the product
+// form posts to; this one takes stock the way the expiry job gives it back.
+if ($path === '/checkout/express' && $method === 'GET') {
+    $sku = (string) ($_GET['sku'] ?? 'CUP-STD');
+    $body = '<h1>Express checkout</h1><p>' . h(Availability::sentence($sku)) . '</p>'
+        . (isset($_GET['sorry']) ? '<p role="alert" data-notice="refused">' . h((string) $_GET['sorry']) . '</p>' : '')
+        . '<form method="post" action="/checkout/express">'
+        . '<input type="hidden" name="sku" value="' . h($sku) . '">'
+        . '<label for="qty">Quantity</label><input id="qty" name="qty" type="number" value="1" min="1">'
+        . '<label for="email">E-mail</label><input id="email" name="email" type="email" value="walk@example.com">'
+        . '<button type="submit">Buy now</button></form>';
+    page('Express checkout', $body);
+    return;
+}
+
+if ($path === '/checkout/express' && $method === 'POST') {
+    $sku = (string) ($_POST['sku'] ?? '');
+    $qty = (int) ($_POST['qty'] ?? 1);
+
+    if (!StockDesk::take($sku, $qty)) {
+        $why = 'We could not reserve that quantity - the piece may have just sold.';
+        Db::conn()->prepare('INSERT INTO notices (audience, order_id, body, created_at) VALUES (?, ?, ?, ?)')
+            ->execute(['customer', null, $why, Db::now()]);
+        header('Location: /checkout/express?sku=' . urlencode($sku) . '&sorry=' . urlencode($why), true, 302);
+        return;
+    }
+
+    $pdo = Db::conn();
+    $price = $pdo->prepare('SELECT price_cents FROM products WHERE sku = ?');
+    $price->execute([$sku]);
+    $cents = (int) $price->fetchColumn();
+
+    $order = $pdo->prepare(
+        'INSERT INTO orders (sku, qty, total_cents, status, email, placed_at, deadline_at)
+         VALUES (?, ?, ?, \'pending\', ?, ?, ?)'
+    );
+    $order->execute([$sku, $qty, $qty * $cents, (string) ($_POST['email'] ?? 'walk@example.com'),
+        Db::now(), gmdate('Y-m-d H:i:s', time() + Checkout::DEADLINE_MINUTES * 60)]);
+
+    page('Order placed', '<h1>Order ' . (int) $pdo->lastInsertId() . ' placed</h1>');
     return;
 }
 

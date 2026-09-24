@@ -1370,3 +1370,8 @@ LOW, and the S18 cell it supports drops to `UNVERIFIED`.
 ### S24 report line
 
 Report line format: `S24 — B boundaries (I inbound, O outbound, N internal); per boundary the class a–e per side (table); external producer × consumer matrices: P, independent fixtures C/D/E, UNVERIFIED producers U; money boundaries below c: M (each HIGH); internal at a on a state-writing path: K; fixtures without version or citation: F`.
+
+---
+
+**Reading receipt: _the channel is the finding_.** Quote this phrase on the Step 7 receipts line to show this
+file was read rather than inferred from the skill's index. It appears nowhere else.

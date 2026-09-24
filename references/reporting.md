@@ -434,3 +434,7 @@ You **must not**:
 - generate speculative vulnerabilities without evidence
 - recommend architectural complexity without a demonstrated need
 
+---
+
+**Reading receipt: _the ledger is harsher on purpose_.** Quote this phrase on the Step 7 receipts line to show this
+file was read rather than inferred from the skill's index. It appears nowhere else.

@@ -53,9 +53,13 @@ POLICY.md                   the shop's written rules — what the code is suppos
 bin/reset.php               create + seed
 bin/cron.php                the scheduled work the host runs
 bin/sign.php                sign a provider notification (the walk's gateway simulator)
+bin/place.php               place one order from the command line (legacy lane)
+bin/take.php                reserve stock from the command line (express lane)
 public/index.php            every route: storefront, checkout, callback, admin, /debug/state
 src/Db.php                  connection
-src/Checkout.php            place an order
+src/Checkout.php            place an order (the legacy lane)
+src/StockDesk.php           reserve and release stock (the express lane's desk)
+src/Availability.php        the sentence the customer reads about availability
 src/Gateway/Callback.php    verify and apply a provider notification
 src/RefundDesk.php          the operator's refund
 src/Admin.php               the admin stock screen, order list, notices

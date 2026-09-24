@@ -1,0 +1,9 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/hackclub/resolution
+fix_commit:    684a14bf136d
+audit_commit:  bfa769c2b87e835fd359019969fe1930f112e613
+subject:       fix: race condition on inventory - use atomic WHERE guard on stock decrement
+files:         resolution-frontend/src/routes/app/warehouse/batches/+page.server.ts, resolution-frontend/src/routes/app/warehouse/orders/new/+page.server.ts
+class:         S2
+scope:         resolution-frontend/src/routes/app/warehouse/
+why_it_counts: A hit must say that the stock decrement reads a quantity and writes it back without carrying the availability predicate into the UPDATE, so two concurrent orders can both succeed. Naming either touched file for that reason counts; naming them for style, typing or unrelated issues does not.

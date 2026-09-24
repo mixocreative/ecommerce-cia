@@ -24,6 +24,7 @@
 | 2026-09-20 | 0b96d5a + today's edits uncommitted (S5.1 retired-caller script; S13.1 second hand-rolled map; S20.5 walk receipt is a one-day fact; S21 shape 6 runner's file listing; S22.9 button with no handler) | Claude **Sonnet** (subagent, cold, key outside the fixture, git forbidden) | Screen — `pre-launch audit, Screen tier` on fixture-shop | 11 | 2 (S13 refund desk and S12 store-chain ingress both filed under S11) | 3 (S1 interval arithmetic under 12 h; S15 collection≠settlement cell never promoted to a finding; S22.6 applied to one constructor, not enumerated) | 0 (+1 real unplanted: S24 no contract test on the money boundary) | 150 | **Signal row, not the gate row — cheaper auditor model; the row below re-runs the same doctrine on Opus.** Misses are promotion/enumeration failures, not discovery failures. RUNS rows now name the model. |
 | 2026-09-20 | 0b96d5a + the same uncommitted edits | Claude **Opus** (subagent, cold, key outside the fixture, git forbidden; prompt adds "every threshold-meeting observation becomes a graded finding") | Screen — `pre-launch audit, Screen tier` on fixture-shop | 15 | 1 (key#14 stamp-without-send found and confirmed, filed under S6 not S1/S12) | 0 | 0 | 15 | **Holds the 15.5 baseline** after five additive doctrine edits; 15 extra correctly-evidenced findings beyond the planted rows (store id never recorded, COD cap, status push 300–303 with no consumer, advancers without heartbeats, ISO-8601 negative interval, UTC-vs-local cutoff, admin templates with zero controls, …) — candidates for planted rows; both controls kept out of the findings. |
 | 2026-09-24 | f0a87f9 + this session's edits uncommitted (promotion rule, evidence ledger, browser-walks §§12–14, tier runtime column, S2/S15 runtime twins, fixture-shop-live) | Claude **Opus** (subagent, cold, key outside the fixture, HTTP only by instruction) | Screen — `pre-launch audit, Screen tier` on **fixture-shop-live** (the runnable fixture's first run) | 7 | 1 (L9 ghost callback reported in the S16 table and inside EC-18, never filed under S3) | 1 (L6 negative quantity: the site was **listed in the S11 sweep line** — "`(int)` cast, no bounds" — and never became a finding) | 0 | 100 | **First live-fixture baseline: 7 hits / 1 near / 1 miss of 9, both controls verified, 0 false positives, 16 further true findings (no auth on admin, out-of-order decline overwriting paid, any non-`declined` result treated as payment, no route by which a customer can pay).** Ran 10 state-delta ladders, 9 of 9 adversarial rows and 2 concurrency probes, so L1 was CONFIRMED rather than predicted. The one miss is a promotion failure, not a discovery failure, and the doctrine gained the sentence it was missing the same session (`reporting.md`: a site in a sweep line is not a finding). The environment was already serving on 8123 when the run began, so §0.8 rung 1 was **not** under test this run. 247k tokens. |
+| 2026-09-24 | cb76331 + the precision controls uncommitted | Claude **Sonnet** (subagent, cold, key outside the fixture; **see the caveat**) | Screen — `pre-launch audit, Screen tier` on **fixture-shop-live** | 6 | 2 (L7 graded LOW against a MEDIUM floor; L9 folded into the fail-open catch at MEDIUM against a HIGH floor) | 1 (L6, the negative quantity — the same miss Opus made) | 0 | 105 | **6.0 against Opus's 6.5 on the same key, and 0 false positives across all five precision controls** — it identified `StockDesk::take` as the correct twin of the broken lane and *fired the probe at both*, reporting one winner on the control and two on the defect. 2 extra true findings (the admin stock floor, the unreachable `cancelled` status). **Caveat, and it is mine, not the run's:** my prompt said "do not read anything outside the fixture directory", which accidentally forbade the skill's own `references/*.md`. The run said so plainly and worked from `SKILL.md` alone — so this row measures the doctrine **as summarised in the skill file**, not the full reference set, and it is the strongest argument yet for the reading receipts added the same day: with them, this would have been visible in the report rather than in a footnote. 163k tokens. |
 
 ## Runtime evidence, per run (2026-09-24 onward)
 
@@ -40,3 +41,26 @@ review; say so rather than leaving the reader to assume.
 marked PASS while citing no artefact produced in that run. The honest value is **0**, at every
 tier, forever: a non-zero number means the auditor promoted a capability from reading, which is
 the one thing `reporting.md`'s ledger forbids. It is scored as a false positive.
+
+## Corpus — ground truth nobody planted (2026-09-24 onward)
+
+Real repositories, audited at the commit **before** a maintainer's own fix commit. The oracle is
+that commit's diff, not anybody's reading of the code. `tests/corpus/README.md` holds the rules;
+`tests/corpus/entries/` holds the entries and **the auditor never reads either**.
+
+This is the only table here whose number cannot be improved by knowing the answer key, because
+there is no answer key — there is a stranger's bug fix. It is also, today, nearly empty, and an
+empty corpus proves nothing.
+
+| Date | Entry | Verdict | Runtime | Note |
+|---|---|---|---|---|
+
+## Cost — what a run actually takes (2026-09-24 onward)
+
+An instrument nobody can afford to run is not an instrument. The tier table promises budgets;
+this records what was spent, so the promise is checkable and so the sweeps can eventually be
+ordered by measured yield rather than by tradition.
+
+| Date | Fixture / target | Tier | Tokens | Minutes | Findings | Tokens per finding | Time to first CRITICAL |
+|---|---|---|---|---|---|---|---|
+| 2026-09-24 | fixture-shop-live | Screen | 247k | 100 | 24 | ~10k | spoken first, before the report (§0.11) |

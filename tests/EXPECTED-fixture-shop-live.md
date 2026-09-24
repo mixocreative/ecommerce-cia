@@ -3,7 +3,7 @@
 **The auditor never reads this file.** It sits here, outside the audited directory, for the
 reason `RUNBOOK.md` gives: a key inside the tree is a key the S6 deferred-work grep will hit.
 
-Eleven rows: **nine defects (eight planted, one found by the first cold run) and two controls**. `python tests/verify-fixture-shop-live.py`
+Sixteen rows: **nine defects (eight planted, one found by the first cold run) and seven controls**. Fourteen of them are probed by the verifier; C6 and C7 are properties read from the source, and the key says so rather than counting them as run. `python tests/verify-fixture-shop-live.py`
 proves every one of them still reproduces against a freshly seeded shop; run it before scoring,
 because a key that no longer matches the fixture scores the auditor against fiction.
 
@@ -40,10 +40,26 @@ running is better evidence for the doctrine than one written to be found.
 
 ## The controls — filing either of these is a false positive
 
-| # | Control | Why it is correct |
-|---|---|---|
-| **C1** | `Jobs::expireUnpaid()` | Re-states the full predicate in the `UPDATE`, checks `rowCount()` before giving the unit back, and writes an operator notice. The unit returns exactly once and a person is told. |
-| **C2** | `Callback::verify()` | HMAC over the sorted fields with `hash_equals`; a tampered notification is refused with `0|signature` and changes nothing. |
+Seven of them, and five were added 2026-09-24 **to measure precision**. Each is written to look
+like one of the defects above and is correct. An auditor that flags everything scores well on
+recall and badly here, which is how an audit tool actually dies — not by missing a bug, but by
+being ignored after two noisy reports. **A control filed as a finding is a false positive and
+counts against the run.**
+
+| # | Control | Looks like | Why it is correct |
+|---|---|---|---|
+| **C1** | `Jobs::expireUnpaid()` | an unguarded release | Re-states the full predicate in the `UPDATE`, checks `rowCount()` before giving the unit back, writes an operator notice. The unit returns exactly once and a person is told. |
+| **C2** | `Callback::verify()` | — | HMAC over the sorted fields with `hash_equals`; a tampered notification is refused `0|signature` and changes nothing. |
+| **C3** | `Availability::sentence()` `src/Availability.php:24-29` | **L9** — a catch that answers anyway | Fail-open on a **display** path, the axis S3 exempts, and the degradation is *visible*: it says availability is unavailable, never "0" and never "in stock". Nothing is recorded as handled because it rendered, and `Checkout` re-reads the row regardless. |
+| **C4** | `StockDesk::take()` `src/StockDesk.php:19-26` | **L1** — read stock, write stock | The predicate is **in the `UPDATE`** (`AND stock >= ?`) and `rowCount()` decides the answer. Proven under the same probe that breaks L1: two processes, one unit, `{"ok":true}` and `{"ok":false}`, stock 0 — never negative. **An auditor that files both this and L1 has not read the `WHERE`**, and one that files neither has not run the probe. |
+| **C5** | The express lane's refusal `public/index.php:129-135` | **L8** — a redirect after a refusal | Takes nothing, writes a `customer` notice, and renders it at the destination in a `role="alert"` — the sentence `POLICY.md` §10 promises. It is the correct twin of L8, one route away from it. |
+| **C6** | Money as integer cents | a rounding bug | `price_cents` is an integer everywhere; no float arithmetic touches money in this shop. |
+| **C7** | `h()` `public/index.php:40-43` | — | `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')` on every interpolated value; no injection site found. |
+
+**The express lane is the fixture's sharpest instrument.** `/checkout` and `/checkout/express`
+place an order from the same page on the same table; one carries L1, L6 and L8, the other is
+correct on all three. A run that grades them together — either flagging both or clearing both —
+has read a route name instead of a predicate, and that is worth knowing about an auditor.
 
 ## Scoring
 

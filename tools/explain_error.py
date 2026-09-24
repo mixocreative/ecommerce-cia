@@ -21,6 +21,31 @@ if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp12
 
 # code -> (gateway, plain meaning, likely cause, next action, source)
 CODES: dict[str, tuple[str, str, str, str, str]] = {
+    # ---- Stripe (docs.stripe.com, read 2026-09-24; refund failure_reason + the signature error) ----
+    "STRIPE:SIGNATURE": ("Stripe", "Webhook signature verification failed.",
+                 "One of three things, and the error is identical for all of them: the endpoint secret is the wrong one (a `stripe listen` secret and a Dashboard endpoint secret both start `whsec_` and are not interchangeable), the body was parsed and re-serialised before verification, or the header carries no usable `t=`.",
+                 "Run `python tools/stripe/sign_test.py` first - it reproduces all four failure modes with no key and no network. Then check middleware ORDER: in Express, `app.use(express.json())` placed before the webhook route parses the body and every event fails. The verifier needs the raw bytes.",
+                 "docs.stripe.com/webhooks/signature"),
+    "STRIPE:DECLINED": ("Stripe", "A refund was declined by Stripe's financial partners.",
+                 "`failure_reason: declined` on a Refund object. The money came back to your Stripe balance; the customer has not been repaid.",
+                 "Handle the `refund.failed` event and badge the order - a refund can fail up to 30 days after it looked successful. Arrange another way to repay the customer; no retry will work.",
+                 "docs.stripe.com/refunds (Handle failed refunds)"),
+    "STRIPE:INSUFFICIENT_FUNDS": ("Stripe", "A refund is pending because your Stripe balance did not cover it, and it has passed the pending window.",
+                 "Refunds draw on the AVAILABLE balance. Card refunds are held pending; refunds on other payment methods fail outright.",
+                 "Top up the Stripe balance or collect payments, then repay the customer another way. Alert on this: it is a shop-level condition, not a customer-level one, and it silently affects every refund.",
+                 "docs.stripe.com/refunds"),
+    "STRIPE:EXPIRED_OR_CANCELED_CARD": ("Stripe", "The refund failed: the card was cancelled or expired.",
+                 "`failure_reason: expired_or_canceled_card`. A refund can only go back to the original payment method.",
+                 "The customer needs repaying another way; there is no API path. Badge the order - this one always needs a person.",
+                 "docs.stripe.com/refunds"),
+    "STRIPE:CHARGE_FOR_PENDING_REFUND_DISPUTED": ("Stripe", "The customer disputed the charge while your refund was still pending.",
+                 "Refunding and disputing at once can repay the customer twice.",
+                 "Stripe's own advice: accept or challenge the dispute instead of refunding. Do not issue a second refund.",
+                 "docs.stripe.com/refunds"),
+    "STRIPE:REQUIRES_CAPTURE": ("Stripe", "You tried to refund a PaymentIntent that is authorised but not captured.",
+                 "An uncaptured charge cannot be refunded at all - the operation does not exist for it.",
+                 "Cancel the PaymentIntent instead (POST /v1/payment_intents/{id}/cancel). A refund desk with one button for both cases fails on half its orders.",
+                 "docs.stripe.com/refunds (Issue refunds)"),
     # ---- NewebPay MPG / query / refund (NDNF-1.2.5 error tables; lessons from a shipped shop) ----
     "MPG02003": ("NewebPay", "This payment method is not enabled for your shop.",
                  "The console toggle may be on, but NewebPay has not switched the product on at their side (seen: three days with every local check green).",
@@ -147,6 +172,7 @@ LOOKUP = {
     "NewebPay": "NDNF-1.2.5 error tables (MPG p.~90, query p.~95) from https://www.newebpay.com/website/Page/content/download_api",
     "NewebPay 物流": "NDNS-1.0.0 p.31-32",
     "ECPay": "https://developers.ecpay.com.tw/?p=2878 (result codes) and the 交易訊息代碼一覽表 linked from it",
+    "Stripe": "https://docs.stripe.com/refunds.md (failure_reason table) and /webhooks/signature.md - every docs page has a .md twin",
     "LINE Pay": "https://developers-pay.line.me/online-api-v3 (result-code table at the foot) and /faq",
 }
 

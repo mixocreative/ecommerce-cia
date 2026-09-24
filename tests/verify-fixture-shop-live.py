@@ -198,6 +198,36 @@ def main() -> int:
               stock(st, "CUP-STD") == 5 and any(n["audience"] == "operator" for n in st["notices"]),
               "unit returned and the operator was told — must NOT be filed as a defect")
 
+        # C3 — the availability sentence degrades visibly, never to a number
+        reset()
+        page = get("/checkout/express?sku=CUP-STD")
+        check("C3 control: availability",
+              "5 available." in page,
+              "the sentence states the live number — must NOT be filed as a defect")
+
+        # C4 — the correct twin of L1: two processes, one unit, exactly one winner
+        reset()
+        post("/admin/stock", {"sku": "BOWL-LG", "qty": "1"})
+        env = {**os.environ, "FIXTURE_SLOW_MS": "400"}
+        racers = [subprocess.Popen(["php", "bin/take.php", "BOWL-LG", "1"], cwd=SHOP, env=env,
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                  for _ in (1, 2)]
+        outs = [r.communicate()[0].decode().strip() for r in racers]
+        st = state()
+        check("C4 control: safe take",
+              sorted(outs) == ['{"ok":false}', '{"ok":true}'] and stock(st, "BOWL-LG") == 0,
+              f"one winner, one refusal, stock {stock(st, 'BOWL-LG')} — must NOT be filed as a defect")
+
+        # C5 — the correct twin of L8: a refusal the customer is actually told about
+        reset()
+        post("/checkout/express", {"sku": "CUP-STD", "qty": "99", "email": "walk@example.com"})
+        st = state()
+        said = get("/checkout/express?sku=CUP-STD&sorry=x")
+        check("C5 control: spoken refusal",
+              not st["orders"] and any(n["audience"] == "customer" for n in st["notices"])
+              and stock(st, "CUP-STD") == 5 and 'data-notice="refused"' in said,
+              "nothing taken, a customer notice written, the sentence rendered — must NOT be filed as a defect")
+
         # C2 — the signature check is correct
         reset()
         post("/checkout", {"sku": "CUP-STD", "qty": "1", "email": "walk@example.com"})
@@ -220,7 +250,7 @@ def main() -> int:
         print(f"FAIL: {len(gone)} row(s) no longer reproduce: {', '.join(gone)}")
         print("The fixture changed, or the shop was not freshly seeded. The answer key is wrong until this passes.")
         return 1
-    print(f"OK: {len(results)} rows reproduce (9 defects + 2 controls).")
+    print(f"OK: {len(results)} rows reproduce (9 defects + 7 controls).")
     return 0
 
 

@@ -169,6 +169,7 @@ a shipped system:
 | Row | The walk | The invariant it holds |
 |---|---|---|
 | Over-quantity | order more than exists | refused at the server, not merely disabled in the UI |
+| **Under-quantity** | order **zero, or a negative number** | refused at the server — the same row from the other side, and the one that gets missed: a negative quantity often *raises* the stock and writes a negative total, and every form's `min="1"` looks like the guard until somebody posts without the form |
 | Last unit, twice, at once | two sessions take the last unit in the same tick | exactly one succeeds; the loser is refused, not queued into negative |
 | Abandoned checkout | start, reach payment, walk away | the reservation expires and the quantity returns, on a clock the audit names |
 | Failed payment | the provider declines | no deduction survives the decline |
@@ -178,7 +179,15 @@ a shipped system:
 | Variant vs parent | move one variant's quantity | the parent's displayed availability agrees |
 | Floor | drive the quantity toward zero from several directions at once | it never goes below zero, and the refusal is a sentence a person can read |
 
-**The same nine rows outside a shop.** The names above are a shop's because that is where they
+**Why the under-quantity row is written out separately.** Two independent cold runs of this
+skill's own live fixture — different models, different sessions — each walked "over-quantity",
+reported it correctly, and never tried a negative one, on a shop where `qty=-3` raised stock by
+three and wrote a total of −144000. Both read the row as a ceiling. A row that two careful
+readers take the same wrong way is a defect in the row, so the floor now has its own line. The
+general form, worth carrying to any quantity: **a bound has two sides, and the audit walks both
+even when the form only offers one.**
+
+**The same ten rows outside a shop.** The names above are a shop's because that is where they
 were learned, and every one of them is a general shape. Read the middle column, not the noun:
 
 | Row | In a job runner | In an API service | In a CLI or library |
@@ -333,3 +342,8 @@ run - `artefacts/<date>-<tier>/` - and the ledger cites the file by path.
 A screenshot of a page is evidence about a page. It is not evidence about a row, and the ledger
 does not accept it as such: the pair - what the person saw and what the store holds - is what any
 four-corner claim needs (§8).
+
+---
+
+**Reading receipt: _three observers, one subtraction_.** Quote this phrase on the report's receipts line (Step 6 in cia, Step 7 in ecommerce-cia) to show this
+file was read rather than inferred from the skill's index. It appears nowhere else.
