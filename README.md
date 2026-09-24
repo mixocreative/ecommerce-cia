@@ -16,7 +16,7 @@
 
 它能幫你做到：
 1. **老手稽核 (Audit Mode)**：抓出跨系統連鎖反應（如：ATM 轉帳開關沒寫入結帳邏輯、過期訂單退庫存壓掉已付款訂單、綠界/藍新 Callback 驗簽錯誤）。
-2. **新手引導 (Setup Mode)**：從零帶你串接台灣金流，手把手檢查 Domain、固定 IP、HTTPS，並發射實機探針 (Live Probe) 驗證金鑰！
+2. **新手引導 (Setup Mode)**：從零帶你串接台灣金流，手把手檢查 Domain、固定 IP、HTTPS，並執行實機探針 (Live Probe) 驗證金鑰！
 
 ---
 
@@ -107,7 +107,7 @@ wired (S13), a control that reaches no decision (S5), or a detector that went bl
 Invariants written at the source are what make AI-generated code *checkable* — the auditor has
 something to hold the output to, instead of reading it and hoping.
 
-## Watch it run｜直接看實機演示
+## Watch it run｜直接看實機展示
 
 ![/cia demo](docs/demo.gif)
 
@@ -168,7 +168,7 @@ A second auditor found all of them by tracing channels, not by reading functions
 - **Algedonic signals must reach System 5.** A pain signal that stops in a log file has not reached policy. Every alert, every catch block, every refund path is traced to the point where identity decides.
   > **痛覺訊號必須一路傳遞到 System 5。** 如果系統出錯的痛覺訊號最後只被默默關在 Log 檔裡，代表它根本沒傳到政策層。每一個 Alert 告警、每一個 Catch 區塊、每一條退款流程，都要一路追查到「到底由誰來做最終決策」。
 
-## How the theory becomes procedure｜如何將理論落地為實作流程
+## How the theory becomes procedure｜如何將理論轉化為實作流程
 
 1. **Map the shop onto Systems 1–5 first** (§0.9 step 0) and report the table: every component, its primary system, its channels as `producer → consumer`.
 2. **Walk the channels** with twenty-two mandatory sweeps (§0.9); each defect class below is a named kind of broken channel, and each sweep enumerates its sites from the map rather than from grep.
@@ -184,7 +184,7 @@ A second auditor found all of them by tracing channels, not by reading functions
 
 These are **cross-boundary invariant violations**: integration-level, emergent defects where every function is correct and the bug lives between them. Each sweep in section 0.9 names one; every finding states its defect class and its boundary location as `producer → consumer`:
 
-> 這些問題全屬於**跨邊界不變量違反（Cross-Boundary Invariant Violation）**：單看每個 Function 都寫得很完美，但 Bug 偏偏就出在 Function 與 Function 交接的縫隙裡。§0.9 中的每個掃描項都對應一種缺陷；每個發掘出的發現都會明確列出缺陷名稱與發生邊界（`producer → consumer`）：
+> 這些問題全屬於**跨邊界不變量違反（Cross-Boundary Invariant Violation）**：單看每個 Function 都寫得很完美，但 Bug 偏偏就出在 Function 與 Function 交接的縫隙裡。§0.9 中的每個掃描項都對應一種缺陷；每個查出的缺陷都會明確列出缺陷名稱與發生邊界（`producer → consumer`）：
 
 | Term｜專業術語 | Meaning｜實際代表的意思 |
 |---|---|
@@ -250,9 +250,9 @@ A channel on the map with no sweep site named against it is reported as unswept.
 9. **Speaks plainly when the owner is not an engineer** (§0.16) and opens every report with five plain lines.
 10. **Is cold-tested**: fresh agents run it against a fixture shop with an answer key; every mode has a logged run with zero false positives (`tests/RUNS.md`).
 
-> 1. **自動摸清專案運行環境**（包含找出測試指令、正式環境配置、Sandbox 密鑰檔、Preview 網址、Admin 路徑）並在第一時間向你回報。
+> 1. **自動摸清專案執行環境**（包含找出測試指令、正式環境配置、Sandbox 金鑰檔、Preview 網址、Admin 路徑）並在第一時間向你回報。
 > 2. **先畫出 VSM 架構圖（§0.9 第 0 步），再順著通道發動二十二項強制掃描（§0.9）**。每一項掃描都會獨立輸出一行進度；只要少一行就視同任務未完成。
-> 3. **貫徹電商硬核教條**：嚴格檢查付款、庫存、訂單、數位商品、折扣邏輯與財務一致性的核心不變量；每個業務關心點都必須有獨立狀態機，而不是只靠一個粗暴的 `order.status` 處理；確保購買與退訂流程完全對稱；防範免費與 0 元訂單被 Abuse；確保金流 Gateway 完整性（防偽、關聯性、冪等性、Browser 與 Server 雙通道驗證、非同步付款機制）；涵蓋退款、權限與財務對帳。
+> 3. **貫徹電商硬派教條**：嚴格檢查付款、庫存、訂單、數位商品、折扣邏輯與財務一致性的核心不變量；每個業務關心點都必須有獨立狀態機，而不是只靠一個粗暴的 `order.status` 處理；確保購買與退訂流程完全對稱；防範免費與 0 元訂單被 Abuse；確保金流 Gateway 完整性（防偽、關聯性、冪等性、Browser 與 Server 雙通道驗證、非同步付款機制）；涵蓋退款、權限與財務對帳。
 > 4. **內建台灣在地化專章（TW-0 至 TW-14）**：包含綠界 ECPay 與藍新 NewebPay 的 Callback 處理機制、ATM 虛擬帳號／超商代碼／超商條碼等非同步金流、超商物流與重新選擇門市流程、超商取貨付款與純取貨驗證、新台幣無小數點特性處理、電子發票串接，以及消保法七天鑑賞期退貨處置。
 > 5. **全自動執行七步上線前檢查（§0.6）**：包含快速跑 Lint 與範疇測試、執行 `/cia`、電商專屬稽核、正式環境完整測試、針對每個語系與 Route 進行瀏覽器模擬實走、每家金流商各在 Sandbox 跑一筆真實結帳並驗證 Callback，最後產出帶有明確未決事項的編號報告。
 > 6. **堅持「沒證據就絕不放行」**。被跳過的 DB 或金流測試會直接被標註為「N 項未驗證」，絕對不給假綠燈。這一輪新寫的測試程式碼，必須附上真實跑過的那一行測試數字。
@@ -319,7 +319,7 @@ A skill that grades other people's evidence should be able to show its own｜一
 
 | Measurement 量測 | What it is 這是什麼 | Result 結果 |
 |---|---|---|
-| **Corpus 真實專案樣本** | 在維護者自己修好那個 bug 的**前一個 commit** 稽核真實專案；該修復 commit 的 diff 就是標準答案，而稽核者永遠看不到它 | **8 個案例中 6 中 / 1 部分中 / 1 未中**，橫跨 6 種缺陷類型、7 種語言 |
+| **Corpus 真實專案樣本** | 在維護者修好該 bug 的**前一個 commit** 稽核真實專案；該修復 commit 的 diff 就是標準答案，而稽核者永遠看不到它 | **8 個案例中 6 中 / 1 部分中 / 1 未中**，橫跨 6 種缺陷類型、7 種語言 |
 | **Blind-forward 盲測前瞻** | 取專案歷史中段的快照，**完全沒有標準答案**；稽核完成後，才用專案自己後續的 commit 回放比對 | 8 個稽核發現，**0 個判斷錯誤**，4 個經獨立驗證為真，但尚未有維護者事後修正 |
 | **Precision 精確率** | 刻意寫成「**看起來像缺陷、其實正確**」的對照組：有 ADR 具名授權的顯示路徑 fail-open、正確的 compare-and-swap 就放在錯誤版本旁邊 | 12 個對照組，**0 個誤報** |
 | **Cheap model 低成本模型** | 同一套測試樣本改用較小的模型跑——只有貴的模型才成立的稽核準則，等於只有一種預算能用 | 差距從 **4 分縮小到 1 分** |
