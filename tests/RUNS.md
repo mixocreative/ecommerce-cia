@@ -127,3 +127,37 @@ ordered by measured yield rather than by tradition.
 | 2026-09-24 | fixture-shop-live | Screen | 163k | 105 | 11 | ~15k | owner paragraph first (sonnet) |
 | 2026-09-24 | corpus: Veda50/Go-Commerce-API | code review | 121k | 3 | 9 | ~13k | first line of the report |
 | 2026-09-24 | corpus: Stefiro777/alata (Stripe) | code review | 125k | 3 | 7 | ~18k | first line of the report |
+| 2026-09-25 | `c0d5a22` (same doctrine) | Claude **Sonnet** (subagent, cold, key and corpus fenced, git forbidden) | Screen — `pre-launch audit, Screen tier` on **fixture-shop-node** | 4 | 0 | 0 | 0 | 12 | **Equal to the baseline — 4/4, no regression under the enlarged doctrine**, and control NC1 correctly filed as a control rather than as the fail-open it is built to resemble. Eleven extra findings, four of them real and unkeyed: `qty=abc` throws `NOT NULL constraint failed` **uncaught inside the request listener and kills the process** (every later request refused — an anonymous one-request outage from a form field); `result=<anything not 'declined'>` recorded as **paid**; `qty=-3` raising stock and writing a negative total; `/admin` served with no credential. Its S2 probe is the model for the §13 discipline: the same-process HTTP race did **not** reproduce, because Node's single thread serialises a handler containing no `await` — the run reported that negative, then fired a cross-process probe that confirmed the oversell, and said plainly that believing the first probe would have been a wrong downgrade. It also reproduced the doctrine's own under-quantity example independently and only recognised the match afterwards. 250k tokens. |
+
+### What the two runs of 2026-09-25 decided about the doctrine's own size
+
+These runs were commissioned for one question. **Seven new S21 shapes in one sitting is a dilution
+risk, and a longer sweep skimmed is worse than a shorter one followed.** So each run was asked, at
+the end, which sections it applied, which it read and never used, and which it skimmed.
+
+**Neither named the new material as the place it skimmed.** Both named **S22** — 550 to 580 lines,
+pre-existing, written for a shop with dozens of admin screens — applied to fixtures with one HTML
+table between them. The cia run filled every new field of S21's report line (`D=0`, `I/J=0/0`,
+`C=0`, `G/H=0/0`, `U=1`, `M=0`): the new shapes being *answered*, with reasons, not skipped. So
+nothing was cut, and nothing was cut on suspicion either — which was the standing agreement, since
+provenance is not evidence and a shape's age says nothing about whether a cold auditor reaches for
+it.
+
+What the runs converged on instead, independently and in nearly the same words, is better than a
+cut. The node run: S16.1's lettered rules "were directly load-bearing" because they name a
+**mechanism**, while S11.1's byte/character trap was "pure noise — could not find a site no matter
+how carefully I looked" on an ASCII-only fixture, because it names a **domain instance**. It asked
+for a size-aware index so a small run could skip such clauses *by rule rather than by judgement*.
+That is now the reading note at the head of the sweeps, with preconditions on the three clauses the
+runs actually named — S11.1, S18.1, and S22's convention library — and with the rule that a
+precondition must be **checked** before it is skipped, because an unverified precondition is not an
+absent one.
+
+**And the harness turned out to have the defect it exists to catch.** Scoring the cia run meant
+reading the key, and three of its cited ranges were stale by twenty lines: `claim_batch` lives at
+`68-82`, the key still said `48-63`. A run reporting the race where the race actually is would have
+been scored a **MISS**, and that regression would have been recorded against whatever doctrine
+change happened to be under test. That is S21 shape 14 — the vacuous failure, an instrument red for
+a reason that is not a reason — committed by the answer key one day after the shape was written
+down. Ranges re-pinned; `tools/check_key_lines.py` now fails red when a cited file changes under
+its key, and it was proved red and then green before it was committed.

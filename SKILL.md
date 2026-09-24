@@ -170,7 +170,7 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 |---|---|---|---|---|
 | **Screen** | 2–4 h | one flow, one row per state, the money cells only | every site enumerated from the map, each read; findings graded | the walk runs: every route and its assets fetched; **one** state-delta ladder on the primary quantity (`browser-walks.md` §12); one concurrency probe on the highest-value S2 site (§13) |
 | **Walk** | 1–2 days | every money flow at full depth, the rest pairwise | as Screen, plus the vendor manual opened for every S4 / S18 field | as Screen, plus a ladder per money flow, every adversarial row of §12, and a probe at every primary-path S2 site |
-| **Full** | as long as it takes | every reachable cell, cited to the authority per cell | as Walk, plus the blind-case test written for every S20 detector | as Walk, plus every ledger row at PASS or FAIL — an UNVERIFIED row at Full tier is itself a finding, about the system's testability |
+| **Full** | as long as it takes | every reachable cell, cited to the authority per cell | as Walk, plus the blind-case test written for every S20 detector | as Walk, plus every ledger row at PASS or FAIL — an UNVERIFIED row at Full tier is itself a finding, about the system's testability, and an UNPROVEN row (§11a) is a finding about the environment, which is a different owner and a different fix |
 
 **The last column is what makes a tier a tier.** The first three say how much was read; only the
 fourth says how much was run, and a run that swept everything and executed nothing is a code
@@ -280,7 +280,7 @@ A detector with no coverage number, no liveness watcher or no order screen is a 
 8. Tier: Screen | Walk | Full — elapsed: N minutes (tier budget: 2–4 h | 1–2 d | open)
 9. Skill score: <the line `python tools/score.py` prints — this skill's own last scored fixture run, so the reader knows what the instrument found when it was last tested>
 10. Runtime walk receipt: <routes fetched N / assets fetched M, all 200 | which not> · error-log delta: <0 lines | the lines> · preview rows walked: <N of N | none exists> · state-delta ladders: <N operations, each with its before/after at every observer | none> · concurrency probes: <N S2 sites fired twice | none> — or `SKIPPED: <reason>` (then the first line says code review, not Screen)
-11. Evidence ledger (§29a): C capabilities — P PASS / F FAIL / U UNVERIFIED; every PASS cites an artefact path (table in report). The stock chain (`stock 5 → buy 2 → 3 in the row, on the admin screen and on the storefront → reverse per the shop's written policy`) is six cells, not one. **Missing line = the report never separated what this run can prove from what it read**, and reading never produces PASS.
+11. Evidence ledger (§29a): C capabilities — one count per verdict §11a defines, which is where the set lives and the only place it is written out (today: P PASS / F FAIL / U UNVERIFIED / N UNPROVEN); every PASS cites an artefact path (table in report). The stock chain (`stock 5 → buy 2 → 3 in the row, on the admin screen and on the storefront → reverse per the shop's written policy`) is six cells, not one. **Missing line = the report never separated what this run can prove from what it read**, and reading never produces PASS.
 ```
 
 Anything skipped → say why. Never claim "handoff ready" / "green-light" / "ready for launch" without listing what wasn't verified in this session. The report is honest by construction: a `⏭` is not a failure, but claiming green when a `⏭` exists IS a failure of the audit.

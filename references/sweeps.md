@@ -59,6 +59,33 @@ A channel on the map with no sweep site named against it is unswept; say so in t
 
 When the user asks for "code integrity", "audit", "review the wiring", "trace state across time", "every control to its consumer", or names any term above, the sweeps are the first thing that runs, before any function-level reading.
 
+### Reading these sweeps at the size you actually have: mechanism clauses and instance clauses
+
+Two cold runs on 2026-09-24/25, on fixtures of a few hundred lines, independently reported the
+same friction and proposed the same fix. **A sub-clause that names a mechanism earns its reading
+at any size; a sub-clause that names a domain instance costs a reading and returns nothing where
+its precondition does not hold.** The node run's words: S16.1's lettered rules "were directly
+load-bearing" — they name a *distinction* (a transition guarded by its own predicate versus a
+value edit that is not) that applies to any state machine — while S11.1's byte/character trap was
+"pure noise — could not find a site no matter how carefully I looked" on an ASCII-only fixture.
+
+So every sub-clause below that assumes something about the system carries its **precondition in
+the first sentence**, and a run that does not meet it writes one line saying so and moves on.
+`no sites on the map: <the map row>` is the report format for exactly this, and using it is not a
+skipped sweep — it is the sweep, answered.
+
+The three that cost the most reading at small size, named by the runs rather than guessed:
+**S11.1** (needs non-ASCII content), **S18.1** (needs a vendor manual or an external authority
+document), and **S22.1–S22.9's convention library** (needs an admin surface of more than a few
+screens). None of them is wrong; all three are written for a system an order of magnitude larger
+than a fixture, and a small run should skip them **by rule**, having checked the precondition,
+rather than by reading all of it and deciding.
+
+**This is a rule about reading order, never about coverage.** A precondition that is *unverified*
+is not a precondition that is absent: a run that has not looked for non-ASCII content has not
+established that there is none. Check the precondition, then skip — the two steps are the whole
+of it, and the second without the first is S14 scope shadow.
+
 ## S1 — Snapshot-vs-live reread (temporal coupling / stale snapshot)
 
 For every value persisted at a moment in time (payment deadline, reserved stock, offered payment methods, price, tax rate, shipping quote, coupon eligibility), enumerate every later reader of the same concept. Classify each reader as "reads the snapshot" or "re-reads live settings/config". Any pair where a later reader re-reads live while an earlier writer froze a snapshot is a finding, because the two can disagree after an admin change or a config edit. Example: a reservation deadline computed from settings at placement, then a payment page that re-reads the enabled methods on every GET and offers a days-long method against a 30-minute hold.
@@ -217,6 +244,18 @@ the character is cut into three pieces; 全 is `e5 85 a8` and loses one. The tex
 mis-split, it is **destroyed**, mid-codepoint, silently. With `/u` the same call returns one part.
 An English corpus exercises none of it and every test written over one passes.
 
+**And the obvious hardening removes the only evidence, which is what makes this worse than
+ordinary silence.** Print the fragments rather than counting them and the four are
+`[e5] [] [e5] [a8e6b8ace8a9a6]` — **one of them is empty**, and 充 has not been cut into pieces
+that could in principle be rejoined: it is gone, leaving a bare `e5` and an empty string where its
+two `0x85` bytes were. That empty fragment is the single visible trace that anything went wrong.
+It is also exactly what a careful author discards on purpose — for a line parser,
+`PREG_SPLIT_NO_EMPTY` or an `array_filter` over blank lines is the *correct-looking* idiom. Apply
+it and three plausible non-empty “lines” come out of a four-character string, with no anomaly left
+to notice and a part count nothing would call unreasonable. **So when looking for this class, check
+what the code does with empty results before concluding a byte-level split is safe:** a defensive
+filter downstream converts a detectable corruption into an undetectable one.
+
 The shape generalises well beyond `\R`. **Any byte-oriented operation on text is a candidate
 corruption site the moment the content is not ASCII** — `substr`, a truncation for a column width
 or a preview, a padding, a length check used as a limit, a reverse, a regex without `u`, a
@@ -306,6 +345,29 @@ who finds out.
 Three greps, one table. (a) For every class under the admin, control, settings or catalogue roots (payment-method matrix, carrier catalogue, shipping chains, fee tables), grep for a caller outside its own file and its tests; a control class with no page, controller or module that renders it is an orphan. (b) For every table column and enum added by a migration (`shipping_method`, `pickup_store_*`, `cod_*`, fee columns), grep for a writer in runtime code — checkout, admin, worker — not only a test; a column nobody writes is scaffolding, and scaffolding that a later reader treats as data is a finding. **Grep the identifier alone and read every hit — never the identifier plus an SQL keyword on the same line.** A column written by a multi-line `UPDATE … SET` whose `SET` sits six lines above the column name is invisible to `grep 'col.*SET'`, and most non-trivial SQL is multi-line. One pass reported a live column as having no writer anywhere and was one sentence from filing it as an orphan with five consumers treating it as scaffolding. **A false orphan costs exactly what a missed one does**, because it sends the next session to rebuild something that already works — so confirm an absence by reading the hits, not by trusting a narrower pattern that returned none. (c) For every design document, master plan or handoff note under `docs/` that names a component (a checkout method picker, a carrier admin page, an eligibility engine), check that the component exists on disk **or** that the gap register carries one row naming it as unbuilt with its blocker (vendor account family, 測標 approval, owner decision). Report each orphan with its three states — designed / coded / wired — and the owner-side blocker if any. A capability that is designed and coded but not wired, and whose absence the register does not record, is the most expensive shape of commerce gap: every document says shipping is handled and the customer has no way to choose how.
 
 **S13.1 — a second hand-rolled copy of a list the shop already derives is a twin, and one of the two copies will rot (also an S5 shape, 2026-09-20).** A dashboard "everywhere else" index was a second, independently maintained map of the admin menu — seven headings covering about twenty of thirty-six pages, missing an entire desk (Customers) — sitting beside a proper map (`AdminNav::TABS`) that already enumerated every page correctly. Nobody wrote the dashboard index wrong; they wrote it once, from the menu as it stood that day, and it had no mechanism to stay current while the real menu kept moving. **Whenever a structure the shop already computes — a menu, a status table, a permission matrix, a route list — appears a second time as a literal, hand-typed list, grep for it.** It is an orphan capability already in progress even while both copies still agree, because the day one changes and the other does not, the second is silently wrong and nothing says so — a control-to-consumer gap (S5) where the "control" is the true source and the stale copy is a consumer reading the wrong one. The fix is never to edit the copy back into sync; it is to derive it, so there is exactly one place a future change can be forgotten.
+
+
+**S13.1 — a grep proves the symbol resolves, never that it reaches the real thing (2026-09-25,
+found by a cold run missing it).** The method above is three greps, and greps find a capability
+with *no* caller. They do not find a capability wired to the **wrong store**, because every symbol
+in it resolves and every call site is real. A job runner's operator CLI opened its database with
+`connect(cfg.get("db_path", ":memory:"))` against a config file that never set `db_path`, so every
+`python -m runner.cli` invocation created a fresh in-memory database, did its work and threw it
+away. `connect` exists. `cfg` exists. The command runs, prints a plausible empty result, and exits
+0. Nothing a grep can see is wrong.
+
+An earlier run caught this by running the CLI in one process after enqueuing in another; a later
+run, following the same doctrine, did not — because the doctrine asked for the greps and never
+asked for that. **A capability found by initiative is a capability the next run will miss.**
+
+So the orphan sweep has a fourth step after the three greps: **run the operator's own entry point
+as a real process, against state something else created**, and check it sees that state. Enqueue
+in one process and list in another; write through the admin and read through the CLI; create by
+API and look on the screen. The defect class it catches has no grep signature at all — the
+capability is present, called, and pointed somewhere nothing else is — and the only cheap way to
+see it is that the thing one process wrote is missing from what the other reads. **The default a
+missing config key falls back to is where to look first** (`:memory:`, `/tmp`, `localhost`,
+`sqlite://`, a stub client): each is a working implementation of somewhere nothing else is.
 
 ## S14 — Scope shadow
 
@@ -637,6 +699,24 @@ And three rules with teeth for any shop:
   produced from something else in the repository", and a member with no currency test is a cell
   marked unverified, not a document.
 
+- **The rule under all of these: derive the set, or pin it — never restate it.** Four separate
+  findings on 2026-09-24 were one defect. A test hand-copied four of nine configured hosts and
+  stopped matching when the set grew (S21 shape 10). A generated reference drifted from its
+  generator. An environment variable existed in code and not in the example file. And — the
+  instance that settles what the rule should say — **this skill added a verdict to its evidence
+  ledger and left two other places in its own `SKILL.md` enumerating the old three**, within an
+  hour of writing shape 10 down, on the smallest possible surface, by the author most primed to
+  avoid it. That is not carelessness in any of the four. **An enumeration repeated in three places
+  has no single source of truth by construction**, so the rule cannot be "check your enumerations"
+  — checking is what failed. Either the set is *derived* at use (read the config, reflect over the
+  enum, regenerate and compare) or it is *pinned* (one canonical list, and every other mention
+  points at it rather than repeating it). Prose can pin as easily as code can; what neither can do
+  is restate and stay correct. When enumerating for this sweep, count the **places** a set is
+  written, not only its members — a set written once is a fact, and a set written three times is
+  three facts that will disagree.
+
+
+
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
 ## S19 — Can the host this shop is launching on actually meet what the gateways and carriers require? A REQUIREMENT THE HOST MUST SATISFY, NEVER CHECKED AGAINST THE HOST THAT WAS CHOSEN
@@ -798,7 +878,7 @@ Report line format: `S20 — D detectors enumerated; C report coverage separatel
 
 ## S21 — The suite is an instrument too. A PASSING ASSERTION THAT SOMETHING IS EMPTY PROVES NOTHING UNTIL SOMETHING PROVES IT CAN BE NON-EMPTY
 
-S20 asks whether the detectors are looking. **S21 asks it of the test suite**, which is the detector everything else is trusted on. Thirteen shapes. The first six are a test that never ran or never asserted; the last seven ran and asserted, on something other than the claim in their name. The first four were confirmed in one codebase in one day, the sixth days later in the same one, and shapes 7 to 13 on 2026-09-24 in a single day across two sessions auditing one tree:
+S20 asks whether the detectors are looking. **S21 asks it of the test suite**, which is the detector everything else is trusted on. Fourteen shapes. The first six are a test that never ran or never asserted; the last eight ran and asserted, on something other than the claim in their name — seven claiming more than they had, and one claiming less. The first four were confirmed in one codebase in one day, the sixth days later in the same one, and shapes 7 to 14 on 2026-09-24 in a single day across two sessions auditing one tree:
 
 1. **The vacuous pass.** A query used by four tests returned nothing at all, because of a defect none of them was about. The two tests asserting *"and the result is empty"* passed — that is what they asked for — and the two asserting a result failed. The failures looked like a test problem precisely because their siblings were green. **Whenever the subject of a test is a query, a filter, a collection or a sweep, at least one test must prove it can return something, under the same conditions.** And watch the **assertion count**, not only the colour: if fixing a bug makes assertions go *up*, assertions were not being reached, and every earlier green run was reporting on code it never executed.
 2. **The runner is one environment.** A test that loads real configuration into the runner's own process — a framework bootstrap, a config builder, a dotenv loader, anything that reaches the production entry point — changes `getenv()` for every test that runs after it, across suite boundaries when the suites share a process. The damage reads as an order-dependent flake and hides for months. **Snapshot the environment before such a test and restore it after.** And the asymmetry that makes this so hard to see: **cleaning up in teardown protects the next test and never the first.** A test that depends on the *absence* of a variable must clear it on the way **in**.
@@ -810,7 +890,7 @@ S20 asks whether the detectors are looking. **S21 asks it of the test suite**, w
 
 6. **The runner's own file listing is an instrument (2026-09-20).** A suite discovers its tests by walking directories; walk it in an environment whose directory iteration is broken and it discovers fewer of them and prints the same green `OK` over the smaller number. One laptop's Docker bind mount returned a single entry from `rewinddir()`, so the fast suite run inside the container found 2,370 tests where the host found 3,137 — 767 tests silently not run, no warning, exit 0. The count is the measurement: every run quotes its discovered-test total against the last known one (`--list-tests | wc -l` on the same commit), and a green run over fewer tests than yesterday is a red run until the difference is explained. The same iteration fault had already poisoned the product's module cache in the same environment (S20.5) — one broken primitive, two storeys of silence.
 
-**Shapes 7 to 13 share a sentence worth saying before them: _the thing that made it pass was not
+**Shapes 7 to 14 share a sentence worth saying before them: _the thing that made it pass was not
 the thing it claimed to prove._** Every one of them is green, runs, and asserts. Coverage counts
 the lines. The assertion count goes up, not down. What fails is the correspondence between the
 claim on the tin and the thing the assertion actually constrains — which is why none of the first
@@ -892,7 +972,11 @@ running anything.
     conclusion out loud, because it is the part that gets left off: **the shapes a per-token
     matcher cannot see are closable only by behaviour** — running the thing against the other
     engine, the other runtime, the other version. A textual guard's real output is a list of what
-    still needs a behavioural check.
+    still needs a behavioural check. **And a guard that names a remedy must have one that
+    resolves** — for every guard whose failure message points at a replacement ("use `Lines::raw()`
+    instead"), check the replacement exists and does what the message claims. A guard teaching a
+    fix nobody can apply is the orphan-capability problem (S13) in a place nobody looks for it, and
+    it is cheap to check: the message names a symbol, so resolve the symbol.
 
 12. **The assertion that cannot fail.** A walk checked that an empty state was actionable by
     raising only if a page-wide "Shop" link **and** every `main a` were absent. The header nav
@@ -917,13 +1001,39 @@ running anything.
     adopted by a tenth of its subjects is a proposal, not a control — and it reads, in every
     report, exactly like one adopted by all of them.
 
+14. **The vacuous failure — a check that reports red for a non-reason.** Every shape above is a
+    proof claiming more than it has. This is the mirror, and it belongs here rather than as a
+    footnote because its harm is slower and more durable. A deploy-rehearsal probe returned `FAIL`
+    on a healthy machine; the only failing row was a required-extensions list naming three PHP
+    extensions. Grepped for actual usage with symbol patterns rather than by plausibility: two were
+    referenced **nowhere** in the source, and the third was real but sat behind an explicit
+    `function_exists()` fallback that degrades rather than breaks. The list had been assembled by
+    plausibility, which is the default state of every requirements list. **A vacuous pass costs a
+    false green once. A vacuous failure trains the operator to ignore the instrument** — the second
+    red is scrolled past, and so is the tenth, and so is the one that meant something. It is alert
+    fatigue arriving by a correctness route rather than a volume route: one check, wrong once,
+    permanently discounted. It is worst where the reader cannot triage what they are shown, because
+    a verdict somebody is not equipped to evaluate burns the one signal they had — and it inverts
+    *nothing dies quietly*, since the thing dying quietly is the operator's attention, which
+    reporting louder makes worse rather than better.
+    **The check: for every condition that can fail a verdict, is the condition actually required,
+    and is that established by evidence or by assumption?** Sort them — hard requirement (proved by
+    a reference to it), soft with a proven fallback, and unreferenced — and let exactly one of the
+    three turn a verdict red. Two riders. **The instrument finding outranks the finding that
+    exposed it:** "is this extension on the host" is a LOW-MEDIUM capability question, while "the
+    probe fails for non-reasons" is a defect in the thing that answers all such questions, so when
+    a check misfires, grade the check and not only its subject. And **a soft dependency reports its
+    consequence, not its absence**: *"gd missing"* tells an operator nothing, *"gd missing — product
+    images serve at full size instead of resized"* tells them whether they care. An absence is not
+    a finding; a consequence is.
+
 Method: enumerate the tests that touch the system's real configuration or entry points; confirm each restores what it changed. **Read a sample of test names and docstrings against their assertions** — where a claim names an enumerated set, count what it actually asserts and quote the ratio. For every test that injects a fault, find what proves the fault arrived; for every guard that matches source text, find where its known limits are written down. For every suite that asserts emptiness, find the sibling that proves non-emptiness. Record the assertion count alongside the test count in every claim, because *"N tests pass"* and *"N tests ran and asserted M things"* are different reports. For every external protocol, name the vendor-published vector the suite reproduces, or write "none — round-trip only".
 
 **Grading.** A vacuous pass on a money path: **HIGH** — the code it was meant to cover has never been exercised. Environment contamination that reaches other tests: **HIGH** when the contaminating values are real credentials, **MEDIUM** otherwise. A live secret reachable in failure output: **HIGH**, and say it in the conversation with the rotation decision attached, per §0.10, beside the order screen it affects. **An assertion that pins a defect** (shape 7): the severity is the defect's, and the pinned assertion is reported beside it, because it is the reason the defect survived review. **An injection test whose fault cannot be shown to have arrived** (shape 8), or a **proof that re-implemented its subject** (shape 9): grade as the coverage the artefact claimed and does not have — so a resilience proof over a money path is **HIGH**, and the report says the claim is withdrawn, not merely qualified. **Claim-versus-assertion drift** (shape 10): **MEDIUM**, and **HIGH** when the un-asserted members include the one the check exists for. **A textual guard with no written limits** (shape 11): **MEDIUM** on its own and **HIGH** where the thing it guards is a portability, security or compatibility boundary that nothing else checks.
 
-**The sentence to carry out of this sweep:** *green is a colour, not a measurement — quote the counts, and know which of them went up.* And beside it, the question that organises shapes 7 to 13 and is a better one than *is this tested?*: **what, exactly, made this pass — and is that the same thing it claims to prove?** Every one of those seven is an instance of the answer being no, and each wore a different costume: a pinned assertion, an injection that never landed, a re-implemented proof, a docstring wider than its asserts, a guard matching text, a conjunction that cannot be false, a mechanism counted by its definition. None of them is found by running anything. All of them are found by reading an artefact against its own claim.
+**The sentence to carry out of this sweep:** *green is a colour, not a measurement — quote the counts, and know which of them went up.* And beside it, the question that organises shapes 7 to 14 and is a better one than *is this tested?*: **what, exactly, made this pass or fail — and is that the same thing it claims to prove?** Both ends of that question matter: shape 14 is the same root asked from the failing side. Every one of those seven is an instance of the answer being no, and each wore a different costume: a pinned assertion, an injection that never landed, a re-implemented proof, a docstring wider than its asserts, a guard matching text, a conjunction that cannot be false, a mechanism counted by its definition. None of them is found by running anything. All of them are found by reading an artefact against its own claim.
 
-Report line format: `S21 — T tests / A assertions quoted; V vacuous-pass risks found; E tests that mutate the runner environment, R of them restoring it; S secrets reachable in failure output; K of P external protocols pinned to a counterpart-published vector; D assertions that pin a defect; I of J fault-injection tests proving the fault arrived; C claims checked against their assertions, X drifting; G of H textual guards with written limits; U unfalsifiable assertions and defaults on check paths; M shared mechanisms quoted as call sites over population.`
+Report line format: `S21 — T tests / A assertions quoted; V vacuous-pass risks found; E tests that mutate the runner environment, R of them restoring it; S secrets reachable in failure output; K of P external protocols pinned to a counterpart-published vector; D assertions that pin a defect; I of J fault-injection tests proving the fault arrived; C claims checked against their assertions, X drifting; G of H textual guards with written limits; U unfalsifiable assertions and defaults on check paths; M shared mechanisms quoted as call sites over population; F conditions able to fail a verdict, E of them evidenced as required rather than assumed.`
 
 ## S22 — Surface completeness across step × outcome × audience. A STEP WITH NO SCREEN IS A STEP NOBODY CAN BE TOLD ABOUT, AND A SCREEN NOBODY HAS RENDERED IS A SCREEN NOBODY KNOWS IS BROKEN
 

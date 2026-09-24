@@ -469,6 +469,31 @@ You **must not**:
 - generate speculative vulnerabilities without evidence
 - recommend architectural complexity without a demonstrated need
 
+## Nothing leaves the room unrecorded, and the record lives where the next person will trip over it
+
+An audit finds more than it can responsibly change in one sitting, and deciding not to act is
+often the right call — a fix riding on top of a load-bearing change makes both harder to attribute
+if something moves, and a latent defect that costs nothing until a particular future edit is a
+poor use of the same attention. **What makes that a decision rather than an oversight is where the
+note lands.**
+
+Three instances from one day, arrived at independently: an auditor holding a queue of doctrine
+edits rather than changing the tree its own validation runs were being scored against; a set of
+real findings parked with an explicit ruling in a ledger rather than fixed mid-flight; and a
+counted, latent inconsistency recorded instead of repaired because repairing it was its own change.
+All three were correct, and all three were correct for the same reason.
+
+**The rule is not "fix everything". It is: nothing leaves the room unrecorded, and the record goes
+where the next person will trip over it, not where the author would look for it.** A note in a
+commit message nobody greps is dropped. A note in the auditor's own head is dropped. A note at the
+place the change would be made — beside the enumeration that will drift, in the file the next
+editor opens, in the register row the next audit reads first — is deferred, and deferred is a
+position a reader can disagree with.
+
+So for every finding this run does not act on, the report says three things: **what it is, why it
+was not done now, and where the note lives.** A deferred finding with no third answer is an
+undeferred one.
+
 ---
 
 **Reading receipt: _the ledger is harsher on purpose_.** Quote this phrase on the Step 7 receipts line to show this
