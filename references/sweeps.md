@@ -78,6 +78,17 @@ the placement, and it needs the identity it counts written down: account, verifi
 card fingerprint.
 
 
+**The runtime twin — fire it twice (2026-09-24).** This sweep produces a *prediction*, and the
+report then grades the prediction. When the system is running — and §0.6 requires it to be at
+every tier — that prediction is one minute away from being an observation: fire the same
+operation twice concurrently against a row prepared so exactly one may win, then read the row
+(`browser-walks.md` §13). Both succeeded → the finding is CONFIRMED and the two responses are
+its artefact. One refused → something holds between the read and the write; name it in the
+verified controls and downgrade honestly. One won and the loser vanished with no error, no
+message and no row → a second finding, S22's, usually worse than this one. A race graded from
+reading alone, on a system that was up on this machine at the time, is evidence left on the
+floor — and its confidence is HIGH-CONFIDENCE, never CONFIRMED.
+
 ## S3 — Catch-block failure posture (fail-open default)
 
 For every `catch` in a payment, checkout, entitlement, refund or inventory path, write one line: what is caught, what the code does next, and whether that is fail-open (proceeds as if the read succeeded) or fail-closed (refuses the action). Fail-open on a configuration or feature-flag read in a money path is a finding unless an owner decision in project memory or an ADR names that exact choice and its reason. "Default on because that was the pre-migration behaviour" is a reason to record, not a reason to keep. **A secret derived from the environment's identity is a time bomb.** Any salt, key or token with a computed fallback — `hash(hostname)`, `hash(__DIR__)`, the container id, an ephemeral machine name — silently changes when the environment is rebuilt, and everything hashed against it stops verifying with no error anywhere. Check three things for each: production fails closed when it is unset rather than computing one; the value survives a container recreation; and every process that reads it (web, CLI tool, worker, test) computes the *same* one. A password written by a host-side CLI that cannot verify inside the container is this defect, and it reads as "wrong password" forever. Fail-open is not one posture: name the axis. On a **display or read path** (a listing, a search, a recommendation) fail-open to an empty or degraded result may be the right System 5 policy, provided the degradation is visible on a screen (S22) and counted by a detector (S20). On a **money, entitlement, permission, or configuration path** fail-open is a finding unless an owner decision or ADR names that exact choice and its reason. Grade the two axes separately, and say which one each `catch` sits on.
@@ -216,7 +227,22 @@ Method, per money-or-goods flow (checkout → payment → fulfilment → collect
 
 **The environment must be able to render what the sweep claims to have walked.** Before reporting a four-corner walk as done, confirm the running system can actually reach each corner: the pages exist (a catalogue with no page rows makes every product URL a 404 and no walk of the customer corner is possible), the operator can sign in, the provider sandbox answers. Seed gaps are findings of this sweep, not excuses for skipping it — they block the owner's own sign-off as surely as a bug, and they are usually one seeder run from fixed. Walk the corners in the running app, not only in the suite: a test renders a class in isolation, a browser renders what the operator will actually see.
 
-Report line format: `S15 — walked N flows × M states across customer/admin/logistics/gateway; four-corner table in the report; K disagreements, J unanswerable states, R reachability findings; E2E matrix: W written / U unwritten.`
+
+**The runtime twin — walk the delta, not only the table (2026-09-24).** The four-corner table is
+filled by reading, and it is this sweep's product. It is also a *claim about a running system*,
+and the cheapest way to test such a claim is to run it: take the quantity the flow moves (the
+stock, the balance, the seat, the claim on a job), read it at all four corners, perform the
+operation through the front door, read all four again, and assert the delta with its arithmetic
+written out — `browser-walks.md` §12, plus the adversarial rows there, which are this table's
+unhappy columns executed rather than reasoned about. It is the same table, run. Corners that
+disagreed on paper either disagree in fact, and the finding is now CONFIRMED with artefacts, or
+they do not, and the reading was wrong — both outcomes are worth more than the prediction.
+
+Every ladder fills rows of the evidence ledger (`reporting.md`); every cell the tier did not
+execute stays UNVERIFIED there. That is how a reader tells the table that was read from the
+table that was walked, and it is the one distinction this sweep could not previously make.
+
+Report line format: `S15 — walked N flows × M states across customer/admin/logistics/gateway; four-corner table in the report; K disagreements, J unanswerable states, R reachability findings; E2E matrix: W written / U unwritten. · runtime: L ladders run, A of 9 adversarial rows (`browser-walks.md` §12); C corner cells proved by artefact of N.`
 
 **S15.3 — inventory has three verbs, and each has an event (2026-09-17, from Sylius and Medusa).**
 Two mature shops agree on the shape and neither calls it "decrement". Sylius's order workflow

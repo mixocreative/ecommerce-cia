@@ -5,10 +5,19 @@ The skill's own S8 applies to the skill: a doctrine edit nobody has run is a wri
 ## What is here
 
 ```
-fixture-shop/              a PHP shop with 11 planted defects and 2 correct controls
-EXPECTED-fixture-shop.md      the answer key: sweep, path:line, minimum grade — kept OUTSIDE the fixture on purpose
+fixture-shop/              a PHP shop with 11 planted defects and 2 correct controls — audited by READING
+fixture-shop-live/         a runnable PHP+sqlite shop with 8 planted defects and 2 controls — audited by RUNNING
+EXPECTED-fixture-shop.md      the answer key for the read fixture — kept OUTSIDE the fixture on purpose
+EXPECTED-fixture-shop-live.md the answer key for the live fixture, same rule
+verify-fixture-shop-live.py   proves every planted live row still reproduces; run it before scoring
 RUNS.md                    one row per run (append; never rewrite history)
 ```
+
+**Two fixtures, because the skill makes two kinds of claim.** Everything the read fixture scores
+is found by reading source. Everything §0.6 Steps 4–6 and `browser-walks.md` §§12–14 ask for is
+found by running a system, and for four months this harness measured none of it — the
+instrument scored the half of the doctrine that was easiest to score, which is S20's blind
+detector filed against the audit itself.
 
 ## Procedure
 
@@ -24,6 +33,36 @@ RUNS.md                    one row per run (append; never rewrite history)
    - **Vacuous line** — a sweep line with a count but no paths, or paths but no quoted line (§0.9). Counts as a miss for that sweep even if the finding was elsewhere reported.
 5. **Record** a row in `RUNS.md`: date, commit of the skill, runtime (Claude / Codex), tier, hits / near / miss / false positives, minutes, and the one sentence that explains any miss.
 6. **Gate for the change** (`python tools/score.py --gate`; installed as a pre-push hook by `tools/install-hooks.sh`). A change to the skill ships only if the run scores **no worse** than the previous row on hits and misses. A new miss is a regression in the doctrine or in the packaging (the agent did not read the reference file) — find which before committing.
+
+## The live fixture run (`fixture-shop-live`)
+
+Same shape, different question: not *did the auditor find the defect in the source* but *did the
+auditor run anything, and did it believe the right observer*. Most of these defects read
+correctly. Every one of them is visible in under a minute to somebody who actually buys
+something.
+
+1. **Prove the fixture first.** `python tests/verify-fixture-shop-live.py --serve` must print
+   `OK: 10 rows reproduce`. A key that no longer matches the fixture scores the auditor against
+   fiction (§0.11 applied to the harness).
+2. **Fresh session** with `tests/fixture-shop-live` as the working directory. The shop is not
+   running; starting it is rung 1 of §0.8 and **the agent is expected to start it itself**. An
+   auditor that asks the owner to run `php -S` has already failed one of the things under test.
+3. **Trigger.** `pre-launch audit, Screen tier`.
+4. **Score the eight planted rows and two controls** against `EXPECTED-fixture-shop-live.md`,
+   by the same hit / near / miss / false-positive rules as above.
+5. **Score the three runtime columns, which are what this fixture exists for:**
+   - **Ladders** — how many state-delta ladders ran (`browser-walks.md` §12), out of the flows
+     the tier owes.
+   - **Adversarial rows** — how many of §12's nine, and which.
+   - **Ledger** — was an evidence ledger produced, and is every PASS carrying an artefact path?
+     **A ledger that reports the stock chain PASS is the fixture's central false positive**: not
+     one capability in this shop can honestly be PASS, and an auditor that promotes a row from
+     reading has failed the rule the ledger exists to enforce, however many defects it found.
+6. **Record** a row in `RUNS.md`'s runtime table, then gate with
+   `python tools/score.py --gate` as usual.
+
+A run that files all eight defects and produces no ledger, no ladder and no probe is recorded as
+what it is: a good code review of a running system nobody ran.
 
 ## Reading a miss
 

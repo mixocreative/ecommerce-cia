@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Compare the S1-S22 sweep texts of cia and ecommerce-cia.
+"""Compare the shared doctrine of cia and ecommerce-cia - the sweeps, and the files around them.
 
 The two skills carry the same sweep numbering by design and diverge by design
 (ecommerce-cia is the commerce-enhanced case). This script makes the divergence
 visible so a lesson that landed in one file only is a decision, not an accident.
 
+Until 2026-09-24 it watched `sweeps.md` alone, which left the other four shared reference files
+unwatched - and `browser-walks.md`, byte-identical in both repos and carrying the whole runtime
+half of the doctrine, had no drift detector at all. The file table below closes that.
+
 Usage:  python tools/sweep-diff.py            (run from either repo)
         python tools/sweep-diff.py --full S12 (unified diff of one sweep)
+        python tools/sweep-diff.py --files    (the shared-file table only)
 
 Exit code 0 always; this is a report, not a gate.
 """
@@ -42,7 +47,37 @@ def subheads(s: str) -> set[str]:
     return set(re.findall(r"^### (S\d+\.\d+)", s, flags=re.M))
 
 
+
+
+SHARED = ["sweeps.md", "doctrine.md", "reporting.md", "theory.md", "browser-walks.md"]
+
+
+def file_table() -> None:
+    """Every shared reference file: size on each side, and whether they are still identical."""
+    print(f"{'file':22} {'cia':>7} {'ecom':>7}  state")
+    print("-" * 100)
+    for name in SHARED:
+        c = SKILLS / "cia" / "references" / name
+        e = SKILLS / "ecommerce-cia" / "references" / name
+        if not c.exists() or not e.exists():
+            print(f"{name:22} {'-':>7} {'-':>7}  MISSING ON ONE SIDE "
+                  f"({'cia' if not c.exists() else 'ecommerce-cia'})")
+            continue
+        ct, et = c.read_text(encoding="utf-8"), e.read_text(encoding="utf-8")
+        cw, ew = len(ct.split()), len(et.split())
+        if ct == et:
+            state = ("identical - a duplicate, so an edit to one is a silent drift in the other; "
+                     "change both in the same commit")
+        else:
+            cb, eb = bold(ct), bold(et)
+            state = f"diverged - {len(cb - eb)} claim(s) only in cia, {len(eb - cb)} only in ecommerce-cia"
+        print(f"{name:22} {cw:7} {ew:7}  {state}")
+    print()
+
 def main() -> None:
+    file_table()
+    if "--files" in sys.argv:
+        return
     for p in (CIA, ECOM):
         if not p.exists():
             print(f"missing: {p}")

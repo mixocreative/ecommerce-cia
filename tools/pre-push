@@ -1,4 +1,9 @@
 #!/bin/sh
 # The RUNBOOK's gate, run: a doctrine change ships only if the newest scored fixture run is no
-# worse than the one before it. Install: cp tools/pre-push .git/hooks/pre-push (tools/install-hooks.sh).
+# worse than the one before it, no ledger PASS was filed without an artefact, and a run scored
+# since 2026-09-24 says what it executed. Install: tools/install-hooks.sh.
 python tools/score.py --gate || exit 1
+
+# Not a gate, a report: where the two skills' shared doctrine has drifted, and which shared file
+# is currently a byte-identical duplicate (edit one, and the other is silently behind).
+python tools/sweep-diff.py --files || true

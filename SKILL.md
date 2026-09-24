@@ -166,17 +166,21 @@ Time budgets are approximate: real durations depend on suite size, sandbox laten
 
 **Depth tiers — say which one ran.** The sweeps as written are days of work at full depth on a real system, and a run that silently sampled is S18's original sin. So the run names its tier in the first line of the report, and the tier fixes what "swept" means:
 
-| Tier | Budget | S15 / S18 / S22 matrices | Every other sweep |
-|---|---|---|---|
-| **Screen** | 2–4 h | one flow, one row per state, the money cells only | every site enumerated from the map, each read; findings graded |
-| **Walk** | 1–2 days | every money flow at full depth, the rest pairwise | as Screen, plus the vendor manual opened for every S4 / S18 field |
-| **Full** | as long as it takes | every reachable cell, cited to the authority per cell | as Walk, plus the blind-case test written for every S20 detector |
+| Tier | Budget | S15 / S18 / S22 matrices | Every other sweep | Runtime evidence owed |
+|---|---|---|---|---|
+| **Screen** | 2–4 h | one flow, one row per state, the money cells only | every site enumerated from the map, each read; findings graded | the walk runs: every route and its assets fetched; **one** state-delta ladder on the primary quantity (`browser-walks.md` §12); one concurrency probe on the highest-value S2 site (§13) |
+| **Walk** | 1–2 days | every money flow at full depth, the rest pairwise | as Screen, plus the vendor manual opened for every S4 / S18 field | as Screen, plus a ladder per money flow, every adversarial row of §12, and a probe at every primary-path S2 site |
+| **Full** | as long as it takes | every reachable cell, cited to the authority per cell | as Walk, plus the blind-case test written for every S20 detector | as Walk, plus every ledger row at PASS or FAIL — an UNVERIFIED row at Full tier is itself a finding, about the system's testability |
+
+**The last column is what makes a tier a tier.** The first three say how much was read; only the
+fourth says how much was run, and a run that swept everything and executed nothing is a code
+review at whatever depth — its first line says so.
 
 A cell, flow or site the tier excluded is reported as `UNVERIFIED`, never omitted, so a later reader knows what was not walked. **The budget line in the report is the tier's budget, not a promise the doctrine can keep at every tier.**
 
 **Step 4 — Full test suite in project's container/env (60–150 min). THE AGENT RUNS THIS.** Complete test run, no group exclusions, on the project's canonical execution environment (docker for docker-first projects, native for others). Uses the full-suite command resolved in 0.5. Non-parallel with any other suite (DB contention risk — see project memory `db-test-suite-contention` if present). If the environment is down, bring it up yourself per §0.8 (e.g. `docker compose up -d`, wait for the DB healthcheck, then run). Run it in the background and keep working Steps 5–6 while it executes; collect the result before Step 7. **Never green-light without a full-suite result on the latest HEAD.** A result with skipped DB/gateway/browser tests is "N unverified", not green (§0.9 S7); every test added this session must show its real run line (§0.9 S8). Only if the §0.8 ladder is exhausted does Step 7 carry a ⏭ — and that line must name the rung reached.
 
-**Step 5 — Browser walk (5–15 min). THE AGENT DRIVES THIS.** Preview URL discovered in 0.5; if the preview server isn't up, start it yourself per §0.8 (project launcher, `docker compose up -d`, or the framework's dev server). Drive the browser with the available automation tool (claude-in-chrome, Playwright MCP, or `npx playwright` — install per §0.8 if absent). Log in with the project's dev-admin credentials when a walk needs an authenticated route (memory usually names them; never ask the owner to type a password). Cover every supported locale, every gateway-visible route (home, shop, product, cart, checkout, order-view, account). At desktop + mobile (390 × 844 baseline) breakpoints. Screenshot each route as an artefact. **Write the walks to `references/browser-walks.md`'s conventions** — page objects, session reuse, artefacts on failure only, no clock waits — or a theme change breaks every walk at once. Check:
+**Step 5 — Browser walk (15–30 min). THE AGENT DRIVES THIS.** Preview URL discovered in 0.5; if the preview server isn't up, start it yourself per §0.8 (project launcher, `docker compose up -d`, or the framework's dev server). Drive the browser with the available automation tool (claude-in-chrome, Playwright MCP, or `npx playwright` — install per §0.8 if absent). Log in with the project's dev-admin credentials when a walk needs an authenticated route (memory usually names them; never ask the owner to type a password). Cover every supported locale, every gateway-visible route (home, shop, product, cart, checkout, order-view, account). At desktop + mobile (390 × 844 baseline) breakpoints. Screenshot each route as an artefact. **Write the walks to `references/browser-walks.md`'s conventions** — page objects, session reuse, artefacts on failure only, no clock waits — or a theme change breaks every walk at once. Check:
 
 - Semantic HTML: `<h1>` present on every page (a11y + SEO).
 - Nav drawer keyboard-accessible, `aria-expanded` matches visible state at every breakpoint.
@@ -212,6 +216,31 @@ with every route 200, every asset 200 and the error log silent, because a shared
 `width:100%; margin:0` while each page still stacked a framework container and an inline
 `max-width` on it, and the commit had probed the two pages that carried neither.
 
+**What the walk proves beyond the page: the operation itself (2026-09-24).** Everything above
+checks that a page renders, loads what it links, and does not error. None of it checks that doing
+the thing changed the world correctly, and that is the half most runtime walks omit — every route
+200, every asset 200, every heading present, and nobody asked whether the number moved. So every
+runtime walk also runs, per `references/browser-walks.md`:
+
+- **§12, the state-delta ladder.** One quantity the system exists to get right; read it at every
+  observer (customer page, operator screen, stored row, provider view), perform the operation
+  through the front door, read every observer again, and assert **the delta, with its arithmetic
+  written out** — not the value, which a lucky fixture satisfies. Then the documented reverse
+  (cancel, refund, release) and its return delta. Disagreement between observers *before* the
+  operation is already a finding. The tier (above) fixes how many ladders and which of §12's
+  adversarial rows — over-quantity, the last unit taken twice at once, abandonment, decline,
+  duplicate and out-of-order notifications, an operator editing mid-flight, variant against
+  parent, and the floor at zero.
+- **§13, the concurrency probe.** Every select-then-act site S2 predicts is a race gets fired
+  twice concurrently against the running system, and the row is read afterwards. A race graded
+  CRITICAL from reading alone, on a system that was running on this machine at the time, left the
+  cheapest evidence in the audit unclaimed.
+
+Both write their artefacts under `artefacts/<date>-<tier>/` and fill rows in the evidence ledger
+(`references/reporting.md`), which is opened **before** the runtime steps with every row
+UNVERIFIED and filled as artefacts arrive. A ledger written afterwards is written from memory,
+and memory is where PASS comes from reading.
+
 **The walk is not optional at Screen tier.** Three defects above survived two Screen runs that
 enumerated every sweep from source and never made a request; the reports said "Screen" and no
 line said the walk was skipped. So the report carries a **runtime-walk receipt** (report line
@@ -219,7 +248,7 @@ below): routes fetched, assets fetched, error-log delta, preview rows walked —
 <reason>`, which downgrades the run to a code review in the first line. A Screen that never made a
 request is a code review.
 
-**Step 6 — Sandbox gateway walk (10–30 min). THE AGENT RUNS THIS.** One checkout per gateway using the project's sandbox credentials (never ask the owner for creds — file discovered in 0.5; if the `.env` lacks them, copy the documented block in yourself per §0.8). Drive the checkout through the browser automation from Step 5, or through the project's headless walk scripts if it ships them (e.g. `tools/dev/walk-*-headless.php`). Test card numbers come from the vendor's public sandbox page, read fresh each run — never stored in the repo. For every gateway: place one order, verify callback lands (poll the notification endpoint / inbox table, don't wait for a human to click), order flips `pending → paid`, digital goods grant entitlement + issue download token, physical goods flip to `processing`, refund path fires (if the sandbox supports refund; some don't — that's expected, not a bug). Capture DB rows / callback logs / screenshots as artefacts referenced from Step 7 report.
+**Step 6 — Sandbox gateway walk (10–30 min). THE AGENT RUNS THIS.** One checkout per gateway using the project's sandbox credentials (never ask the owner for creds — file discovered in 0.5; if the `.env` lacks them, copy the documented block in yourself per §0.8). Drive the checkout through the browser automation from Step 5, or through the project's headless walk scripts if it ships them (e.g. `tools/dev/walk-*-headless.php`). Test card numbers come from the vendor's public sandbox page, read fresh each run — never stored in the repo. For every gateway: place one order, verify callback lands (poll the notification endpoint / inbox table, don't wait for a human to click), order flips `pending → paid`, digital goods grant entitlement + issue download token, physical goods flip to `processing`, refund path fires (if the sandbox supports refund; some don't — that's expected, not a bug). Capture DB rows / callback logs / screenshots as artefacts referenced from Step 7 report. **This step fills named ledger rows** (§29a): `Payment authorisation`, `Gateway callback`, `Order creation`, `Digital entitlement`, `Refund` — each with the artefact path, each FAIL or UNVERIFIED until one exists. A gateway whose sandbox cannot do a thing (an ECPay stage refund, say) is UNVERIFIED with the vendor's own statement as the reason, never PASS by inference from the code that would have done it.
 
 **Step 6b — Host-capability reconciliation (10 min). THE AGENT PRODUCES THE TABLE.** Run S19: every precondition the gateways and carriers impose on the *host* (fixed or allowlisted egress IP, inbound webhook reachability, TLS floor, cron granularity, background processes, persistent disk, clock window, timezone, non-443 outbound), cited to its manual page, crossed against **the host the shop actually launches on and its plan** — and against any host it is planning to move to, since a requirement satisfied on one and not the other is a migration that silently breaks fulfilment.
 
@@ -250,7 +279,8 @@ A detector with no coverage number, no liveness watcher or no order screen is a 
 7. Fixes applied autonomously this run: N (list path:line + one-line why)  |  Fixes escalated to owner: M (list + why the §0.8 boundary blocked them)
 8. Tier: Screen | Walk | Full — elapsed: N minutes (tier budget: 2–4 h | 1–2 d | open)
 9. Skill score: <the line `python tools/score.py` prints — this skill's own last scored fixture run, so the reader knows what the instrument found when it was last tested>
-10. Runtime walk receipt: <routes fetched N / assets fetched M, all 200 | which not> · error-log delta: <0 lines | the lines> · preview rows walked: <N of N | none exists> — or `SKIPPED: <reason>` (then the first line says code review, not Screen)
+10. Runtime walk receipt: <routes fetched N / assets fetched M, all 200 | which not> · error-log delta: <0 lines | the lines> · preview rows walked: <N of N | none exists> · state-delta ladders: <N operations, each with its before/after at every observer | none> · concurrency probes: <N S2 sites fired twice | none> — or `SKIPPED: <reason>` (then the first line says code review, not Screen)
+11. Evidence ledger (§29a): C capabilities — P PASS / F FAIL / U UNVERIFIED; every PASS cites an artefact path (table in report). The stock chain (`stock 5 → buy 2 → 3 in the row, on the admin screen and on the storefront → reverse per the shop's written policy`) is six cells, not one. **Missing line = the report never separated what this run can prove from what it read**, and reading never produces PASS.
 ```
 
 Anything skipped → say why. Never claim "handoff ready" / "green-light" / "ready for launch" without listing what wasn't verified in this session. The report is honest by construction: a `⏭` is not a failure, but claiming green when a `⏭` exists IS a failure of the audit.
@@ -381,12 +411,12 @@ Paths are relative to this skill's directory. "Read" means read the whole file; 
 | `references/payuni-onboarding.md` + `tools/payuni/` | Setup mode (§0.15) when PAYUNi is used or chosen | Detect → ShowDoc pages by id (`fetch_docs.py`) → UPP flags with caps (超商代碼 20,000) → prerequisites (sandbox registration; 幕後/Token forms + IP binding) → S19 (NotifyURL 80/443 only) → `crypto.php selftest` (AES-256-GCM `:::` tag, `HashInfo = sha256(key+cipher+iv)`) → `probe_upp.php` (verdict from `JS_INFO`) → 模擬繳費 → `Status`+`TradeStatus` semantics, undocumented ack → logistics on the same page → refunds by 轉匯 |
 | `references/tappay-onboarding.md` + `tools/tappay/` | Setup mode (§0.15) when TapPay is used or chosen | tokenising SDK model (prime, 90 s) → self-served portal → `pay-by-prime` shape, `x-api-key` → 3DS/wallet notify (HTTP 200 ack, 5 retries) → refund/query by `rec_trade_id` → `probe_prime.php --dry-run` |
 | `references/linepay-onboarding.md` + `tools/linepay/` | Setup mode (§0.15) when LINE Pay is named — **first question: direct Online API, or via NewebPay / PAYUNi (ECPay's AIO has no LINE Pay flag)** | §0 direct-vs-via table → `detect.py` (direct / via / offline signals) → `fetch_docs.py --latest` from `developers-pay.line.me` (v3 **and v4**) → sandbox account (one per e-mail), Channel ID/Secret from Manage Link Key → S19 (no fixed outbound IP for the Online API; inbound allowlist only for `confirmUrlType=SERVER`) → `probe_request.php` with `--check` / `--confirm` / `--refund` / `--details` (full walk live-verified; sandbox approval is a pop-up simulator, no LINE login; confirm before `0110` kills the reservation) → wiring (HMAC over the exact bytes, `1106`; confirmUrl is GET and means *authenticated*, only confirm means paid; 19-digit `transactionId` as string; `0000` on `/check` = still waiting) → walk incl. double-confirm → go-live → readiness card |
-| `references/browser-walks.md` | Step 5, before the first rendering walk is written | The conventions: headless vs rendering walks, selector priority, page objects, session reuse, artefacts on failure only, no clock waits, isolation, layout, the per-route checks |
-| `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; §30 five-section final output; §31 must / must-not rules |
+| `references/browser-walks.md` | Step 5, before the first rendering walk is written | The conventions: headless vs rendering walks, selector priority, page objects, session reuse, artefacts on failure only, no clock waits, isolation, layout, the per-route checks; §12 the state-delta ladder and its nine adversarial rows; §13 the concurrency probe; §14 what each kind of artefact is allowed to prove |
+| `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; **§29a the evidence ledger — capability × verdict × artefact, where reading never produces PASS**; §30 five-section final output; §31 must / must-not rules |
 
 Step 3 order, restated: theory → sweeps (step 0 map, then S1–S24, S15 first when time is short) → doctrine → domains (+ adapters) → global-compliance → reporting. Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
 
-**Testing this skill.** `tests/RUNBOOK.md` and `tests/fixture-shop/` are the harness: a planted-defect shop with an answer key. Any change to this file or to `references/` is run against it before it is committed (S8 applies to the skill). `tools/sweep-diff.py` shows where this skill's sweep texts and `cia`'s have diverged, so a lesson that landed in one only is a decision, not an accident.
+**Testing this skill.** `tests/RUNBOOK.md` names two harnesses. `tests/fixture-shop/` is a planted-defect shop with an answer key, audited by **reading**. `tests/fixture-shop-live/` is a runnable PHP+sqlite shop with eight defects and two controls that are found by **running** it — a storefront reading a cache nothing refreshes, an admin screen blind to variants, a duplicate provider notification that releases stock twice, a refund that contradicts the shop's own written policy — and `RUNS.md`'s runtime table scores ladders, probes and whether any ledger row was marked PASS without an artefact. Until that fixture existed, the instrument measured only the half of the doctrine that reading reaches. Any change to this file or to `references/` is run against it before it is committed (S8 applies to the skill). `tools/sweep-diff.py` shows where this skill's sweep texts and `cia`'s have diverged, so a lesson that landed in one only is a decision, not an accident.
 
 ### 0.14 Paired Run With `cia` — explicit request only
 
