@@ -81,6 +81,19 @@ def reset() -> None:
 def main() -> int:
     server = None
     if "--serve" in sys.argv:
+        # Environment truth before diagnosis (S10): a server somebody else started would be
+        # tested against a database this script has just reset, and the difference would be
+        # reported as a planted row that stopped reproducing.
+        try:
+            urllib.request.urlopen(BASE + "/debug/state", timeout=1.5)
+        except Exception:
+            pass
+        else:
+            print(f"REFUSED: something is already serving {BASE}.\n"
+                  "This script starts its own server and reseeds the shop; testing a stranger's\n"
+                  "process against a store it just wiped reports live defects as GONE.\n"
+                  "Stop that process and run again.", file=sys.stderr)
+            return 2
         subprocess.run(["php", "bin/reset.php"], cwd=SHOP, check=True, capture_output=True)
         server = subprocess.Popen(["php", "-S", "127.0.0.1:8123", "-t", "public"], cwd=SHOP,
                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

@@ -1,0 +1,10 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/Veda50/Go-Commerce-API
+fix_commit:    ac18fb3327fd
+audit_commit:  a6886f63e901
+subject:       fix: idempotency check on duplicate Xendit webhook
+files:         internal/service/order_service.go
+class:         S23
+language:      Go
+scope:         internal/service/
+why_it_counts: A hit must say that the payment-status update applies whatever the provider sent without checking the order's current status, so a re-delivered webhook re-applies a transition the order has already made. The maintainer's fix reads the order first and returns early when the status already matches or is already final. Naming the file for validation, logging or error-wrapping alone does not count.

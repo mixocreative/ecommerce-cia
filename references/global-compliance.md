@@ -200,3 +200,9 @@ Each follows the four questions (state machine, authoritative signal, operator s
 - Logistics: SF Express, Hongkong Post, **locker and convenience-store pickup** (7-Eleven, Circle K) as a method with a deadline; cross-border to mainland China is CBEC (above)
 
 **Release gates that follow (all markets):** no market offered without its legal pages versioned and linked; no order without its acceptance record in the same transaction; no marketing send without a consent row and a working suppression check; no DSAR route without a queue and a clock; no third party on the data map without a contract row and a transfer mechanism; the privacy notice's every promise traced to a channel.
+
+---
+
+**Reading receipt: _a promise in a notice is a promise in the system_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

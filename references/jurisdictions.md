@@ -209,3 +209,9 @@ UK GDPR and the Data Protection Act 2018 mirror EU-5; **PECR** governs electroni
 Royal Mail, DPD, Evri, DHL and others each have their own status vocabulary and size / weight bands; Highlands, Islands and Northern Ireland carry surcharges and longer transit that must be quoted before payment. EU-bound parcels need customs data (HS codes, origin, value) in the carrier request and a **DDP vs DAP** choice the customer was told about at checkout — a DAP parcel refused for unexpected charges is a return with double freight (EU-8 in reverse).
 
 **Release gates that follow (US and UK):** no state or country offered without a tax treatment and a customs / import treatment on file; no digital content before the waiver record; no ACH / Direct Debit order shipped before the return window is modelled; the displayed return policy is stored with the order it governed.
+
+---
+
+**Reading receipt: _the adapter is the law, not the habit_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

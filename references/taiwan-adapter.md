@@ -453,3 +453,9 @@ Therefore Taiwan-specific data must not pollute global checkout assumptions.
 ## TW-14. 統一發票 timing on pickup-with-payment (取貨付款)
 
 Where the shop's invoice is a physical document that travels with the parcel (hand-written from the 字軌 book, posted in the box — the practice this shop recorded), the obligation for a 取貨付款 order arises when the label is created, not when the money settles: the parcel leaves before payment. The audit checks that (a) the obligation row exists at label time with a state that says "issued, unpaid", (b) an unclaimed / returned parcel voids it (作廢 record) rather than leaving an issued invoice against a cancelled sale, (c) a collected-then-refunded order produces the 折讓, and (d) no e-invoice API, 載具 or 手機條碼 field is introduced on the pickup page — the physical practice stands until the owner changes it. A plan that records the obligation "at settle" for a pickup order contradicts the shop's own invoice policy.
+
+---
+
+**Reading receipt: _the vendor's own page outranks the memory of it_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

@@ -1,0 +1,10 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/WilliamAGH/findmybook
+fix_commit:    99a838f1f346
+audit_commit:  3f04e4316551
+subject:       fix: stop swallowing exceptions in startup config normalization (ERR1)
+files:         src/main/java/net/findmybook/BookRecommendationEngineApplication.java
+class:         S3
+language:      Java (Spring Boot)
+scope:         src/main/java/net/findmybook/
+why_it_counts: A hit must say the startup configuration normalisation catches and discards its own failures, so the application boots with unnormalised or default configuration and nothing anywhere reports it. Naming the file for unrelated style or for a different catch does not count.

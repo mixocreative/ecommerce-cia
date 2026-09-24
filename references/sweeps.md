@@ -103,6 +103,48 @@ S11's cause; the posture that acknowledges it is S3's finding, and it is CRITICA
 configuration or flag read in a money path, where the wrong value is at least visible in
 behaviour, is **HIGH**.
 
+**The one documented exception, and why it is not a loophole (2026-09-24).** This sweep grades a
+`catch` that answers the provider "received" before the write as CRITICAL, and that is right for
+every provider in this skill **except one**. Adyen's own contract instructs the merchant to
+respond 202 within ten seconds and, verbatim, *"Do not validate or process the data at this
+step"* — store first, process asynchronously after. So on an Adyen integration the shape this
+sweep hunts is the vendor's design, and filing it is S4 semantic drift committed by the auditor:
+grading one provider's code against another provider's contract.
+
+What that changes is *where* to look, never whether to look. The risk does not vanish when a
+vendor moves it; it relocates, and the sweep follows it: **is the store between the ack and the
+queue durable and synchronous, and what happens to a message the asynchronous processor cannot
+process?** An ack sent before a failed *store* loses exactly the event the other shape would
+have lost, one storey earlier, and a queue with no advancer and no screen is S16 and S20 on
+machinery the vendor told the shop to build. Read `references/adyen-onboarding.md` §1 before
+grading any `catch` on an Adyen notify path, and **name which provider's contract you graded
+against** in the finding either way.
+
+**The log level is part of the posture (2026-09-24, from a corpus miss).** A `catch` that logs is
+not thereby reporting. Production runs at INFO or WARN, so **a failure logged at DEBUG or TRACE is
+silence with a receipt** — the line exists, the operator's log does not contain it, and the code
+reads as handled to anyone grepping for `log.` on the failure path. The shape to hunt, verbatim
+from the commit that fixed it:
+
+```java
+} catch (IOException | SecurityException e) {
+    // Silently continue if .env loading fails, but log at debug level
+    log.debug("Skipping .env file loading: {}", e.getMessage());
+}
+```
+
+The application then boots on defaults, and its own comment says so. The maintainer's fix threw.
+This sweep's first corpus miss was exactly this site: a cold run audited that file, filed a
+different fail-open in it, and walked past this one because it logged.
+
+So for every `catch` on a primary path, write the level next to the posture: **`debug`/`trace` is
+fail-open-and-silent, and it is graded as though there were no log line at all.** `info` is
+fail-open-and-buried unless something reads it (S20 — a line in a stream nobody watches is the
+detector problem one storey down). `warn`/`error` reporting to a channel a person reads is the
+minimum for "reported", and a screen is the minimum for "handled" (S22). The comment beside the
+catch is evidence of intent, not of reporting: *"silently continue"* written by the author is the
+author agreeing with the finding.
+
 ## S4 — Vendor field semantics from the spec, not from the mapper (semantic drift)
 
 For every provider callback field the code branches on (payment type, method, status, sub-status, error code), open the vendor's specification document that is checked into the repo or referenced in project memory and cite the page or section that defines the field. If the spec distinguishes a family field from a subtype field (for example a shared `PaymentType` and a card-only `PaymentMethod`), confirm the parser reads the one that is present for every family, not only for cards. A mapper whose comment says what a field means is not evidence; the spec page is. No spec read this session → the Step 7 line for the gateway carries "field semantics unverified against spec". **Sample code is not a specification.** A vendor's runnable example (a `createShipment.php` with a form and a curl) proves the envelope it exercises and nothing else — no response fields, no status-code table, no retry or acknowledgement rule, no fee, no amount cap. When the only vendor source on disk is a sample pack, say so, name the manual that is missing, and fetch it if the vendor publishes it before writing a line against that boundary. A handoff note claiming "the sample folder is the complete authority" is an S4 finding. **Check the hosted page before building a picker.** Before designing any store-selection, address-selection or method-selection round-trip of the shop's own, read the payment gateway's hosted-page parameters: a gateway that already collects the convenience-store choice on its payment page (NewebPay MPG `CVSCOM` + `LgsType`, which returns `StoreCode/StoreName/StoreAddr/LgsNo` in the ordinary payment callback) removes the whole map integration from the customer path; the logistics API is then label, trace and modify only. Building the map anyway is unrequested variety. **Gates must exist for every payment family that reaches them.** For every predicate a payment reducer or settlement path branches on (close status, capture flag, sub-code), list every method family that can arrive there — card, virtual account, convenience-store code, barcode, wallet, pickup-with-payment — and confirm the vendor defines the field for each. A gate on a card-only field leaves every non-card order `awaiting_payment` forever with a NULL or spent deadline, stock held, no error and no alarm. Fixture-test the reducer with one real-shaped result body per family the shop offers. **The vendor's recap is not the field table.** A manual's own summary list — a 注意事項 note, a changelog, a quick-reference — can omit a field the full request table defines (NDNF-1.2.5 p.40 lists every method flag except `TWQR`, which p.38 defines). Transcribe from the table and use the recap only as a cross-check; record any difference as a finding against the recap, not the table. **Same field name, per-family numbering.** A status field several families share may number its values differently per family (NDNF `CloseStatus` 3 = 請款完成 for cards and wallets but 請款失敗 for BNPL; the payment callback's integer `StoreType` numbers OK as 3 where the logistics `ShipType` numbers it 4). Keep one value table per family keyed on the family field, refuse a value that is not on its family's table, and never derive one document's code from another's integer.

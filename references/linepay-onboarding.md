@@ -236,3 +236,9 @@ Next three actions, in order: 1 … 2 … 3 …
 ```
 
 A ❌ or ⏳ with no owner and no date is a finding against the guide, not the user. `python tools/newebpay/readiness.py --init --provider linepay` writes this card as a file and renders it with the same rules as the NewebPay one.
+
+---
+
+**Reading receipt: _confirm is the only word that means paid_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

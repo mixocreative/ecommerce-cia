@@ -38,7 +38,27 @@ async function post(p, body) {
 const state = async () => JSON.parse(await get('/debug/state'));
 const stock = (st, sku) => st.products.find((p) => p.sku === sku).stock;
 
+async function portIsBusy() {
+  // Environment truth before diagnosis: if somebody else is already serving 8124, this script
+  // would reset the database and then test THEIR process against it, and report the difference
+  // as a defect that stopped reproducing.
+  try {
+    await fetch(BASE + '/debug/state', { signal: AbortSignal.timeout(1500) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 (async () => {
+  if (await portIsBusy()) {
+    console.error(`REFUSED: something is already serving ${BASE}.`);
+    console.error('This script starts its own server and resets the database; testing a stranger\'s');
+    console.error('process against a store it just wiped reports defects as GONE that are still there.');
+    console.error('Stop that process (or set PORT) and run again.');
+    process.exit(2);
+  }
+
   reset();
   const server = spawn(process.execPath, ['server.js'], { cwd: SHOP, stdio: 'ignore' });
   await new Promise((r) => setTimeout(r, 1200));

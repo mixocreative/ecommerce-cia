@@ -1,8 +1,12 @@
 #!/bin/sh
 # The RUNBOOK's gate, run: a doctrine change ships only if the newest scored fixture run is no
-# worse than the one before it, no ledger PASS was filed without an artefact, and a run scored
-# since 2026-09-24 says what it executed. Install: tools/install-hooks.sh.
+# worse than the one before it ON THE SAME FIXTURE AND MODEL, no ledger PASS was filed without an
+# artefact, and a run scored since 2026-09-24 says what it executed. Install: tools/install-hooks.sh.
 python tools/score.py --gate || exit 1
+
+# Every reference file carries a unique reading receipt. A file without one cannot be told apart
+# from a file nobody opened, which is the confusion receipts exist to remove.
+python tools/receipts.py --gate || exit 1
 
 # Not a gate, a report: where the two skills' shared doctrine has drifted, and which shared file
 # is currently a byte-identical duplicate (edit one, and the other is silently behind).

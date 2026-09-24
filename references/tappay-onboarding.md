@@ -64,3 +64,9 @@ No documented merchant IP allowlist for `pay-by-prime` (read 2026-09-13); the po
 ## 11. Harness
 
 `tools/tappay/probe_prime.php --dry-run` (request shape, redaction) and `tools/explain_error.py` (`915`, `10003`, `10005`, `10006`). Full probe requires an SDK-issued prime — a browser step by design.
+
+---
+
+**Reading receipt: _the prime lives ninety seconds_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

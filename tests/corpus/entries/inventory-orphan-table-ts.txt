@@ -1,0 +1,12 @@
+# HARD ENTRY. Ground truth: a maintainer's own commit. The auditor never reads this file.
+# Chosen deliberately because the defect is an ABSENCE and the commit title names symptoms,
+# not a defect class - the earlier entries were all commits whose message named the bug.
+repo:          https://github.com/GOYUNIR/customAttempt_1
+fix_commit:    f54614c38df0
+audit_commit:  1ff2d93d7913
+subject:       H4: inventory backfill + decrement verification, and a lock that does not lock
+files:         e-commerce-store/scripts/backfill-inventory-levels.ts, e-commerce-store/scripts/verify-inventory-decrement.ts, e-commerce-store/scripts/verify-lock-mutual-exclusion.ts
+class:         S13 (primary) + S2 (secondary)
+language:      TypeScript
+scope:         e-commerce-store/lib/
+why_it_counts: Two things, and the primary is an absence. (1) S13/reachability - `inventory_levels` has never had a row and NOTHING writes it, while `decrementInventory` fails CLOSED on a missing row, so gating checkout on it would refuse every purchase; a hit must say the table has no writer and name the consumer that depends on it. (2) S2 - the lock helper does not provide mutual exclusion; naming that is a second, independent hit. Naming the inventory code for style, typing or unrelated issues counts for neither.

@@ -1,0 +1,10 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/Stefiro777/alata-investment-club
+fix_commit:    5b9ee9112076
+audit_commit:  f33a8ffa5389
+subject:       fix: idempotency check on stripe webhook to prevent duplicate emails
+files:         app/api/stripe/webhook/route.ts
+class:         S23
+language:      TypeScript (Next.js, Stripe)
+scope:         app/api/stripe/
+why_it_counts: A hit must say the Stripe webhook handler performs its side effects (confirming the booking and sending mail) without checking whether the booking is already confirmed, so Stripe's documented re-delivery sends the customer a second e-mail. The maintainer's fix adds `status` to the select and returns early on `status === 'confirmed'`. Flagging the signature check or the error handling alone does not count.

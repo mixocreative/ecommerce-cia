@@ -960,3 +960,8 @@ Audit:
 
 Evaluate actual risk rather than checking generic boxes without evidence.
 
+---
+
+**Reading receipt: _the domain decides which invariant is load-bearing_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

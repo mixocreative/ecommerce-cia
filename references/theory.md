@@ -204,3 +204,9 @@ Includes:
 System 5 receives **algedonic alerts** when system viability is threatened.
 
 ---
+
+---
+
+**Reading receipt: _a codebase has five systems whether or not anyone named them_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

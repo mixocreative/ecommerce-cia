@@ -1,0 +1,10 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/floorballdeutschland/saisonmanager-api
+fix_commit:    30c8d076d04e
+audit_commit:  624ccc464a7e
+subject:       fix: Race Condition bei Lizenzantrag absichern (secure the race condition on a licence application)
+files:         app/controllers/players_controller.rb
+class:         S2
+language:      Ruby (Rails)
+scope:         app/controllers/
+why_it_counts: A hit must say the licence list is read, appended to in memory and written back with no lock, no unique constraint and no re-check at write time, so two concurrent applications for the same team each see no existing licence and each append one. Naming the controller for the permission check alone, or for style, does not count - though the permission structure is a legitimate second finding.

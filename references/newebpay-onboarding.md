@@ -330,3 +330,9 @@ Next three actions, in order: 1 … 2 … 3 …
 ```
 
 A ❌ or ⏳ with no owner and no date is a finding against the guide, not the user. `readiness.py` enforces exactly this.
+
+---
+
+**Reading receipt: _one scheme, and the sandbox can refund_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

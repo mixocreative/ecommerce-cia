@@ -122,3 +122,9 @@ For the API calls themselves, ECPay's official skill (above) is the reference; t
 ## 12. Readiness card
 
 Same format as the NewebPay guide §13, with `account.stage: ok | public 3002607` on day one and `walk.refund: skip | stage cannot; production canary on <date>` always present.
+
+---
+
+**Reading receipt: _three crypto schemes, and the refund proves none of them_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

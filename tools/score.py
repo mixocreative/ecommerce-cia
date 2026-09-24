@@ -32,7 +32,9 @@ def runtime_rows() -> list[dict]:
     if "## Runtime evidence" not in text:
         return []
     out = []
-    for line in text.split("## Runtime evidence", 1)[1].splitlines():
+    section = text.split("## Runtime evidence", 1)[1]
+    section = section.split(chr(10) + "## ", 1)[0]   # stop at the next heading, not at EOF
+    for line in section.splitlines():
         if not line.startswith("| 20"):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
@@ -107,7 +109,9 @@ def fixture_of(tier: str) -> str:
     higher number from the other harness. The RUNS row names its fixture in the tier cell.
     """
     low = tier.lower()
-    for name in ("fixture-shop-live", "fixture-service", "fixture-shop"):
+    # Longest first: "fixture-shop-node" contains "fixture-shop", and matching the shorter one
+    # compared the node fixture against the read fixture's history on the day it was added.
+    for name in ("fixture-shop-live", "fixture-shop-node", "fixture-service", "fixture-shop"):
         if name in low:
             return name
     return "default"

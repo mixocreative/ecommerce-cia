@@ -199,7 +199,22 @@ acknowledged.
 | `tools/stripe/probe_intent.php` | `--dry-run` no; live yes | the request shape; with a sandbox key, a real PaymentIntent round trip |
 | `stripe trigger <event>` (vendor CLI) | sandbox | real, correctly signed events for the S24 contract test |
 
-**Live-verification status: UNVERIFIED.** Everything on this page is read from the vendor's current
-documentation and the signature scheme is proved by known-answer test, but no live sandbox round
-trip has been run from this skill. Say that wherever this guide is cited as evidence, and run
-`stripe sandbox create` — with the owner's yes — to close it.
+**Live-verification status: PARTIAL, and the parts are named.**
+
+| Claim | Status |
+|---|---|
+| The signature construction and its four failure modes | **PROVED** offline — `tools/stripe/sign_test.py`, five cases, no key and no network |
+| The API endpoint, TLS, auth header shape and error envelope | **PROVED live** — a probe against `api.stripe.com/v1/payment_intents` with a syntactically valid but unowned `sk_test_` key returned a real HTTP 401 and the probe parsed it: `REFUSED — HTTP 401 — the key is not valid for this account.` Transport, path and error handling are therefore real, not assumed |
+| Detection on a real codebase | **PROVED** — `detect.py` run against a positive (flagging the re-serialised body and the Express middleware order) and a negative |
+| A successful PaymentIntent create, and every status value in §2 | **UNVERIFIED** — needs a key |
+
+`stripe sandbox create` provisions one without an account, but it requires an e-mail address on
+the command line, and an owner's address is theirs to give rather than the agent's to send. That
+is the one rung-5 line in this guide: **one e-mail address, and §2's status machine becomes
+observable rather than quoted.**
+
+---
+
+**Reading receipt: _a decline is not a terminal state_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.

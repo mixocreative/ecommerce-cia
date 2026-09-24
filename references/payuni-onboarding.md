@@ -102,3 +102,9 @@ Sandbox proves: UPP, HashInfo/GCM, `NotifyURL` for cards, **ATM/CVS via 模擬�
 ## 11. Harness
 
 `tools/payuni/`: `detect.py`, `fetch_docs.py` (ShowDoc JSON API), `crypto.php selftest|encrypt|decrypt|hash`, `probe_upp.php [FLAG] [--dry-run]` (PASS / keys refusal / not-enabled `UPP020xx` decrypted from the ReturnURL auto-form; `PAYUNI_PROBE_DUMP=file` keeps the raw response). `tools/explain_error.py` knows `DEF01002/05/07`, `API00010/11`, `UPP02049/50/63/73/109`. Readiness card: `tools/newebpay/readiness.py --init --provider payuni`.
+
+---
+
+**Reading receipt: _the verdict comes from JS_INFO, never the brand name_.** Quote this phrase on the report's receipts line (Step 6 in cia,
+Step 7 in ecommerce-cia) to show this file was read rather than inferred from the skill's index.
+It appears nowhere else.
