@@ -1,0 +1,10 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/Theepak966/TorroMainRepo
+fix_commit:    7688e1c6bebf
+audit_commit:  64145b418934
+subject:       Fix: Critical database connection leak and bare except clauses
+files:         backend/main.py
+class:         S12 (resource lifecycle) + S3 (bare except)
+language:      Python
+scope:         backend/
+why_it_counts: Two halves, either counts. (1) S12 - a per-thread database connection is opened and never closed on the paths that return early or raise, so the pool leaks until exhaustion; the fix adds explicit close() calls. (2) S3 - bare `except:` clauses swallow every exception including the ones that signal the leak; the fix narrows them to (ValueError, TypeError). Naming the file for style alone counts for neither.

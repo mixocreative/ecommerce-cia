@@ -105,6 +105,44 @@ oracle rather than anybody's reading of the code; and a miss is recorded rather 
 away, because a miss here is the doctrine's blind spot showing itself on real code. An entry that
 keeps missing is the most valuable row in the harness.
 
+## Blind-forward validation — the mode with no oracle
+
+The corpus above has a bias it cannot remove by growing: **every entry is a commit whose author
+had already diagnosed the bug and written its name in the subject line.** The auditor never sees
+that message, but the defect had still been characterised by somebody before the audit began, and
+the entry was chosen *because* it had been. It measures recall on named defect classes, which is
+worth measuring and is not the same as finding something nobody knew about.
+
+`tests/corpus/forward.py` removes the chooser:
+
+```
+python tests/corpus/forward.py pick <repo-url> --back 220
+   ... audit the printed path, cold, and write the findings down ...
+python tests/corpus/forward.py confirm <name> --files a.ts,b.ts
+```
+
+`pick` checks a repository out at a commit well back along its first-parent chain and prints the
+path and nothing else — no subject, no date, no diff, nothing about what came next. **No oracle
+exists at audit time.** `confirm` then replays the project's own future: every later commit that
+touched the files the audit named.
+
+| Verdict | Meaning |
+|---|---|
+| **CONFIRMED-BY-FUTURE** | a later commit changes the exact thing the finding named, for the reason the finding gave. The maintainers agreed, months later, knowing nothing about this skill |
+| **OPEN** | nobody has touched it. **Not a miss** — the defect may well still be there, and an audit running ahead of its project is the thing you want |
+| **WRONG** | a later commit shows the finding was mistaken about the code |
+
+This is the only measurement in the harness that can register a defect **nobody had collected**,
+which is the ceiling the retrospective corpus cannot reach by any amount of growth. It is also
+the only one where `OPEN` is an honest outcome rather than a hole, so read the three verdicts
+together and never quote a hit rate from this table alone.
+
+**The rule that keeps it worth anything: step two happens between the other two.** Running
+`confirm` before the audit is written down is reading an answer key — one that did not exist
+until you looked. The audit prompt says so, and it also forbids the auditor from running `git`
+at all inside the snapshot, because the history is right there and one `git log` would end the
+measurement.
+
 ## Reading a miss
 
 | Symptom | Usually means |

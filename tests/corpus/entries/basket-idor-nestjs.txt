@@ -1,0 +1,10 @@
+# Ground truth: a maintainer's own fix commit. The auditor never reads this file.
+repo:          https://github.com/mishadanilovich/coffee-shop-server
+fix_commit:    6ebc7bfc46e5
+audit_commit:  feb214e1fa7d
+subject:       Fix basket IDOR and link Stripe payments to orders via webhook
+files:         src/basket/basket.controller.ts, src/basket/basket.service.ts
+class:         S15 / authorization (object-level access)
+language:      TypeScript (NestJS)
+scope:         src/basket/
+why_it_counts: A hit must say the basket endpoints take the basket id from the caller and never establish that the basket belongs to the caller - so any authenticated user can read, add to, remove from and submit somebody else's basket by id. The maintainer's fix threads a @UserId() through every one of those handlers. Naming the controller for validation or typing alone does not count.
