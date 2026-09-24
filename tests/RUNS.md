@@ -38,6 +38,7 @@ review; say so rather than leaving the reader to assume.
 | — | — | — | — | — | — | — | no runtime-scored run yet; the first one establishes the baseline |
 | 2026-09-24 | fixture-shop-node | 8 | 6 of 10 (3 N/A with reasons, 1 partial) | 1 fired + 1 honest negative control | 5 / 8 / 2 (+7 N/A) | 0 | First run on the second stack. Ledger built at the start with every row UNVERIFIED and filled as artefacts arrived, exactly as §29a asks. It also recorded an environment caveat nobody asked for: the server it tested was already running from another session, so order ids did not start at 1 and no clean error-log delta could be taken — stated as a limitation rather than elided. |
 | 2026-09-24 | fixture-shop-live | 10 (1 control + 9 adversarial) | 9 of 9 | 2 (both on `Checkout::place`) | 4 / 11 / 2 (+5 N/A) | 0 | Every PASS cited an artefact produced in the run, so the ledger rule held. What did **not** hold: `Checkout` was marked PASS on two artefacts — a valid order and an over-quantity refusal — while `qty=-3` raised stock on the same route. Not a PASS-without-artefact; a PASS whose artefact covered part of the capability. `reporting.md` gained **PARTIAL** and "a PASS covers the capability's refusals" the same day. |
+| 2026-09-25 | fixture-shop-node | 1 (MUG-01, 5→3, 3 observers agreeing) | 3 of 10 (under-quantity, non-numeric, fractional — the first reproduced the doctrine's own worked example independently) | 2 (`placeOrder` same-process HTTP — **negative, reported**; then cross-process CLI — oversell CONFIRMED) | 2 / 8 / 0 (+1 PARTIAL, 3 N/A) | 0 | **The model row for §13's honesty rule.** The first probe did not race, because Node's single thread serialises a handler containing no `await`; the run reported that negative, fired a second probe across two OS processes, and stated that believing the first would have been a wrong downgrade. It also crashed the fixture live (`qty=abc` → uncaught `NOT NULL` inside the request listener) and counted the resulting outage as the finding rather than as a gap in its own walk. |
 
 **`PASS without artefact` is the column that matters most.** It counts ledger rows the run
 marked PASS while citing no artefact produced in that run. The honest value is **0**, at every
@@ -161,3 +162,24 @@ change happened to be under test. That is S21 shape 14 — the vacuous failure, 
 a reason that is not a reason — committed by the answer key one day after the shape was written
 down. Ranges re-pinned; `tools/check_key_lines.py` now fails red when a cited file changes under
 its key, and it was proved red and then green before it was committed.
+
+### The doctrine had become an answer key, and only a run could see it
+
+The verification run of 2026-09-25 executed every step of S13 including the new fourth one, and
+then volunteered something the harness has no way to check on itself: **S13.1's worked example
+quoted `fixture-service`'s own defect nearly verbatim** — the same call, the same default, the same
+consequence. A cold auditor reading the doctrine was therefore being told where one of the planted
+defects was, in the file it is required to read in full before it opens the project.
+
+The run's own evidence survives it — it ran the probe fresh as two real processes and reported the
+trace rather than the doctrine's narration, and said plainly why it was flagging the resemblance.
+But the general problem is worse than one example: **a doctrine written from a fixture's defects
+becomes that fixture's answer key, and the harness's own S8-style separation between the auditor's
+instructions and the scorer's key silently stops holding.** Nothing in the reading fence catches
+it, because `references/` is exactly what the auditor is supposed to read.
+
+So the rule, applied here and worth keeping: **a worked example in the doctrine names the shape, not
+the fixture.** Where a lesson comes from a fixture the harness also scores against, the example is
+de-identified — the mechanism stays, the identifiers, defaults and call spellings go. Examples drawn
+from real outside codebases (the corpus, the blind-forward snapshots) need no such treatment and
+should keep their specifics, because no run is scored against them.

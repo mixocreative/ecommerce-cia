@@ -350,11 +350,11 @@ Three greps, one table. (a) For every class under the admin, control, settings o
 **S13.1 — a grep proves the symbol resolves, never that it reaches the real thing (2026-09-25,
 found by a cold run missing it).** The method above is three greps, and greps find a capability
 with *no* caller. They do not find a capability wired to the **wrong store**, because every symbol
-in it resolves and every call site is real. A job runner's operator CLI opened its database with
-`connect(cfg.get("db_path", ":memory:"))` against a config file that never set `db_path`, so every
-`python -m runner.cli` invocation created a fresh in-memory database, did its work and threw it
-away. `connect` exists. `cfg` exists. The command runs, prints a plausible empty result, and exits
-0. Nothing a grep can see is wrong.
+in it resolves and every call site is real. An operator command-line tool opened its
+data store from a configuration key the configuration never set, so the lookup fell through to its
+default and every invocation worked against a fresh, empty, immediately-discarded store. The
+connect call exists. The config object exists. The command runs, prints a plausible empty result,
+and exits 0. Nothing a grep can see is wrong.
 
 An earlier run caught this by running the CLI in one process after enqueuing in another; a later
 run, following the same doctrine, did not — because the doctrine asked for the greps and never
