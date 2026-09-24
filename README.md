@@ -355,7 +355,7 @@ The audit assumes an integration exists. When it does not — the user is starti
 | Prerequisites before code｜寫 Code 前的前置需求 | identity documents, bank account, SMS number, HTTPS domain or tunnel, application forms — with who acts and how long it takes｜身分認證文件、銀行帳戶、簡訊驗證號碼、HTTPS 網域或 Tunnel、申請表單 — 並註明執行者與所需時間 |
 | Host before code｜寫 Code 前的主機檢查 | a table of what the gateway needs (inbound 443, stable outbound IP for logistics, cron, clock) against shared hosting, VPS, PaaS, serverless｜對照金流商的需求（如 Inbound 443、物流用的固定 Outbound IP、Cron 排程、時鐘同步）與共享主機、VPS、PaaS、Serverless 的規格差異表 |
 | Sandbox and proof｜測試環境與驗證 | guided registration, console activation, then a synthetic probe per method: PASS, or the exact refusal code and what it means｜一步步引導註冊、後台開通，並對每種付款方式發射模擬探針：回傳 PASS，或是印出精確的拒絕代碼與含義 |
-| Wiring, walk, go-live｜串接、走位與上線 | the contract in the order things go wrong, one sandbox order per method, a production checklist with a canary｜依故障可能發生的順序排列合約規範，每種付款方式完成一筆測試訂單，並提供含 Canary 灰度驗證的上線清單 |
+| Wiring, walk, go-live｜串接、走位與上線 | the contract in the order things go wrong, one sandbox order per method, a production checklist with a canary｜依故障可能發生的順序排列合約規範，每種付款方式完成一筆測試訂單，並提供含 Canary 小流量驗證的上線清單 |
 
 ## Providers｜支援的金流商
 

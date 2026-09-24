@@ -83,7 +83,7 @@ Ask these in order. Each answer removes work.
 | WebATM `WEBATM` | pays now via online banking | immediate | console toggle | fine for any cart size |
 | ATM 轉帳 (虛擬帳號) `VACC` | gets a virtual account, pays later at ATM or app | when the transfer lands — **hours or days** | console toggle on the hosted page; `非信用卡應用 API 機制申請表` if you call the standalone API | the order is *unpaid* until `NotifyURL` fires; expiry sweep + "waiting for payment" screen (TW-4); **refunds need `商店非信用卡退款機制申請表`** or are manual transfers |
 | 超商代碼 `CVS` | gets a code, pays at 7-11/全家/萊爾富/OK counter | when paid at the counter | as `VACC` | **cap NT$6,000 by default** *(lesson; NDNF §超商代碼 — cite the page from the manual you fetched)* — hide it on larger carts |
-| 超商條碼 `BARCODE` | prints/shows a barcode, pays at counter | as above | as `VACC` | higher cap than 代碼 (check NDNF) |
+| 超商條碼 `BARCODE` | prints/shows a barcode, pays at counter | as above | as `VACC` | higher cap than 超商代碼 (check NDNF) |
 | 先買後付 BNPL `AFTEE` / `OPPAY` (大哥付你) | credit approval at checkout | provider settles | **vendor-enabled**: seller terms signed (`AFTEE服務條款`, `大哥付你分期-賣家約定條款`), then NewebPay | approval can refuse; refunds via BNPL capture/void APIs |
 | 定期定額 (recurring) | separate NDNP API, not MPG | per period | **vendor-enabled**: `約定信用卡付款授權申請表` | only if Q1 said subscriptions |
 
