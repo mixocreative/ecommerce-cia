@@ -3,6 +3,7 @@
 
     python tools/zh_check.py           # report every hit with its line and context
     python tools/zh_check.py --gate    # exit 1 if any hit is not on the allowlist
+    python tools/zh_check.py --tone    # also flag translationese patterns (advisory, never gated)
 
 Why this is a tool and not a habit: on 2026-09-24 a blanket `代碼 -> 程式碼` sweep turned
 **超商代碼** into 超商程式碼 in eight places - 超商代碼 is the standard Taiwanese term for a
@@ -96,6 +97,24 @@ ALLOW: dict[str, str] = {
     "貨態代碼": "ECPay's own console menu name (物流貨態代碼查詢)",
 }
 
+# Translationese: phrasing that is grammatical, uses no mainland vocabulary, and still reads as
+# translated English. These are patterns rather than words, so each one is a PROMPT to re-read
+# the line, not a verdict - the tool prints the line and a human decides.
+TONE: dict[str, str] = {
+    "進行了": "「進行+動詞」多半是英文 -ing 的直譯；台灣寫法通常直接用那個動詞",
+    "進行一個": "同上，且「一個」多半是 a/an 的直譯",
+    "被認為是": "英文被動語態直譯；中文少用「被」，改主動",
+    "被稱為": "同上；可用「稱為」或直接敘述",
+    "的的": "「的」連續，幾乎都是修飾語過長",
+    "透過使用": "冗詞；「透過」或「用」擇一",
+    "藉由使用": "同上",
+    "的事實": "the fact that 的直譯",
+    "在...的情況下": "in the case of 的直譯",
+    "不僅僅": "not only 的直譯；台灣多用「不只」",
+    "在某種程度上": "to some extent 的直譯",
+    "眾所周知": "翻譯腔套語",
+}
+
 SKIP_DIRS = {".git", "node_modules", "vendor", "__pycache__", "var", "build", "dist"}
 SKIP_SUFFIX = {".sqlite", ".png", ".gif", ".jpg", ".lock", ".pyc"}
 HAN = re.compile(r"[一-鿿]")
@@ -120,6 +139,10 @@ def scan() -> list[tuple[Path, int, str, str, str, str]]:
             continue
 
         for lineno, line in enumerate(text.splitlines(), 1):
+            if "--tone" in sys.argv:
+                for pattern, why in TONE.items():
+                    if pattern in line:
+                        hits.append((path, lineno, pattern, "(re-read this line)", why, line.strip()))
             for bad, (good, note) in TERMS.items():
                 idx = 0
                 while (idx := line.find(bad, idx)) != -1:
@@ -147,7 +170,13 @@ def main() -> int:
 
     print("Never fix these with a blanket replace: 超商代碼 became 超商程式碼 that way, in the")
     print("README of a skill built for the Taiwanese market. Decide per line.")
-    return 1 if "--gate" in sys.argv else 0
+
+    # --tone is advisory and never gates: every pattern in TONE has a legitimate use, and a
+    # gate on judgement would be a gate that gets switched off.
+    if "--gate" in sys.argv:
+        vocab = [h for h in hits if h[2] not in TONE]
+        return 1 if vocab else 0
+    return 0
 
 
 if __name__ == "__main__":
