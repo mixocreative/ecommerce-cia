@@ -65,6 +65,23 @@ For every value persisted at a moment in time (payment deadline, reserved stock,
 
 **S1.1 — arithmetic on a configurable value (three cold runs missed it, 2026-09-19).** For every quantity a job *derives* from a setting — `window − 12h` for a reminder, `hold_days − 1`, a cap times a rate — evaluate the expression at the edges the admin screen will actually accept (0, 1, the default, ten times the default). A result that goes negative, zero, or throws — a `DateInterval('PT-4H')` when the window is under twelve hours — is a finding at **MEDIUM**, and **HIGH** when the job then records the effect it did not produce (a `reminder_sent_at` stamped after the throw path, or with no send). The admin screen let the value in; the job is where it fails.
 
+**S1.1 — the same setting read twice inside one operation (2026-09-24, found in a live checkout).**
+S1's usual shape is a writer that froze a snapshot and a later reader that re-reads. The sharper
+instance is *inside a single transaction*: one operation reads a setting, uses it for the figure it
+quotes outward, and then **reads it again** for the figure it records. A checkout read its
+international surcharge rate twice — once to compute the amount the payment gateway would be asked
+for, once for the rate written on the order row — so a settings table that changed, or failed,
+between the two produced an order **whose recorded rate did not explain the amount charged**.
+Nothing throws. The discrepancy surfaces weeks later at reconciliation, as an order nobody can
+account for, and by then the settings have been read a thousand times since.
+
+Read the operation as a unit: **every external value it depends on is read once, at the top, and
+carried.** Two reads of one name inside one operation is the finding, whether or not you can
+construct the interleaving — the argument "the window is tiny" is an argument about likelihood, and
+the cost here is an unexplainable money row, which is the expensive kind of rare. The same rule
+covers a clock (`now()` twice in one operation gives two times), a random source, a feature flag,
+and anything whose second read can disagree with its first.
+
 ## S2 — Select-then-act predicate loss (TOCTOU race)
 
 For every worker, cron, or batch that SELECTs candidate rows and then mutates them one by one (expire unpaid, release stock, void invoice, revoke entitlement, retry notification), read the per-row UPDATE/DELETE. The mutation's WHERE clause must re-state the full selection predicate, not only the status column. A predicate that is checked at SELECT and dropped at UPDATE is a time-of-check/time-of-use finding: a callback that lands between the two steps (deadline extension, payment arrival, manual hold) is silently ignored.
@@ -179,6 +196,52 @@ Before concluding "site not installed", "DB missing", "sandbox blocked", run the
 
 For every payload that crosses a boundary into this system (gateway callback, webhook, logistics status push, import file, admin form, any JSON from an external API or a model), find the point where it is parsed and the point where it is first acted on. Between those two points there must be explicit validation of shape and type: required fields present, unexpected fields ignored or rejected deliberately, numeric amounts not accepted as strings without conversion, null where a list or object is expected refused, encoding and escape handling defined. A parser that hands a raw decoded array straight to business logic is a finding. Name the boundary in the finding as `producer → consumer`.
 
+**An anchor that is not the end of the string is a validator with a hole.** In PCRE, `$` matches
+*before a trailing newline* unless the `D` modifier is given, so `"Threads_connected\n"` passes a
+`^[A-Za-z0-9_]+$` identifier check unchanged and reaches whatever the identifier is interpolated
+into. Use `\z`, or `D`. The same trap has a name in most regex flavours and a different default in
+each, so for every validator on the boundary, ask what its anchors actually anchor to — and note
+that a validator exists at all only where a value could not be bound as a parameter: `SHOW`
+statements, for one, accept no placeholder on either MySQL or MariaDB, which is exactly how a
+hand-rolled identifier check comes to exist on a path that would otherwise never need one.
+
+**S11.1 — the byte/character boundary, which a monolingual test suite cannot see (2026-09-24,
+proved).** The boundary this sweep is usually about is between two systems. This one is inside a
+single expression, and it is invisible until the content stops being ASCII.
+
+`preg_split('/\R/', $text)` — PCRE's any-line-ending escape — **without the `u` modifier also
+matches the raw byte `0x85`**, which is not a line ending in UTF-8 at all but an ordinary
+continuation byte inside Traditional Chinese and Japanese characters. Run on `充全測試` it returns
+**four fragments**: 充 is `e5 85 85`, so both of its continuation bytes are eaten as separators and
+the character is cut into three pieces; 全 is `e5 85 a8` and loses one. The text is not
+mis-split, it is **destroyed**, mid-codepoint, silently. With `/u` the same call returns one part.
+An English corpus exercises none of it and every test written over one passes.
+
+The shape generalises well beyond `\R`. **Any byte-oriented operation on text is a candidate
+corruption site the moment the content is not ASCII** — `substr`, a truncation for a column width
+or a preview, a padding, a length check used as a limit, a reverse, a regex without `u`, a
+case-fold, a sort. Each is correct on its own terms and each is silent by construction, and the
+symptom surfaces arbitrarily far downstream as mojibake, so the diagnosis starts in the wrong file.
+
+**Method.** For every locale the system serves, take one non-ASCII string from its own content and
+ask of each text operation on the path: *does this operate on bytes or on characters, and has it
+been exercised against this string?* Where the language has both families — `strlen`/`mb_strlen`,
+`substr`/`mb_substr`, a regex with and without `u` — the byte form on user-facing content is a
+finding unless the byte semantics are what was wanted and the comment says so.
+
+**The wider rule this is an instance of, and it is the one worth carrying:** a defect whose **test
+surface and production surface differ by locale** is not reachable by adding coverage in the
+language the suite is written in. A trilingual system needs at least one non-ASCII fixture on every
+text path, for the same reason S21's non-emptiness sibling exists — the green run in English is not
+evidence about `zh-TW`.
+
+**And when a guard and the right engineering answer coincide, record the reason, not the
+compliance.** The case that surfaced this parsed a `.env` file, where CRLF cannot be promised —
+`.gitattributes` pins line endings *inside* the repository, not on a file hand-edited on a server —
+so a line-ending-agnostic split is correct there independently of any lint rule. A comment saying
+"a test requires this" invites the next person to simplify back to the broken form; a comment
+saying *why* does not.
+
 ## S12 — Cascade, partial failure and retry storm
 
 For every outbound call (gateway query, logistics API, mail, storage, queue) and every inbound retry source (provider re-sends a notification, cron re-runs, customer refreshes), answer: what happens when the call fails half-way, times out, or succeeds after the caller gave up? Is there a per-step timeout? Is retry bounded with backoff, and is the retried action idempotent? Is there a circuit breaker or a degrade path (offer fewer methods, queue for later) rather than a crash or an unbounded loop? A retry that repeats a non-idempotent write, or a failure in one step that silently leaves an earlier step's side effect in place, is a finding. Trace the chain end to end and state which downstream effect the upstream failure produces. **A wait with no ceiling is a leak.** Any order, parcel or payment that waits for an external signal the environment cannot guarantee (a callback the sandbox cannot emit, a store-to-store status push with no documented retry, a counter payment) must have a ceiling that routes to a human queue — never an automatic reversal, because the parcel may be at the counter — and a sweep that lists what is waiting. State the ceiling and the queue; "the callback will come" is not a design (§3 fulfilment rule 9). **A browser-returned result is not a server channel.** Gateways deliver a result twice: once to the customer's browser (a return URL, a `ClientBackURL` / `ReturnURL` form post) and once server-to-server (a `NotifyURL`), with different fields at different moments. Anything dispatch depends on — a consignment number, the chosen store, a virtual account — must reach the shop by the notify channel or a poll of the vendor's query API; a design that takes it only from the browser post loses it the moment the tab closes (§3 fulfilment rule 12).
@@ -213,6 +276,30 @@ still sells*. "The gateway is down → the Pay button explains and the order wai
 on the order list → the catalogue and the basket" is a design; "→ a 500 → nothing → nothing" is
 a finding graded on the money it loses. A row nobody can fill is a dependency nobody has thought
 about failing.
+
+
+**S12.3 — the two-step mutation whose restore is conditional on arriving at step two (2026-09-24).**
+S12 asks what a half-way failure leaves behind. The commonest instance in operational tooling is a
+script that **puts the system into a state and takes it out again**: close the shop, prove the
+maintenance page, reopen; disable the index, backfill, re-enable; revoke the key, rehearse the
+rotation, restore. If it dies in between — and it is a script, so it dies on a network blip, a
+`Ctrl-C`, an OOM, a failing assertion halfway down — **the system stays in the first state**, and
+nothing in the script is wrong when read top to bottom.
+
+Three rules, in increasing order of how much they actually buy:
+
+1. **The restore goes on an unconditional path** — a `finally`, a trap, a deferred call — never
+   after the work, and never inside the branch that only runs on success.
+2. **Announce what will be mutated before touching it**, naming the target, so a concurrent process
+   or a person reading the log can tell a deliberate outage from a defect.
+3. **Default to a disposable, isolated target, and put the shared or real one behind an explicit
+   flag.** This is the one that survives contact with a tired person: safe-by-default beats
+   safe-because-everybody-remembered-to-coordinate, and the moment a rehearsal needs coordination
+   to be safe it will be run uncoordinated exactly once, on the day it matters most.
+
+The tell when reading: a mutation and its inverse in the same function, with anything between them
+that can throw, return early or be interrupted. Ask what the system looks like at that instant, and
+who finds out.
 
 ## S13 — Orphan capability / designed-but-unbuilt
 
@@ -535,6 +622,21 @@ And three rules with teeth for any shop:
   that reads cell borders) said 125, because a fifth of the table was a second code column
   the first read never saw. Extract cells, count rows, then cross-check the raw order.
 
+- **A document generated from an authority needs a test that it is still generated, or it is a
+  document that was true once (2026-09-24, proved).** The direction here is the inverse of the rest
+  of this sweep: the artefact is *derived* from the source of truth rather than checked against an
+  external one, which makes people trust it more and check it less. An environment reference
+  generated from `.env.example` had drifted from it; the guard that caught it **regenerates and
+  compares**, which is the only form that works — a reviewer reading both files side by side is the
+  thing that already failed. The sibling shape is the same rule pointed the other way: a new
+  environment variable read by the code but absent from `.env.example`, caught by a test that pins
+  the two sets together. **For every generated or mirrored artefact — a reference document, a
+  schema dump, a fixture, an example config, a client stub, a type definition — name the test that
+  regenerates it and fails on a difference, or record that there is none.** Enumerate them the way
+  this sweep enumerates anything else: the population is "everything in the repository that was
+  produced from something else in the repository", and a member with no currency test is a cell
+  marked unverified, not a document.
+
 Report line format: `S18 — P payment × D delivery cells enumerated from the shipped seed; M verified against manuals with page citations, U unverified; matrix in the report. Re-walks triggered by findings this run: K.`
 
 ## S19 — Can the host this shop is launching on actually meet what the gateways and carriers require? A REQUIREMENT THE HOST MUST SATISFY, NEVER CHECKED AGAINST THE HOST THAT WAS CHOSEN
@@ -696,7 +798,7 @@ Report line format: `S20 — D detectors enumerated; C report coverage separatel
 
 ## S21 — The suite is an instrument too. A PASSING ASSERTION THAT SOMETHING IS EMPTY PROVES NOTHING UNTIL SOMETHING PROVES IT CAN BE NON-EMPTY
 
-S20 asks whether the detectors are looking. **S21 asks it of the test suite**, which is the detector everything else is trusted on. Six shapes, the first four confirmed in one codebase, the sixth days later in the same one:
+S20 asks whether the detectors are looking. **S21 asks it of the test suite**, which is the detector everything else is trusted on. Thirteen shapes. The first six are a test that never ran or never asserted; the last seven ran and asserted, on something other than the claim in their name. The first four were confirmed in one codebase in one day, the sixth days later in the same one, and shapes 7 to 13 on 2026-09-24 in a single day across two sessions auditing one tree:
 
 1. **The vacuous pass.** A query used by four tests returned nothing at all, because of a defect none of them was about. The two tests asserting *"and the result is empty"* passed — that is what they asked for — and the two asserting a result failed. The failures looked like a test problem precisely because their siblings were green. **Whenever the subject of a test is a query, a filter, a collection or a sweep, at least one test must prove it can return something, under the same conditions.** And watch the **assertion count**, not only the colour: if fixing a bug makes assertions go *up*, assertions were not being reached, and every earlier green run was reporting on code it never executed.
 2. **The runner is one environment.** A test that loads real configuration into the runner's own process — a framework bootstrap, a config builder, a dotenv loader, anything that reaches the production entry point — changes `getenv()` for every test that runs after it, across suite boundaries when the suites share a process. The damage reads as an order-dependent flake and hides for months. **Snapshot the environment before such a test and restore it after.** And the asymmetry that makes this so hard to see: **cleaning up in teardown protects the next test and never the first.** A test that depends on the *absence* of a variable must clear it on the way **in**.
@@ -708,13 +810,120 @@ S20 asks whether the detectors are looking. **S21 asks it of the test suite**, w
 
 6. **The runner's own file listing is an instrument (2026-09-20).** A suite discovers its tests by walking directories; walk it in an environment whose directory iteration is broken and it discovers fewer of them and prints the same green `OK` over the smaller number. One laptop's Docker bind mount returned a single entry from `rewinddir()`, so the fast suite run inside the container found 2,370 tests where the host found 3,137 — 767 tests silently not run, no warning, exit 0. The count is the measurement: every run quotes its discovered-test total against the last known one (`--list-tests | wc -l` on the same commit), and a green run over fewer tests than yesterday is a red run until the difference is explained. The same iteration fault had already poisoned the product's module cache in the same environment (S20.5) — one broken primitive, two storeys of silence.
 
-Method: enumerate the tests that touch the system's real configuration or entry points; confirm each restores what it changed. For every suite that asserts emptiness, find the sibling that proves non-emptiness. Record the assertion count alongside the test count in every claim, because *"N tests pass"* and *"N tests ran and asserted M things"* are different reports. For every external protocol, name the vendor-published vector the suite reproduces, or write "none — round-trip only".
+**Shapes 7 to 13 share a sentence worth saying before them: _the thing that made it pass was not
+the thing it claimed to prove._** Every one of them is green, runs, and asserts. Coverage counts
+the lines. The assertion count goes up, not down. What fails is the correspondence between the
+claim on the tin and the thing the assertion actually constrains — which is why none of the first
+six catch them, and why they are found by reading a test against its own name rather than by
+running anything.
 
-**Grading.** A vacuous pass on a money path: **HIGH** — the code it was meant to cover has never been exercised. Environment contamination that reaches other tests: **HIGH** when the contaminating values are real credentials, **MEDIUM** otherwise. A live secret reachable in failure output: **HIGH**, and say it in the conversation with the rotation decision attached, per §0.10, beside the order screen it affects.
+7. **The test that pins the defect.** A product page published `variants[0]`'s stock as the whole
+   product's availability, so an item with one sold-out variant and one in stock went to Facebook
+   and Google as `out of stock` while the shop accepted orders for it. The renderer's test file
+   had an assertion for it — it asserted the template read the *variant's* purchasability. **The
+   defect had a passing test holding it in place**, and the fix turned the suite red, which reads
+   to whoever runs it next as the fix being the regression. **When a finding is confirmed, grep
+   the suite for an assertion that encodes the defective behaviour before writing the fix.** If
+   one exists: the finding is *stronger*, because somebody wrote the wrong behaviour down
+   deliberately and it is therefore load-bearing somewhere; the fix must **replace** that
+   assertion rather than add beside it, with a comment saying the old one pinned a defect; and ask
+   what else that author pinned. This is the inverse of a missing test and invisible to coverage —
+   the line is covered, by an assertion that it stay wrong.
 
-**The sentence to carry out of this sweep:** *green is a colour, not a measurement — quote the counts, and know which of them went up.*
+8. **The injection that never arrived.** Proving a fallback needs a fault, and the obvious
+   injection is the blunt one: take the table away, kill the connection, delete the file. The
+   blunt injection frequently **never reaches the code under test**, because an earlier guard
+   refuses first and the test goes green on the refusal. Concretely: a checkout falls back to a
+   standard tax rate when settings cannot be read; the test hid the settings table; checkout
+   refused at `shipping-method-unavailable`, and for a basket that skipped shipping at
+   `payment-window-unavailable` — both read settings *before* the tax read. Every assertion about
+   the fallback was unreachable. It was caught only because one refusal message differed from the
+   expected one; reword that message and the test is green for ever over a path it never entered.
+   **An injection test must assert that the injection arrived, not only that the system behaved.**
+   Three things make it hold: prove the fault reached the frame under test (a counter the injector
+   increments, its distinctive exception asserted in the log, or an observable only the fallback
+   produces); **key the injector on the call frame, never on a query count, an ordinal or a
+   timing**, so an unrelated call added later cannot move the injection or silence it — and name
+   the frame by symbol, so renaming the method turns the suite red instead of turning the injector
+   into a no-op; and **assert the guards that fire before it**, because they are the reason the
+   interesting case is the one it is. The reachability question comes first and changes the
+   finding itself: **before filing "silent fallback", ask what refuses before it.** A fallback
+   behind guards that refuse under the same conditions is reachable only in a narrower window —
+   usually a failure *during* an operation rather than a sustained one — and that window is what
+   the proof has to reproduce.
 
-Report line format: `S21 — T tests / A assertions quoted; V vacuous-pass risks found; E tests that mutate the runner environment, R of them restoring it; S secrets reachable in failure output; K of P external protocols pinned to a counterpart-published vector.`
+9. **The proof that re-implements the cases it tests.** A walk suite's resilience to re-theming
+   was to be proved by renaming CSS classes and re-running the walks. The proof re-implemented
+   four abbreviated inline copies of walks instead of running the real ones, and the two it
+   omitted were exactly the two depending on the selectors the injection renamed. It reported
+   *"3 of 4 passed unmodified"*. None ran unmodified, and the ones that would have failed were not
+   among the four. **A proof that re-implements its subject proves the re-implementation.** Two
+   rules: a resilience, migration or compatibility proof must invoke the real artefact through the
+   same entry point production uses, and if it cannot, *that* is the finding; and **when a proof
+   tests a subset, the selection rule must be stated and must be independent of the outcome** —
+   "all of them", "the four fastest", "four at random, seed recorded" are rules, while "four of
+   them" is a result dressed as a method. The tell is a denominator that does not match the
+   population: *3 of 4* where the population is 6.
+
+10. **Claim-versus-assertion drift.** A browser walk's own docstring said it verified the cart and
+    checkout routes and that the CSP `form-action` listed the configured gateway hosts. It
+    asserted **four of the nine hosts the code configures**, on the cart route only, and the
+    missing four included the production host the check existed for in the first place. It also
+    read different headers than it named. Everything it asserted was true; the sentence describing
+    it was not — and the sentence is what gets quoted into a report. **Read every test's name and
+    docstring as a claim, then check the assertions against it.** Where the code enumerates a set —
+    hosts, providers, statuses, locales, roles, permissions — a test that names the set and asserts
+    a subset is *worse* than one asserting nothing, because it is counted as coverage. **Assert
+    against the enumeration itself rather than a copied list**, so adding a member fails the test
+    until somebody decides about it. And quote ratios in report lines: *asserted 4 of 9 configured
+    hosts*, never *"hosts verified"*.
+
+11. **The textual guard that passes on a variant of what it forbids.** An architecture test
+    forbade a MySQL-only JSON operator by matching raw token text. A developer escaping the dollar
+    out of habit — `"col->>'\$.a'"`, an escape PHP does not need — moved the operator out of
+    matching position and **the guard passed, silently, by accident, on exactly the dependency it
+    existed to stop.** **Every guard that matches source text has variants, and a green textual
+    guard is evidence of nothing until its limits are written down.** The fix is not a better
+    regex. Enumerate the evasions — concatenation across lines, heredoc and nowdoc bodies, a
+    `sprintf` template, a variable interpolated back, whitespace inside the construct, an
+    unnecessary escape — and pin each in a data-provider test as **caught-with-proof** or
+    **knowingly-not-caught-with-reason**; prove that a stale exemption turns the guard **red**
+    rather than permissive, and that an exemption opens one line rather than the file. Then say the
+    conclusion out loud, because it is the part that gets left off: **the shapes a per-token
+    matcher cannot see are closable only by behaviour** — running the thing against the other
+    engine, the other runtime, the other version. A textual guard's real output is a list of what
+    still needs a behavioural check.
+
+12. **The assertion that cannot fail.** A walk checked that an empty state was actionable by
+    raising only if a page-wide "Shop" link **and** every `main a` were absent. The header nav
+    guarantees the first on every page, so the conjunction could never be true and the check could
+    never fail — it ran, asserted, and was structurally incapable of finding anything. Its sibling
+    read console errors from `getattr(page, "_walk_console_errors", [])`, which returns the empty
+    default on any page not built by the expected factory and passes; the resilience proof built
+    pages exactly that way. **Every default on an assertion path is a candidate vacuous pass.**
+    `getattr(x, name, default)`, `?? []`, `dict.get(k, [])`, an `or []`, a nullable that silently
+    coalesces — each turns "I could not find the evidence" into "there was nothing to find", which
+    are opposite reports. Two checks: **write the negative first** and watch the assertion go red
+    before it goes green, which an unfalsifiable conjunction cannot do; and for every default in a
+    check, ask what reaches it *other* than the intended empty case, then assert the value was
+    actually populated rather than merely empty.
+
+13. **Structure counted as coverage.** A shared base class carrying a route checklist existed, was
+    genuinely shared, was well written — and was invoked on **one route of fourteen**. The coverage
+    claim was made from the existence of the mechanism rather than from its use, and every sentence
+    in that claim was true about the class. **Count call sites, not definitions.** A helper, a base
+    class, a decorator, a mixin, a fixture, a lint rule: the number that matters is how many of the
+    population actually go through it, over the population the code itself enumerates. A mechanism
+    adopted by a tenth of its subjects is a proposal, not a control — and it reads, in every
+    report, exactly like one adopted by all of them.
+
+Method: enumerate the tests that touch the system's real configuration or entry points; confirm each restores what it changed. **Read a sample of test names and docstrings against their assertions** — where a claim names an enumerated set, count what it actually asserts and quote the ratio. For every test that injects a fault, find what proves the fault arrived; for every guard that matches source text, find where its known limits are written down. For every suite that asserts emptiness, find the sibling that proves non-emptiness. Record the assertion count alongside the test count in every claim, because *"N tests pass"* and *"N tests ran and asserted M things"* are different reports. For every external protocol, name the vendor-published vector the suite reproduces, or write "none — round-trip only".
+
+**Grading.** A vacuous pass on a money path: **HIGH** — the code it was meant to cover has never been exercised. Environment contamination that reaches other tests: **HIGH** when the contaminating values are real credentials, **MEDIUM** otherwise. A live secret reachable in failure output: **HIGH**, and say it in the conversation with the rotation decision attached, per §0.10, beside the order screen it affects. **An assertion that pins a defect** (shape 7): the severity is the defect's, and the pinned assertion is reported beside it, because it is the reason the defect survived review. **An injection test whose fault cannot be shown to have arrived** (shape 8), or a **proof that re-implemented its subject** (shape 9): grade as the coverage the artefact claimed and does not have — so a resilience proof over a money path is **HIGH**, and the report says the claim is withdrawn, not merely qualified. **Claim-versus-assertion drift** (shape 10): **MEDIUM**, and **HIGH** when the un-asserted members include the one the check exists for. **A textual guard with no written limits** (shape 11): **MEDIUM** on its own and **HIGH** where the thing it guards is a portability, security or compatibility boundary that nothing else checks.
+
+**The sentence to carry out of this sweep:** *green is a colour, not a measurement — quote the counts, and know which of them went up.* And beside it, the question that organises shapes 7 to 13 and is a better one than *is this tested?*: **what, exactly, made this pass — and is that the same thing it claims to prove?** Every one of those seven is an instance of the answer being no, and each wore a different costume: a pinned assertion, an injection that never landed, a re-implemented proof, a docstring wider than its asserts, a guard matching text, a conjunction that cannot be false, a mechanism counted by its definition. None of them is found by running anything. All of them are found by reading an artefact against its own claim.
+
+Report line format: `S21 — T tests / A assertions quoted; V vacuous-pass risks found; E tests that mutate the runner environment, R of them restoring it; S secrets reachable in failure output; K of P external protocols pinned to a counterpart-published vector; D assertions that pin a defect; I of J fault-injection tests proving the fault arrived; C claims checked against their assertions, X drifting; G of H textual guards with written limits; U unfalsifiable assertions and defaults on check paths; M shared mechanisms quoted as call sites over population.`
 
 ## S22 — Surface completeness across step × outcome × audience. A STEP WITH NO SCREEN IS A STEP NOBODY CAN BE TOLD ABOUT, AND A SCREEN NOBODY HAS RENDERED IS A SCREEN NOBODY KNOWS IS BROKEN
 

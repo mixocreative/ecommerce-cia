@@ -274,6 +274,30 @@ observations, six artefacts. "The decrement is implemented in `StockReducer`" is
 - **FAIL** — an artefact shows it behaving incorrectly. A FAIL row carries the finding ID.
 - **UNVERIFIED** — everything else: no artefact, an artefact from an earlier run, an artefact
   that proves a neighbouring fact, or a capability this tier excluded.
+- **UNPROVEN** — the run tried, reached the system, and **could not tell**: the environment was
+  down, the shop was in maintenance, the session dropped, a redirect went to a login, every retry
+  hit the same wall. Added 2026-09-24, because folding this into UNVERIFIED loses the distinction
+  a reader needs most. UNVERIFIED reads as *not attempted*; "skipped" reads as *deliberately
+  excluded*; this is **"I attempted it and the environment would not let me answer"**, and it is the
+  only one of the three that should stop a green light on its own, because nobody knows what is
+  behind it. The evidence column names what blocked it and how many attempts agreed.
+
+**Three artefact rules that belong with UNPROVEN, because each is a way an environment failure gets
+recorded as a fact about the code:**
+
+- **An environment outcome is never a defect row.** A tool that fetches many pages must distinguish
+  *this row is broken* from *the server was unreachable / the site was closed / I was redirected to
+  a login*. Without that split, one concurrent maintenance toggle produces a page-long list of
+  false defects against exactly the surface somebody is about to work from — and the list is
+  indistinguishable from a real one.
+- **A 200 that renders an exception inside the layout is a FAIL, not a PASS.** The status code is
+  the transport's opinion. Assert on the body: a framework error page, a stack trace, an untemplated
+  exception string or an empty main region returned with a 200 is the most common way a broken page
+  is counted as a working one.
+- **A retry that succeeded is reported as a retry.** `PASS (attempt 2)`, never folded into the green
+  count. A capability that needs two attempts is a different fact from one that needs one, and the
+  folding is how an intermittent failure becomes invisible in exactly the report that should have
+  named it.
 
 **The rule that gives the ledger its value: reading the source can never produce PASS.** Not
 "the code clearly does this", not "the test for it exists", not "the handler is registered", not
@@ -308,6 +332,17 @@ is not "did it work?" but "which of this capability's ways of being asked did I 
 **Where the rows come from, and the order they are written in:** the ledger is built at the
 *start* of the runtime steps, all rows UNVERIFIED, and filled as artefacts arrive. Built at the
 end, it is written from memory, and memory is where PASS comes from reading.
+
+**And prove the artefact landed, because the tool that stores it can succeed at doing nothing
+(2026-09-24, proved).** A session wrote its walk artefacts to a new top-level `walks/` directory and
+`git add walks/…` silently no-opped: a generic `walks/` pattern in the machine's **global** ignore
+file, `~/.gitignore_global`, outside the repository and invisible to any amount of reading the
+repository's own `.gitignore`. The commit would have landed empty and read as success. So: **any
+run that creates a new top-level directory for its evidence runs `git check-ignore -v <dir>` before
+believing its own commit**, and every claim that an artefact was stored is checked by reading it
+back from where it was meant to land — `git show --stat`, `ls` the path, re-open the file. The
+general form is the one to carry: *the rule that bites is the one outside the artefact you are
+reading.*
 
 ---
 
