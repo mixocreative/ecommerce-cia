@@ -86,6 +86,26 @@ For every UI walk there is usually a cheaper API or CLI check of the same fact (
 the payment row, the entitlement). Do both where the fact is money: the UI proves the person
 sees it, the row proves it is true. Mock the vendor at the boundary, never the shop.
 
+## 8a. Closed-loop actions
+
+This is not just a command-runner rule. Every UI action is a little journey with a start, a middle,
+and an accountable end: buttons, toggles, segmented controls, form submits, file uploads/downloads,
+copy controls, refresh/recheck controls, setup/install steps, checkout, refunds, dismissals, retries,
+bulk actions and destructive actions.
+
+Walk each action through the full loop:
+
+1. **Before action:** the screen says what will happen, what object/scope it applies to, and why it is available or disabled.
+2. **Immediately after action:** the user can tell the click was received; a dead handler and a slow handler do not look the same.
+3. **While running:** long work has progress, disabled duplicate submission, or an explicit "running" state.
+4. **Completion:** success, failure, cancellation and retry states are visible in the same journey.
+5. **Next action:** the screen says what to do next, especially after partial success or a requirement the user must satisfy.
+6. **Refresh/recheck:** if completion happens outside the page or process, a visible recheck path exists and changes the displayed requirement state.
+7. **Final state:** the screen proves the action changed the system, or explains why it did not.
+
+A click whose handler ran but leaves the same display as a broken click is not closed. File it under
+S22 for the missing surface and S5 when the control has no consumer.
+
 ## 9. Layout
 
 ```
