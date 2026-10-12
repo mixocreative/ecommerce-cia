@@ -359,6 +359,13 @@ run - `artefacts/<date>-<tier>/` - and the ledger cites the file by path.
 | Log excerpt | a detector fired | the timestamp and the line, plus the neighbouring lines that show what did *not* fire |
 | Two concurrent responses | a race exists, or does not | both responses and the row read afterwards (§13) |
 
+**Every artefact says what it ran against (2026-10-12).** The run directory carries one `identity.txt`
+written before the first request: `git rev-parse HEAD` and whether the tree was clean, the `sha256` of each
+main script and stylesheet the walk fetched with its `?ver=` / build id, the app's reported versions, the
+schema version. A PASS against a build that is not HEAD is UNVERIFIED for HEAD (`evidence.md` §E9). Where
+a flow's fields matter (S4, S18, S23), save the walk's HAR beside it — cookies, authorisation headers and
+card data stripped first.
+
 A screenshot of a page is evidence about a page. It is not evidence about a row, and the ledger
 does not accept it as such: the pair - what the person saw and what the store holds - is what any
 four-corner claim needs (§8).

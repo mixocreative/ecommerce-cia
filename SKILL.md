@@ -1,6 +1,6 @@
 ---
 name: ecommerce-cia
-description: "Use when auditing transactional e-commerce: checkout, orders, payments, gateway callbacks, inventory, fulfilment, pickup, refunds, promotions, tax/invoices, digital entitlements, settlement, reconciliation, consumer-law/privacy compliance, legal pages, subscriptions, or setting up a gateway from zero. Also use when commerce projects hear pre-launch, run tests, handoff, green-light, ready to ship, audit, security audit, wiring audit, nothing dies silently, dead control, fail-open, vacuous pass, TOCTOU, four-corner walk, VSM map, admin dashboard, closed-loop UX journey, ambiguous step, dead button, install/setup action. Explicit /ecommerce-cia or $ecommerce-cia selects this skill. Not for /cia or non-commerce projects."
+description: "Use when auditing transactional e-commerce: checkout, orders, payments, gateway callbacks, inventory, fulfilment, pickup, refunds, promotions, tax/invoices, digital entitlements, settlement, reconciliation, consumer-law/privacy compliance, legal pages, subscriptions, or setting up a gateway from zero. Also use when commerce projects hear pre-launch, run tests, handoff, green-light, ready to ship, audit, security audit, wiring audit, nothing dies silently, dead control, fail-open, vacuous pass, TOCTOU, four-corner walk, VSM map, admin dashboard, closed-loop UX journey, ambiguous step, dead button, install/setup action, requirement-to-code tracing, obligation ledger, reverse trace of a checkout or gateway flow. Explicit /ecommerce-cia or $ecommerce-cia selects this skill. Not for /cia or non-commerce projects."
 ---
 
 # SKILL: ecommerce-cia — Commerce Integrity Auditor
@@ -284,6 +284,8 @@ A detector with no coverage number, no liveness watcher or no order screen is a 
 9. Skill score: <the line `python tools/score.py` prints — this skill's own last scored fixture run, so the reader knows what the instrument found when it was last tested>
 10. Runtime walk receipt: <routes fetched N / assets fetched M, all 200 | which not> · error-log delta: <0 lines | the lines> · preview rows walked: <N of N | none exists> · closed-loop actions: <A walked, B ambiguous / not closed> · state-delta ladders: <N operations, each with its before/after at every observer | none> · concurrency probes: <N S2 sites fired twice | none> — or `SKIPPED: <reason>` (then the first line says code review, not Screen)
 11. Evidence ledger (§29a): C capabilities — one count per verdict §11a defines, which is where the set lives and the only place it is written out (today: P PASS / F FAIL / U UNVERIFIED / N UNPROVEN); every PASS cites an artefact path (table in report). The stock chain (`stock 5 → buy 2 → 3 in the row, on the admin screen and on the storefront → reverse per the shop's written policy`) is six cells, not one. **Missing line = the report never separated what this run can prove from what it read**, and reading never produces PASS.
+12. Obligations (`references/evidence.md` §E3): O promises taken from the owner's words, the invariant register, docs, vendor cells and screens — C CLOSED / P OPEN / F FAILED / B BLOCKED / S OUT-OF-SCOPE; no owner N, two owners T, no verifier V, verifier below required authority L; unowned behaviours U, listed for an owner decision. **Missing line = the run audited the code it found and never asked what the code was for.**
+13. Unknowns and contradictions (§E4, §E7): N unknowns, each with its next evidence and who can supply it; K contradictions, blocking J obligations; R truncated outputs re-run (§E6). BLOCKED, UNKNOWN, PARTIAL, TRUNCATED and SKIPPED never roll up into a green line.
 ```
 
 Anything skipped → say why. Never claim "handoff ready" / "green-light" / "ready for launch" without listing what wasn't verified in this session. The report is honest by construction: a `⏭` is not a failure, but claiming green when a `⏭` exists IS a failure of the audit.
@@ -434,6 +436,11 @@ Every command this audit runs, and every command it writes, is a claim about the
 2. **Test the real failure mode, not a cooperative stub.** A stub whose `save()` sets a boolean can never reproduce a framework that silently drops one field. Model the shape that actually fails, then assert the tool refuses.
 3. **Refuse rather than report.** When the read-back does not confirm the write, throw. A tool that cannot prove its effect must not print a success line, because the line is what the next person will trust instead of checking.
 4. **The same rule applies to the audit's own output.** A sweep line saying "0 findings, N sites" claims those sites were inspected. If the environment prevented inspection, the line says so and names the rung (§0.8) rather than reporting the sweep clean.
+5. **Cut output is not a result, and absence has a boundary.** A grep, listing, log or response that was
+   truncated — by the tool, the client, `head`, paging or rotation — is marked `TRUNCATED` and narrowed or
+   paged, never counted or parsed as whole (`references/evidence.md` §E6). Every "nothing reads it",
+   "no other writer" or "0 findings" states its search boundary and what lies outside it (§E5); if
+   something outside could hold it, the claim is UNKNOWN, not absent.
 
 ### 0.12 AI components in a shop
 
@@ -453,6 +460,10 @@ something is "production-ready". Say which mode you are in, as §0.15 requires f
 
 **The contract, and it is short because the whole of it is in `references/build-standard.md`:**
 
+0. **Write the obligation row first** (`references/evidence.md` §E3): the promise as a sentence
+   that can be false, where the intent came from, the case kinds it must survive, the authority
+   its proof needs (§E2), and the one owner the new code will be. The proof's test names carry the
+   obligation ID. Code with no row behind it is unowned behaviour, even when it is your own.
 1. **Name the operation's primary quantity and its observers** before writing anything. If you
    cannot say which number must be right afterwards, and who will disagree about it, nothing
    below matters yet.
@@ -480,6 +491,18 @@ it does not end at four properties: §2 of the standard adds the movement row th
 number, the surface the outcome reaches, and a test that can fail.
 
 
+### 0.12b Reverse-trace mode — when the intent lives only in what the system does
+
+Some requests start from behaviour, not from code: *"why does the order flip back to unpaid"*, *"how does this
+feature actually work"*, *"make ours behave like theirs"*, *"nobody knows what this job is for"* — or the flow
+passes through a part with no source here (a minified vendor SDK, a plugin zip not in the repo, a SaaS step).
+Say you are in reverse-trace mode, then follow `references/evidence.md`: §E11 (write the questions and the
+evidence each needs), §E10 (seed from the observed behaviour, trace inward edge by edge, tag every edge
+OBSERVED / INFERRED, keep `?` edges, capture the traffic and compare it with the authority), and finish by
+turning each confirmed behaviour into an obligation row (§E3). The answer distinguishes what was observed
+from what was inferred and lists what is still unknown with its next evidence (§E4). A static read never
+observed an execution; the reply never implies it did.
+
 ### 0.13 Reference Index — what to load, and when
 
 Paths are relative to this skill's directory. "Read" means read the whole file; skimming a doctrine file and reporting its chapters as done is S14 scope shadow applied to the audit itself.
@@ -505,8 +528,9 @@ Paths are relative to this skill's directory. "Read" means read the whole file; 
 | `references/browser-walks.md` | Step 5, before the first rendering walk is written | The conventions: headless vs rendering walks, selector priority, page objects, session reuse, artefacts on failure only, no clock waits, isolation, closed-loop actions (§8a), layout, the per-route checks; §12 the state-delta ladder and its nine adversarial rows; §13 the concurrency probe; §14 what each kind of artefact is allowed to prove |
 | `references/build-standard.md` | **Build mode**, before writing an operation that moves money, stock or an entitlement — and in audit mode whenever the report will recommend a rewrite | The four properties of a primary-path write (atomic, race-free, idempotent, loud), the mechanism for each, and **the proof each one needs**; §2 what the operation still owes beyond correctness (an explanation, a surface, a boundary, a test that can fail); §3 the build-mode contract |
 | `references/reporting.md` | Before the first finding is written, and before Step 7 | §26 test matrix; §27 finding format; §28 severity; §29 verified controls; **§29a the evidence ledger — capability × verdict × artefact, where reading never produces PASS**; §30 five-section final output; §31 must / must-not rules |
+| `references/evidence.md` | After `reporting.md`, before the first finding is graded; in build mode before the proof; first in reverse-trace mode | §E1 OBSERVED / INFERRED / UNKNOWN on every claim; §E2 the authority ladder A0–A5 and why a verifier below a claim's authority closes nothing; **§E3 the obligation ledger — intent → owner → verifier**; §E4 the unknown register; §E5 bounded negatives; §E6 truncation and fail-closed aggregation; §E7 contradictions; §E8 partial-order specs; §E9 deployed ≠ HEAD; §E10 reverse trace; §E11 the question checklist |
 
-Step 3 order, restated: reference-system selection + business-rule traces → theory → sweeps (step 0 map, then S1–S24, S15 first when time is short) → doctrine → domains (+ adapters) → battle-testing → global-compliance → reporting. Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
+Step 3 order, restated: reference-system selection + business-rule traces → theory → sweeps (step 0 map, then S1–S24, S15 first when time is short) → doctrine → domains (+ adapters) → battle-testing → global-compliance → reporting → evidence (claim tags, obligation ledger, unknowns). Every finding is graded against the invariants stated in-line in those files, not against generic "what if" reasoning.
 
 ### The reading receipt — how a miss names its own cause
 
@@ -523,7 +547,7 @@ nowhere else in the skill and nowhere in the audited project. The Step 7 report 
 one line quoting the receipt of each file the run says it read.
 
 ```
-Reference receipts: sweeps.md "the channel is the finding" | doctrine.md "an invariant is a sentence that can be false" | reporting.md "the ledger is harsher on purpose" | browser-walks.md "three observers, one subtraction"
+Reference receipts: sweeps.md "the channel is the finding" | doctrine.md "an invariant is a sentence that can be false" | reporting.md "the ledger is harsher on purpose" | browser-walks.md "three observers, one subtraction" | evidence.md "a promise needs one owner and a witness"
 ```
 
 This is not a trick question and it is not security — an auditor that wants to fake it can. It

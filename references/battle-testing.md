@@ -75,3 +75,8 @@ When independent reviewers are available, one maps rules while another attempts 
 - **Full:** all reachable rule variants, fault-matrix cells, targeted mutation challenge for every critical rule on the audited commit, and independent coverage review.
 
 No tier means “watertight.” It states which threats were actively challenged and which remain unverified.
+
+---
+
+**Reading receipt: _a rule unchallenged is a rule unproven_.** Quote this phrase on the report's receipts line (Step 7) to show this
+file was read rather than inferred from the skill's index. It appears nowhere else.

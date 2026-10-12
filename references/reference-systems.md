@@ -56,3 +56,8 @@ Existing evidence is admissible only when it is an automated test rerun on the a
 ## 6. Reporting
 
 Report aggregate verdict counts, then the complete trace table or a stable artifact path. Every `DEFICIENT` row becomes a normal finding with the rule and broken trace edge in its evidence. `NOT-APPLICABLE` rows remain visible so a reader can distinguish an intentional scope choice from a forgotten feature.
+
+---
+
+**Reading receipt: _compare the outcome, never the class name_.** Quote this phrase on the report's receipts line (Step 7) to show this
+file was read rather than inferred from the skill's index. It appears nowhere else.

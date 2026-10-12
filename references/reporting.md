@@ -264,6 +264,12 @@ observations, six artefacts. "The decrement is implemented in `StockReducer`" is
 | Capability | Verdict | Evidence (artefact path) | What the evidence shows |
 |---|---|---|---|
 
+**Authority (2026-10-12).** Each row also states the authority it requires and the authority its cited
+artefact reached, on the ladder in `evidence.md` §E2 (A0 read · A1 unit · A2 integration · A3 process ·
+A4 deployed · A5 counterpart) — written `A3 / A3`. A PASS whose reached level is below its required level
+is a promotion and is not a PASS. Every sentence in the fourth column carries its §E1 tag (OBSERVED /
+INFERRED / UNKNOWN), and every PASS row names the obligation IDs (§E3) its artefact closes.
+
 **Verdicts, and the only things that produce them:**
 
 - **PASS** — an artefact produced *by this run* shows the capability behaving correctly, end to

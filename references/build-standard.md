@@ -117,6 +117,10 @@ that stops at four has stopped early:
 
 ## §3 — Using this in build mode
 
+**Before anything below: the obligation row** (`evidence.md` §E3) — statement, intent source, case kinds,
+required authority, the one owner. The four properties are case kinds of that row (`fault-after-first-write`,
+`concurrent`, `duplicate`, `refused`); the proof's test names carry its ID.
+
 When the request is *"write this"* rather than *"audit this"*:
 
 1. **Name the operation's primary quantity and its observers** (`browser-walks.md` §12). If you
