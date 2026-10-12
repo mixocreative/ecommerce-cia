@@ -11,7 +11,7 @@
 
 [![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-D97757)](#install) [![Codex skill](https://img.shields.io/badge/OpenAI_Codex-skill-000000)](#install) [![Gateways](https://img.shields.io/badge/藍新·綠界·LINE_Pay·PAYUNi-sandbox_verified-2ea44f)](#providers) [![Taiwan Focused](https://img.shields.io/badge/Taiwan-電商／金流／發票-blue.svg)](#providers) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
 
-[快速開始 Quick start](#quick-start) · [抓到過什麼 What it catches](#what-it-catches) · [支援金流 Providers](#providers) · [常見問題 FAQ](#faq) · [安裝 Install](#install)
+[快速開始 Quick start](#quick-start) · [串接稽核 Wiring audit](#wiring-walk) · [抓到過什麼 What it catches](#what-it-catches) · [支援金流 Providers](#providers) · [常見問題 FAQ](#faq) · [安裝 Install](#install)
 
 ```bash
 claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative
@@ -54,6 +54,10 @@ claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin instal
 ```
 
 ```text
+我們的電商是自己寫的，下一步該稽核什麼？用參考系統當檢查清單，跑一次 Walk 等級的串接稽核。
+```
+
+```text
 /ecommerce-cia pre-launch audit: place one sandbox order per payment method,
 then cancel and refund each, and show me the stock at every step.
 ```
@@ -62,6 +66,42 @@ then cancel and refund each, and show me the stock at every step.
 
 - **稽核模式 Audit**：給老闆看的 5 行白話摘要（哪裡安全、哪裡危險、先做什麼），接著是每個步驟一行、每個發現附 `檔案:行號` 與引用程式碼，以及一張證據帳冊（PASS / FAIL / UNVERIFIED / UNPROVEN，每個 PASS 都指向這次執行產生的檔案）。
 - **新手引導模式 Setup**：一張**準備就緒卡**，每項前置需求 ✅ / ⏳ / ❌，附負責人、日期，以及每種付款方式的實機探針結果。
+
+<a id="wiring-walk"></a>
+
+## Feature list vs wiring audit｜功能清單 vs 串接稽核
+
+A feature comparison asks: *"Do we have refunds?"* A wiring audit asks: ***"What happens if a payment succeeds, the callback is lost, stock changes, the invoice write fails, and the operator opens the order two days later?"*** That is where custom commerce engines break — and it is the question `ecommerce-cia` asks first, about your shop, and answers with evidence.
+
+> 功能比較問的是：「我們有退款功能嗎？」串接稽核問的是：**「如果付款成功、Callback 掉了、庫存變了、發票寫入失敗，而管理員兩天後才打開這張訂單，會發生什麼事？」** 自己寫的電商系統就是在這裡出事。`ecommerce-cia` 第一個就問你的商店這個問題，並用證據回答。
+
+**Three layers, every run｜每次都檢查三層：** function logic (each function correct on its own) · relationship wiring (every call made, every result persisted, retries and partial failures handled) · lifecycle business rules (the whole shop obeys its rules when events arrive late, twice or out of order). The report counts findings per layer — a report with only the first layer was not a wiring audit.
+
+**A side-by-side state map per lifecycle｜每個流程的對照狀態圖** — a mature reference (ProcessWire Commerce, WooCommerce, Shopify, Saleor) is used as a **checklist of stages, never as the truth**; your own rules, the gateway manuals, Taiwan invoice law and your architecture are the authority:
+
+| Lifecycle｜流程 | Reference path｜參考系統 | Your path｜你的系統 | Failure / retry｜失敗與重試 | Operator sees｜後台看到 |
+|---|---|---|---|---|
+| Checkout 結帳 | cart → order → payment | cart → locked stock → order → redirect | duplicate submit, expired order | clear refusal or order state |
+| Payment 付款 | confirmation → paid | callback → verify / re-query → settlement | missing / forged / late callback | order warning + reconciliation |
+| Refund 退款 | request → status | provider request → pending → reconcile | provider timeout, partial refund | refund exception on the order |
+| Shipping 物流 | fulfilment → delivered | parcel → carrier event → notice | duplicate / out-of-order event | traceable shipment issue |
+| Invoice 發票 | order → invoice | paid order → obligation → book / correction | failed or missing obligation | visible invoice finding |
+| Download 下載 | paid → download | entitlement → pinned file key | expired link, file replaced | recoverable access |
+
+**Seven questions for every connection｜每一條串接問七個問題:** is it actually called? is the result saved? safe if retried twice? one authoritative state when systems disagree? can a job stop unnoticed? does an unresolved case show on the order page, not only in logs? is there a test that breaks *this* connection?
+
+**Seven deliberate failures｜七種刻意製造的故障** — reject the invoice write · replay a callback · callback before the customer returns · two checkouts on the last unit · refund provider times out · download file removed after sale · reconciliation job stopped. The only passing outcomes: **the system recovers, or the problem appears in admin.**
+
+**The deliverable is a traceability matrix, not a code review｜交付的是規則追溯矩陣，不是 Code Review:**
+
+| Business rule｜商業規則 | Code that enforces it | Connected systems | Proof | Outcome |
+|---|---|---|---|---|
+| Never oversell physical stock｜實體庫存絕不超賣 | checkout + stock ledger | cart, order, payment expiry | concurrency test | covered / gap |
+| Never fulfil an unverified payment｜未驗證的付款絕不出貨 | callback reducer + re-query | gateway, order, download, invoice | replay / forged callback tests | covered / gap |
+| Every sale gets the right invoice｜每筆交易都有正確發票 | settlement + invoice obligation | order, refund, invoice book | success / failure / retry tests | covered / gap |
+| Every unresolved money state reaches admin｜未解決的金流狀態一定出現在後台 | reconciliation + findings UI | worker, order list, dashboard | forced-failure walk | covered / gap |
+
+…plus a gap register with the exact `file:line` and proof status of every gap. Ask *"what should we audit next?"* and this — a **reference-guided Walk** — is what it recommends. Full method: `references/wiring-walk.md`.
 
 <a id="what-it-catches"></a>
 
@@ -610,6 +650,7 @@ Setup mode starts from plain words — 「我想用藍新金流收款，怎麼�
 | `references/sweeps.md` | S1–S22 with methods, gradings and report-line formats｜S1–S22 包含檢驗方法、評分標準與報告單行格式 |
 | `references/doctrine.md`, `domains.md`, `theory.md`, `reporting.md` | audit doctrine, the domain chapters §8–§25, the VSM, finding format and severity｜Audit 原則、領域章節 §8–§25、Viable System Model (VSM)、缺失格式與嚴重程度定義 |
 | `references/evidence.md` | claim tags, authority ladder, the obligation ledger (intent → owner → verifier), unknowns, bounded negatives, contradictions, reverse trace｜結論標記、證據強度階梯、義務帳冊（意圖 → 負責程式 → 驗證）、未知清單、有邊界的「找不到」、矛盾紀錄、反向追蹤 |
+| `references/wiring-walk.md` | feature list vs wiring: three layers, six-lifecycle state map, seven connection questions, faults F1–F7, question banks, traceability matrix, gap register｜功能 vs 串接：三層檢查、六大流程對照圖、每條串接七問、七種故障注入、問題清單、規則追溯矩陣、缺口登記表 |
 | `references/taiwan-adapter.md` | TW-0…TW-14｜TW-0…TW-14 台灣特定條款 |
 | `references/newebpay-onboarding.md`, `ecpay-onboarding.md`, `linepay-onboarding.md`, `payuni-onboarding.md`, `tappay-onboarding.md` | the five provider guides｜五家金流商的新手上路指南 |
 | `references/jurisdictions.md`, `global-compliance.md` | EU / Japan / US / UK adapters; terms and privacy across 13 regimes｜歐盟 / 日本 / 美國 / 英國轉接器；跨 13 種法規體系的條款與隱私合規檢查 |
