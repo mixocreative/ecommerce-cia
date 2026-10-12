@@ -14,7 +14,7 @@
 [快速開始 Quick start](#quick-start) · [串接稽核 Wiring audit](#wiring-walk) · [抓到過什麼 What it catches](#what-it-catches) · [支援金流 Providers](#providers) · [常見問題 FAQ](#faq) · [安裝 Install](#install)
 
 ```bash
-claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative
+claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative-ecommerce-cia
 ```
 
 <img src="docs/demo.gif" alt="ecommerce-cia auditing a production shop" width="900" />
@@ -36,7 +36,7 @@ Your shop is live and every test passed. Then a paid order shows "unpaid", the e
 **1. 安裝 Install**（其他方式見 [Install](#install)）
 
 ```bash
-claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative
+claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative-ecommerce-cia
 ```
 
 **2. 直接對 Agent 下指令 Ask your agent** — 複製任一則：
@@ -595,7 +595,7 @@ When the person asking is not an engineer, the skill switches voice, not doctrin
 
 ```bash
 claude plugin marketplace add mixocreative/ecommerce-cia
-claude plugin install ecommerce-cia@mixocreative
+claude plugin install ecommerce-cia@mixocreative-ecommerce-cia
 ```
 
 Or inside a session: `/plugin` → marketplaces → add `mixocreative/ecommerce-cia` → install `ecommerce-cia`.
