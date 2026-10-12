@@ -1,24 +1,153 @@
-# ecommerce-cia — Commerce Integrity Auditor｜台灣電商金流與系統完整性稽核 Skill
+<div align="center">
+
+# ecommerce-cia — Commerce Integrity Auditor
+
+### 電商金流與系統完整性稽核 · a skill for Claude Code and OpenAI Codex
+
+**測試全綠，線上卻掉單、庫存鎖死、後台開關沒作用？**<br/>
+**`ecommerce-cia` 盯的是錢和庫存真正走過的路 —— 從結帳、Callback、退款到後台，一條一條驗給你看。**
+
+**Green tests, lost orders. `ecommerce-cia` audits the path money and stock actually take — and walks first-time builders through Taiwan's payment gateways from zero.**
+
+[![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-D97757)](#install) [![Codex skill](https://img.shields.io/badge/OpenAI_Codex-skill-000000)](#install) [![Gateways](https://img.shields.io/badge/藍新·綠界·LINE_Pay·PAYUNi-sandbox_verified-2ea44f)](#providers) [![Taiwan Focused](https://img.shields.io/badge/Taiwan-電商／金流／發票-blue.svg)](#providers) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
+
+[快速開始 Quick start](#quick-start) · [抓到過什麼 What it catches](#what-it-catches) · [支援金流 Providers](#providers) · [常見問題 FAQ](#faq) · [安裝 Install](#install)
+
+```bash
+claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative
+```
+
+<img src="docs/demo.gif" alt="ecommerce-cia auditing a production shop" width="900" />
+
+</div>
+
+---
+
+> 你的商店上線了，測試也全過了。然後：客人付了錢訂單卻顯示「未付款」、過期訂單的退庫存把已付款訂單的庫存也退掉了、後台把 ATM 轉帳關掉了結帳頁照樣出現、藍新的 Callback 重送一次庫存就被釋放兩次。每一段程式單獨看都沒錯，錯在它們之間。
+>
+> 對 AI Agent 輸入 `/ecommerce-cia`，它會把結帳 → 金流 → Callback → 訂單 → 庫存 → 出貨 → 退款 → 後台整條路走一遍，**在測試環境實際下單驗證**，再交出一份每一條「通過」都附證據的報告。還沒串金流？它會切換成**新手引導模式**，一次問一個問題，帶你從零接好藍新、綠界或 LINE Pay。
+
+Your shop is live and every test passed. Then a paid order shows "unpaid", the expiry job restocks an order that was already paid, the admin switched ATM transfer off but checkout still offers it, and one duplicate gateway callback releases the stock twice. Each piece is correct alone; the defect is between them. `/ecommerce-cia` walks checkout → gateway → callback → order → stock → fulfilment → refund → admin, places real sandbox orders, and reports nothing as passed without evidence from this run. No gateway yet? It switches to **setup mode** and walks you through NewebPay, ECPay or LINE Pay from zero.
+
+<a id="quick-start"></a>
+
+## Quick start｜快速開始
+
+**1. 安裝 Install**（其他方式見 [Install](#install)）
+
+```bash
+claude plugin marketplace add mixocreative/ecommerce-cia && claude plugin install ecommerce-cia@mixocreative
+```
+
+**2. 直接對 Agent 下指令 Ask your agent** — 複製任一則：
+
+```text
+/ecommerce-cia 上線前稽核，Screen 等級
+```
+
+```text
+我要開一家網路商店，想用藍新收信用卡跟超商代碼，從零帶我串。
+```
+
+```text
+幫我確認：後台關掉的付款方式，結帳頁是不是真的不會出現？Callback 重送兩次會不會重複扣庫存？
+```
+
+```text
+/ecommerce-cia pre-launch audit: place one sandbox order per payment method,
+then cancel and refund each, and show me the stock at every step.
+```
+
+**3. 你會拿到什麼 What comes back**
+
+- **稽核模式 Audit**：給老闆看的 5 行白話摘要（哪裡安全、哪裡危險、先做什麼），接著是每個步驟一行、每個發現附 `檔案:行號` 與引用程式碼，以及一張證據帳冊（PASS / FAIL / UNVERIFIED / UNPROVEN，每個 PASS 都指向這次執行產生的檔案）。
+- **新手引導模式 Setup**：一張**準備就緒卡**，每項前置需求 ✅ / ⏳ / ❌，附負責人、日期，以及每種付款方式的實機探針結果。
+
+<a id="what-it-catches"></a>
+
+## What it catches｜它抓到過什麼
+
+Planted in the runnable fixture shop, each one invisible to a reading-only review and to a green suite — found only by running the system:
+
+> 以下是可實際執行的測試商店裡埋的缺陷，只讀程式碼或只看測試都抓不到，必須把系統跑起來才會現形：
+
+| 情境 Case | 大家看到的 What everyone saw | 實際上 What was true |
+|---|---|---|
+| **重送的通知** Duplicate notify | 金流 Callback 驗簽通過、訂單已付款 | 同一則通知送兩次，庫存被釋放兩次 |
+| **永遠不更新的快取** Stale storefront | 前台顯示「有庫存」 | 前台讀的快取沒有任何程式在刷新 |
+| **看不見規格的後台** Blind admin | 後台庫存頁數字正確 | 後台看不到變體（尺寸/顏色），老闆以為有貨 |
+| **違反自家條款的退款** Policy drift | 退款按鈕正常運作 | 退款規則跟商店自己寫的退貨政策相反 |
+| **後台開關沒作用** Dead control | 後台把付款方式關了 | 結帳邏輯根本沒讀那個設定 |
+
+And from live sandboxes, real gateway behaviour the docs do not spell out: NewebPay answers `MPG02003` for a method your console has not enabled; LINE Pay answers `1172` to a repeated confirm and `1165` to a repeated refund; ECPay's `CheckMacValue` reproduced byte-for-byte from its published example. Full table in [Live-verified](#live-verified).
+
+> 也包含在真實測試環境量到、文件沒寫清楚的金流行為：藍新未開通的付款方式回 `MPG02003`、LINE Pay 重複 confirm 回 `1172`、重複退款回 `1165`、綠界 `CheckMacValue` 與官方範例逐位元組一致。
+
+Found a commerce bug class it missed? [Share the lesson](https://github.com/mixocreative/ecommerce-cia/issues/new?template=lesson.md).｜發現它漏掉的電商 bug？歡迎[分享案例](https://github.com/mixocreative/ecommerce-cia/issues/new?template=lesson.md)。
+
+<a id="faq"></a>
+
+## FAQ｜常見問題
+
+<details>
+<summary><strong>我沒串過金流，也不是工程師，用得了嗎？｜Never integrated a gateway — can I use it?</strong></summary>
+
+可以，這正是新手引導模式的用途。每次只問一個帶 2–4 個選項的問題，結尾給一個下一步。AI 負責查手冊、解釋欄位、跑探針；身分資料、密碼與後台設定由你本人輸入。
+
+Yes — that is setup mode. One question at a time with choices; the AI reads the manuals and runs the probes, you type identity, passwords and console changes yourself.
+</details>
+
+<details>
+<summary><strong>它會碰到正式環境或真的扣款嗎？｜Will it touch production or charge real money?</strong></summary>
+
+不會。探針預設只連測試環境，沒有明確旗標就拒絕連正式環境；金鑰永遠不會印出來。稽核中絕不呼叫有副作用的正式 API。
+
+No. Probes target sandboxes and refuse production without an explicit flag; keys are never printed.
+</details>
+
+<details>
+<summary><strong>跟金流商自己出的 Skill 有什麼不同？｜How is it different from a vendor's own skill?</strong></summary>
+
+金流商的 Skill 教你「怎麼呼叫它的 API」；`ecommerce-cia` 檢查的是「呼叫完之後，你的訂單、庫存、退款、後台是不是還對得起來」，而且跨金流商一致。詳見 [How it differs from vendor skills](#how-it-differs-from-vendor-skills)。
+
+A vendor skill teaches its API; this one checks that your orders, stock, refunds and admin still agree after the call — the same way across providers.
+</details>
+
+<details>
+<summary><strong>只支援台灣嗎？｜Taiwan only?</strong></summary>
+
+台灣金流最深（藍新、綠界、LINE Pay、PAYUNi、TapPay，含 ATM 虛擬帳號、超商代碼、超商取貨付款、統一發票、七天鑑賞期），也涵蓋 Stripe 與 Adyen 的簽章與 Webhook 合約。結帳、庫存、退款、冪等性這些稽核邏輯則與國家無關。
+
+Deepest for Taiwan; Stripe and Adyen webhook/signature contracts are covered too, and the checkout, stock, refund and idempotency doctrine is country-neutral.
+</details>
+
+<details>
+<summary><strong>要跑多久？會改我的程式嗎？｜How long? Will it change my code?</strong></summary>
+
+報告第一行會寫明深度：Screen 2–4 小時、Walk 1–2 天、Full 不設限。只有「本地、可還原、附測試」的修正會自動 commit（不 push）；其餘附 patch 交給你決定。
+
+Screen 2–4 h, Walk 1–2 days, Full open-ended. Only local, reversible, test-backed fixes are committed automatically (never pushed); everything else comes to you as a patch.
+</details>
+
+<details>
+<summary><strong>需要搭配 cia 嗎？｜Do I also need cia?</strong></summary>
+
+建議一起安裝。[cia](https://github.com/mixocreative/cia) 負責通用的程式完整性，`ecommerce-cia` 負責電商專屬規則；兩者各自執行，你也可以要求「兩個一起跑」，共用的工作只做一次。
+
+Recommended. `cia` owns universal integrity, this skill owns commerce doctrine; ask for both and the shared work runs once.
+</details>
+
+---
+
+<a id="about"></a>
+
+## About｜關於
+
+**New in this release — evidence discipline borrowed from reverse engineering.** Every claim is tagged OBSERVED / INFERRED / UNKNOWN; every promise the owner made becomes an **obligation** with exactly one owner in the code and a verifier that names it; a test can only close a claim at its own strength (a mocked gateway never proves a real callback); "nothing reads it" must state where it looked; cut-off output is never counted; contradictions between manual, sandbox and code are recorded instead of resolved by preference; and a new **reverse-trace mode** starts from what the system visibly does and traces inward. See `references/evidence.md`. Ideas adapted from [REA](https://github.com/morluto/rea).
+
+> **本版新增：從逆向工程借來的證據紀律。** 每一條結論都標記「實測 / 推論 / 未知」；老闆說過的每一個承諾都變成一條**義務（Obligation）**，在程式裡必須剛好有一個負責者、一個點名它的驗證；測試只能證明與自己同等強度的事（用假金流的測試，永遠證明不了真的 Callback）；「沒有程式在讀」必須說清楚找過哪裡；被截斷的輸出不算數；手冊、測試環境與程式碼互相矛盾時，記錄下來而不是挑方便的那邊相信；新增**反向追蹤模式**：從系統看得見的行為出發，一路追到程式碼裡。詳見 `references/evidence.md`。概念改編自 [REA](https://github.com/morluto/rea)。
 
 **Last scored fixture run:** see `tests/RUNS.md` — `python tools/score.py` prints it, `--gate` refuses a push that scores below the run before (RUNBOOK step 6).
-
-[![tests](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml/badge.svg)](https://github.com/mixocreative/ecommerce-cia/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-D97757)](#install安裝) [![Codex skill](https://img.shields.io/badge/OpenAI_Codex-skill-000000)](#install安裝) [![Taiwan Focused](https://img.shields.io/badge/Taiwan-電商／金流／發票-blue.svg)](#providers支援的金流商) [![GitHub stars](https://img.shields.io/github/stars/mixocreative/ecommerce-cia?style=social)](https://github.com/mixocreative/ecommerce-cia/stargazers)
-
-**English 🇬🇧 · 繁體中文 🇹🇼** — every section is written in both, English first, 中文接在後面。
-
-> 🚀 **專為台灣電商情境打造的 AI 稽核助手**：掃描藍新 NewebPay、綠界 ECPay、LINE Pay、PAYUNi、TapPay 串接邏輯。抓出「測試全綠卻在線上掉單、庫存鎖死、後台開關沒作用」的跨系統隱形 Bug！
-
----
-
-### 💡 一句話說明它能幹嘛？ (TL;DR)
-
-一般的 Code Review / Linter 只看**語法有沒有寫錯**，而 `ecommerce-cia` 盯的是**真正的錢與庫存流向**。
-
-它能幫你做到：
-1. **老手稽核 (Audit Mode)**：抓出跨系統連鎖反應（如：ATM 轉帳開關沒寫入結帳邏輯、過期訂單退庫存壓掉已付款訂單、綠界/藍新 Callback 驗簽錯誤）。
-2. **新手引導 (Setup Mode)**：從零帶你串接台灣金流，手把手檢查 Domain、固定 IP、HTTPS，並執行實機探針 (Live Probe) 驗證金鑰！
-
----
 
 A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce system as a **viable system** in Stafford Beer's sense, and hunts the defect class that only such a view can see: **cross-boundary invariant violations**, also called **integration-level** or **emergent defects**, in the paths money and stock actually take.
 
@@ -357,6 +486,8 @@ The audit assumes an integration exists. When it does not — the user is starti
 | Sandbox and proof｜測試環境與驗證 | guided registration, console activation, then a synthetic probe per method: PASS, or the exact refusal code and what it means｜一步步引導註冊、後台開通，並對每種付款方式發射模擬探針：回傳 PASS，或是印出精確的拒絕代碼與含義 |
 | Wiring, walk, go-live｜串接、走位與上線 | the contract in the order things go wrong, one sandbox order per method, a production checklist with a canary｜依故障可能發生的順序排列合約規範，每種付款方式完成一筆測試訂單，並提供含 Canary 小流量驗證的上線清單 |
 
+<a id="providers"></a>
+
 ## Providers｜支援的金流商
 
 The depth is in **NewebPay and ECPay**: a 330-line NewebPay guide built from a shipped Taiwanese shop's lessons and probes verified on a real sandbox shop; an ECPay guide with the `CheckMacValue` known-answer test and probes verified on ECPay's public stage. PAYUNi and TapPay are documentation-derived secondary guides — correct as far as the vendor pages go, not yet backed by a shipped integration. NewebPay's codec is pinned to the vendor's own published numbers: the NDNF-1.2.5 manual's example key, IV, plaintext, `TradeInfo`, `TradeSha` and its complete signed callback body are reproduced byte-for-byte by the tool selftests and, independently, by the Python standard library in the tests. LINE Pay has a direct guide of the same shape — direct-vs-via decision first, docs read from `developers-pay.line.me` (v3 and v4), signer cross-checked against a second implementation, probe verified against the sandbox host.
@@ -374,6 +505,8 @@ The depth is in **NewebPay and ECPay**: a 330-line NewebPay guide built from a s
 Default for a first shop built by a non-engineer: NewebPay — one crypto scheme, sandbox refunds work, the store picker is hosted. ECPay when the shop is on WooCommerce, wants a sandbox payment in five minutes, or already holds a contract. PAYUNi when 7-ELEVEN is the channel of record or the 超商代碼 cap (NT$20,000) matters. TapPay when the shop wants its own checkout page and card-on-file with every wallet. LINE Pay is a flag on NewebPay and PAYUNi (ECPay's AIO has none) and is integrated directly only when it is *the* way to pay; the direct Online API needs no static IP — the guide's §4 says why, with the source. Where a vendor ships its own AI skill (ECPay does), this skill defers to it for the API calls and covers everything around them.
 
 > 非工程師建立第一家店時的預設選擇：藍新 NewebPay —— 單一加密機制、測試環境支援退款、超商門市選擇頁面由官方託管。若商店使用 WooCommerce、想在 5 分鐘內測通刷卡，或已經簽約，建議用綠界 ECPay。若以 7-ELEVEN 為主要通路，或重視超商代碼上限（新台幣 20,000 元），請選 PAYUNi。若商店想自訂結帳頁面並支援各類電子錢包綁卡（Card-on-file），則選 TapPay。LINE Pay 在藍新與統一金流上只是其中一個付款方式旗標（綠界 AIO 沒有 LINE Pay）；只有當 LINE Pay 是*主要*支付管道時，才需要直連整合。直連 Online API 不需要固定 IP —— 指南 §4 附上出處並說明原因。若金流商有提供自己的 AI Skill（例如 ECPay），本 Skill 會將 API 呼叫交給官方 Skill，自己則專注把關周邊的所有防護。
+
+<a id="live-verified"></a>
 
 ## Live-verified, not assumed｜實機驗證，不是憑空假設
 
@@ -394,6 +527,8 @@ Default for a first shop built by a non-engineer: NewebPay — one crypto scheme
 
 > `tools/{newebpay,ecpay,linepay,payuni,tappay}/`：包含偵測器（辨識哪家金流、切換引導或審查模式）、文件抓取工具、模擬探針（回傳 PASS / 具名拒絕 / UNKNOWN，絕不印出金鑰，未帶 Flag 則直接拒絕在正式環境執行）、Callback 驗證器與模擬器（在測試環境發送請求前先測試你的 Notify Handler），以及準備就緒卡渲染器（每家金流商各有範本：`readiness.py --init --provider linepay`）。`tools/explain_error.py MPG02003` 可將藍新 NewebPay、綠界 ECPay、LINE Pay（如 `linepay:1106`）、統一金流 PAYUNi、TapPay 的任何錯誤碼，轉譯成實際含義、成因與單一下一步行動；若遇上藍新物流與 LINE Pay 共用的四位數代碼，則會同時印出兩種解讀。所有測試預設離線執行，實測連線檢查透過環境變數旗標開啟：28 項藍新 NewebPay、28 項綠界 ECPay、20 項 LINE Pay，以及 8 項統一金流 PAYUNi 與 TapPay。`tests/fixture-shop/` 是一個帶有 16 個已知缺陷與標準答案的 PHP 測試商店，用「讀」的方式審查；`tests/fixture-shop-live/` 是一個可實際執行的 PHP + SQLite 商店，其中 8 個缺陷只有在實際執行時才能發現——前台讀取的是未更新的庫存快取、後台庫存頁面根本看不到規格商品、重複的金流通知會釋放兩次庫存、退款沒有依照商店自訂的政策退回庫存；`tests/verify-fixture-shop-live.py` 則用來證明每一個埋入的缺陷仍能重現。`tests/RUNBOOK.md` 用於為執行評分；`tests/RUNS.md` 為測試紀錄帳本。全工具零第三方套件依賴：僅需 Python 3.10+ 標準庫與 PHP 8。
 
+<a id="how-it-differs-from-vendor-skills"></a>
+
 ## How it differs from vendor skills｜與金流商官方 Skill 的分工
 
 | | Generic audit prompts｜通用型 Audit Prompt | Vendor API skills (ECPay's `ecpay-api-skill`, `paid-tw/skills`)｜金流商官方 API Skill | ecommerce-cia｜ecommerce-cia |
@@ -411,6 +546,8 @@ Default for a first shop built by a non-engineer: NewebPay — one crypto scheme
 When the person asking is not an engineer, the skill switches voice, not doctrine: one thing at a time, meaning instead of names (sweep ids and section numbers stay in the report file), the whole road drawn as numbered stops, errors translated rather than quoted, every wait named with who and since when, the slow voice before anything that touches real money or identity, and every report opening with five plain lines — what is safe, what is not, what to do first.
 
 > 當提問者不是工程師時，Skill 會切換語氣但堅持原則：一次只講一件事、用含義代替專有名詞（掃描 ID 與章節編號保留在報告檔案中）、將整個流程畫成編號站牌、轉譯錯誤內容而非直接引用原文、明確標示每項等待由誰負責及從何時開始卡住。在觸及真實金錢或身分驗證前改用放慢的審慎語氣，且每份報告開頭皆以五行白話總結 —— 什麼是安全的、什麼還不安全、第一步該先做什麼。
+
+<a id="install"></a>
 
 ## Install｜安裝方式
 
@@ -472,11 +609,23 @@ Setup mode starts from plain words — 「我想用藍新金流收款，怎麼�
 | `SKILL.md` | the runbook: routing, discovery, seven-step protocol, autonomy contract, sweep index, escalation, setup mode, plain-language contract, start menu｜操作手冊：包含路由、探索、七步驟協定、自主權合約、掃描索引、通報機制、新手引導模式、白話報告條約、啟動選單 |
 | `references/sweeps.md` | S1–S22 with methods, gradings and report-line formats｜S1–S22 包含檢驗方法、評分標準與報告單行格式 |
 | `references/doctrine.md`, `domains.md`, `theory.md`, `reporting.md` | audit doctrine, the domain chapters §8–§25, the VSM, finding format and severity｜Audit 原則、領域章節 §8–§25、Viable System Model (VSM)、缺失格式與嚴重程度定義 |
+| `references/evidence.md` | claim tags, authority ladder, the obligation ledger (intent → owner → verifier), unknowns, bounded negatives, contradictions, reverse trace｜結論標記、證據強度階梯、義務帳冊（意圖 → 負責程式 → 驗證）、未知清單、有邊界的「找不到」、矛盾紀錄、反向追蹤 |
 | `references/taiwan-adapter.md` | TW-0…TW-14｜TW-0…TW-14 台灣特定條款 |
 | `references/newebpay-onboarding.md`, `ecpay-onboarding.md`, `linepay-onboarding.md`, `payuni-onboarding.md`, `tappay-onboarding.md` | the five provider guides｜五家金流商的新手上路指南 |
 | `references/jurisdictions.md`, `global-compliance.md` | EU / Japan / US / UK adapters; terms and privacy across 13 regimes｜歐盟 / 日本 / 美國 / 英國轉接器；跨 13 種法規體系的條款與隱私合規檢查 |
 | `tools/` | detectors, doc fetchers, probes, callback verifiers, readiness card, error translator｜偵測器、文件抓取工具、探針、Callback 驗證器、準備就緒卡、錯誤碼轉譯器 |
 | `tests/` | the fixture shop with its answer key, the run book and the run ledger｜附帶解答的測試商店、測試手冊與測試執行帳本 |
+
+## Star history｜Star 趨勢
+
+<a href="https://www.star-history.com/#mixocreative/ecommerce-cia&mixocreative/cia&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=mixocreative/ecommerce-cia,mixocreative/cia&type=Date&theme=dark" />
+    <img alt="Star history for ecommerce-cia and cia" src="https://api.star-history.com/svg?repos=mixocreative/ecommerce-cia,mixocreative/cia&type=Date" />
+  </picture>
+</a>
+
+如果它幫你在上線前抓到掉單或庫存 bug，給個 ⭐ 讓更多台灣開發者找到它。If it saved you a lost order, a ⭐ helps the next shop find it.
 
 ## License｜授權條款（License）
 
