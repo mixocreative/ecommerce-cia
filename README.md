@@ -657,6 +657,11 @@ Setup mode starts from plain words — 「我想用藍新金流收款，怎麼�
 | `tools/` | detectors, doc fetchers, probes, callback verifiers, readiness card, error translator｜偵測器、文件抓取工具、探針、Callback 驗證器、準備就緒卡、錯誤碼轉譯器 |
 | `tests/` | the fixture shop with its answer key, the run book and the run ledger｜附帶解答的測試商店、測試手冊與測試執行帳本 |
 
+## More skills by MixoCreative｜更多 MixoCreative 的 Skill
+
+- **[cia](https://github.com/mixocreative/cia)**: Code Integrity Auditor for any codebase. Finds the bugs that live between two correct functions.
+- **[token-economy-delegation](https://github.com/mixocreative/token-economy-delegation)**: One router for local Ollama, Codex and Claude. Bulky jobs go to the cheapest worker whose answer can be checked; a failed check escalates. Pairs well with a long audit.
+
 ## Star history｜Star 趨勢
 
 <a href="https://www.star-history.com/#mixocreative/ecommerce-cia&mixocreative/cia&Date">
