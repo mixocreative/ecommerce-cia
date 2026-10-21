@@ -19,6 +19,9 @@ Seed: `MUG-01` 5 · `PLATE-01` 2.
 |---|---|---|
 | **NC1** | The signature check (`server.js:80-86`) | HMAC-SHA256 over the sorted fields, length-checked before `crypto.timingSafeEqual` — the length guard matters, because `timingSafeEqual` **throws** on unequal lengths and a naive implementation crashes the handler on a malformed signature. A tampered body is refused `0|signature` and changes nothing. |
 
+
+Also expected from 2026-10-16, not separately scored: the **S19.3** parity line names the one environment the run used (Node 22 + `node:sqlite` on this machine) and reports every other cell `NOT RUN`; the **S20.6** CI line reads `no CI configured`; **S12.4** finds no gateway query caller (`0 callers`, with that reason); **S24.1** records that the notification verifier has only self-signed bodies and no real vendor exists here, so the real-browser cell is `NOT RUN` / UNPROVEN with that reason. None of this is grounds to file NC1: a correct verifier with no vendor fixture is an UNPROVEN cell, not a defect.
+
 ## Scoring
 
 Same hit / near / miss / false-positive rules as the other fixtures. The number that matters

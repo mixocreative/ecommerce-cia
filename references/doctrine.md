@@ -339,6 +339,10 @@ These invariants take priority over implementation style.
 
 8. Refund totals must never exceed legitimately captured/settled refundable value unless an intentional separate credit workflow exists.
 
+8a. A reconciler, poller or recheck may ask a provider only about a transaction the provider has received — one with a recorded gateway attempt in the same environment — and never at a rate that can trip the provider's own lockout (sweeps S12.4).
+
+8b. A provider message verifier (signature, cipher, padding, encoding) is proven against the provider's own bytes from the sandbox or production, not only against messages the shop signed itself (sweeps S24.1).
+
 ## Inventory
 
 9. Sellable stock must not become negative unless backordering is explicitly supported.

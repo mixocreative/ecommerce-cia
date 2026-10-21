@@ -345,6 +345,42 @@ The tell when reading: a mutation and its inverse in the same function, with any
 that can throw, return early or be interrupted. Ask what the system looks like at that instant, and
 who finds out.
 
+**S12.4 — the self-inflicted vendor lockout: a reconciler that asks about orders the gateway never saw (2026-10-16).**
+Some gateways punish the question "what happened to order X?" when X is unknown to them. NewebPay is the
+worked example: repeated queries for a non-existent order trip `TRA10071`, a four-hour lock on the
+query API (NDNF-1.2.5 p.95) — and during those four hours every **legitimate** reconciliation, settlement
+check and "is this paid?" answer for the whole shop fails too. The shop does it to itself, by design, in
+three ordinary ways: a poller that walks every `awaiting_payment` order including those abandoned
+**before** the redirect (the gateway never received them); a reconciler pointed at a sandbox or shared
+merchant id that also holds another environment's test orders, or the reverse; and a retry loop that
+treats "no such order" as transient.
+
+**Check every poller, reconciler, settlement job and operator "recheck" button that calls a gateway's
+query API:**
+
+1. **It queries only orders with a recorded gateway attempt** — a row written at redirect or form-post
+   time naming the gateway, the merchant id and the environment. No attempt row, no query. An order
+   that never left for the gateway is expired locally, not asked about.
+2. **The environment is part of the key.** A stage query never carries a production order id and the
+   reverse; the attempt row's environment must match the client's.
+3. **One budget per gateway, shared by every caller** — cron, worker, admin button, CLI — counted in one
+   place (a table or a lock-guarded counter), with a ceiling set below the vendor's documented threshold.
+   Per-caller budgets add up to the lockout.
+4. **The lockout code is a stop, not a retry.** On the vendor's lockout code every caller stops querying
+   that gateway until the documented window passes, the stop is recorded with its expiry, and it reaches
+   an order screen (S20/S22): "gateway queries paused until 15:40 — the gateway locked us out" is a
+   state a person can account for; four hours of "unreachable" is not.
+5. **"No such order" is an answer.** It ends the question for that order (expire, or route to a human
+   if money may have moved by another channel); it never re-enters the queue on the next cycle.
+
+**Grading.** A query path with no attempt-row guard on a gateway that documents a lockout: HIGH (the
+shop can blind its own reconciliation for hours, during trading). No shared budget, or a lockout code
+handled as a retry: HIGH. Lockout recorded but not shown: MEDIUM. Include the probe suites in the count:
+a live sandbox probe that queries a deliberately unknown order is the same caller, and running it twice
+inside the window is the lockout, not a signature fault.
+
+Report line format: `S12.4 — Q gateway-query callers (cron, worker, admin, CLI, probes); guarded by an attempt row G/Q; environment-keyed E/Q; shared budget per gateway: yes/no; lockout codes handled as stop L of K documented; shown on an order screen: yes/no.`
+
 ## S13 — Orphan capability / designed-but-unbuilt
 
 Three greps, one table. (a) For every class under the admin, control, settings or catalogue roots (payment-method matrix, carrier catalogue, shipping chains, fee tables), grep for a caller outside its own file and its tests; a control class with no page, controller or module that renders it is an orphan. (b) For every table column and enum added by a migration (`shipping_method`, `pickup_store_*`, `cod_*`, fee columns), grep for a writer in runtime code — checkout, admin, worker — not only a test; a column nobody writes is scaffolding, and scaffolding that a later reader treats as data is a finding. **Grep the identifier alone and read every hit — never the identifier plus an SQL keyword on the same line.** A column written by a multi-line `UPDATE … SET` whose `SET` sits six lines above the column name is invisible to `grep 'col.*SET'`, and most non-trivial SQL is multi-line. One pass reported a live column as having no writer anywhere and was one sentence from filing it as an orphan with five consumers treating it as scaffolding. **A false orphan costs exactly what a missed one does**, because it sends the next session to rebuild something that already works — so confirm an absence by reading the hits, not by trusting a narrower pattern that returned none. (c) For every design document, master plan or handoff note under `docs/` that names a component (a checkout method picker, a carrier admin page, an eligibility engine), check that the component exists on disk **or** that the gap register carries one row naming it as unbuilt with its blocker (vendor account family, 測標 approval, owner decision). Report each orphan with its three states — designed / coded / wired — and the owner-side blocker if any. A capability that is designed and coded but not wired, and whose absence the register does not record, is the most expensive shape of commerce gap: every document says shipping is handled and the customer has no way to choose how.
@@ -797,6 +833,78 @@ connection, uploads on the local disk, the settlement cron on one host, an outbo
 carrier allowlisted that the next host will not have (§8ab). Write each with the stage that breaks
 it and the plan's date for that stage; a finding with no such date is post-launch and says so.
 
+**S19.3 — the parity matrix: the developer machine is the most permissive cell (2026-10-16).**
+S19 crosses what the dependencies require against what the host provides. The same cross has to be
+made against what **the suite ran on**, because a test is evidence about the environment it ran in
+and nothing else — and the developer's machine is almost always the most forgiving environment the
+code will ever meet. Three axes, each of which has produced a red CI under a green laptop:
+
+1. **Engine and version.** One database engine locally while the deploy target, a CI leg or a stated
+   future host runs another (MySQL locally, MariaDB on the host, or the reverse; one major version
+   against another). What diverges is a list worth walking site by site: engine-specific SQL (JSON
+   operators and `JSON_TABLE`, `RETURNING`, CTE and window edge cases), `information_schema` columns
+   and their case and collation, DDL behaviour (implicit commits, default values on `TEXT`/`JSON`,
+   online `ALTER`), what `JSON` is (a native type on one, an alias with a check constraint on the
+   other), `GET_LOCK` and advisory-lock semantics, and the client programs themselves — dump and
+   restore binaries whose names and accepted flags differ by engine, so a tool that shells out to one
+   works only where that one is installed.
+2. **Privileges.** A local account that can do everything (`CREATE DATABASE`, `PROCESS`, `RELOAD`,
+   `SUPER`, routines and triggers) where shared hosting and many CI services grant one database and
+   little else. A test that creates a scratch database, a tool that reads a `PROCESS`-gated table or
+   sets a global variable, a dump that asks for routines — each passes locally and fails there.
+3. **Secrets present or absent.** Locally the `.env` holds every secret, every time, so a code path
+   that **wrongly requires** one is never exercised without it — a list-only or dry-run tool that
+   resolves the database password before discovering it needs no connection, a health check that
+   reads a key it never uses. CI (forks, unprivileged jobs, a fresh runner) is usually the first place
+   the secret is missing, which makes it the first place the wrong dependency shows.
+
+**Method.** Write the matrix: one row per environment the code runs in — developer machine, each CI
+leg, staging, the production host, and every host or engine a stated move names (S19.4) — with
+columns for engine and version, the account's privileges, secrets present or absent, OS and
+filesystem (case sensitivity, bind-mount quirks), and runtime version. Then one cell per suite ×
+environment: **RAN** with that run's count line pasted, or **NOT RUN**. Reproduce the cells you do not
+have before pushing, not after: a throwaway container of the other engine on a spare port, a second
+account granted exactly what the target grants, and one run with the secrets unset (an empty `.env`,
+`env -u`). CI is where a cell gets confirmed, not where it gets discovered (S20.6).
+
+**Grading.** A single-engine run is **not a green light** when the deploy target or a stated migration
+target is another engine: that cell is UNVERIFIED, and on a path that stores orders, payments or stock it is a HIGH
+finding until it is RAN. A privilege the code needs that the target account lacks is graded as S19
+grades any requirement the host cannot satisfy. A code path that demands a secret it does not use:
+MEDIUM — it fails the first unprivileged run and it means the tool cannot run where the secret must
+not be.
+
+**Worked example (mixoweb, 2026-10-14..16).** Every suite was green on the laptop, against MySQL, with
+an account that could create databases, and with `.env` populated. CI's MariaDB leg went red on
+engine-specific behaviour in the dump, restore and migration-guard tooling; the restricted CI account
+could not do what the laptop's could; and a list-only restore command failed because it resolved the
+database password from an environment that, for once, did not have one. None of the three could fail
+on the machine the code was written on, and all three had been called green.
+
+Report line format: `S19.3 — E environments × S suites; RAN R / NOT RUN N (matrix in the report); engines run <list> of engines named by deploy and migration targets <list>; restricted-account run: yes/no; secrets-absent run: yes/no.`
+
+**S19.4 — migration readiness: a backup that has never been restored somewhere else is not a migration plan (2026-10-16).**
+Runs whenever the owner has stated a future move — host to host, engine to engine, shared hosting to a
+VPS, one region to another. "Backup and restore exist" is a claim about two tools; readiness is a claim
+about a round trip **across the boundary the move crosses**, and only a drill makes it. Require:
+
+1. **Dump on A, restore on B**, where A is the current engine and version and B the target's (a
+   throwaway container of B is enough).
+2. **Compare, per table**: row counts, and `CHECKSUM TABLE` — or, where a column type makes the two
+   engines' checksums incomparable, an ordered-row hash, saying which tables needed it and why.
+   **Compare the file stores** (uploads, private downloads, generated documents) by a hash manifest.
+3. **Smoke B through the application**: log in, open a recent record, exercise one download or
+   export. A restore whose data is right and whose logins all fail because a salt or app key did not
+   travel is the commonest failed migration there is.
+4. **Write the lay-person procedure**: numbered steps the owner can follow without the developer,
+   naming each program, where every secret that must travel comes from, and how to tell it worked.
+
+**Grading.** A stated move with no cross-engine drill: HIGH — it is the data-loss class, deferred to the
+day of the move. A drill with row counts only and no checksums: its cells are PARTIAL. A drill with no
+lay procedure: MEDIUM, because the person who will run it is not the person who wrote it.
+
+Report line format: `S19.4 — move stated: <A → B | none>; drill: <date, A engine@version → B engine@version, T tables, counts equal C/T, checksums equal K/T, files hashed F> | NOT RUN; lay procedure: <path | none>.`
+
 ## S20 — Liveness of the safety net itself. ZERO FINDINGS AND ZERO LOOKING ARE THE SAME REPORT UNLESS SOMEBODY DESIGNED THEM APART
 
 The First Law — *"Nothing should die silently!!"* — applied to the watchdogs themselves.
@@ -889,6 +997,26 @@ liveness answer to a readiness question. For every detector and worker on the ro
 of the two its signal is, and whether anything asks the other.
 
 **S20.5 — a walk receipt proves the moment it was taken, not the day after (2026-09-20).** A headless walk logged into the admin, read the rendered menu and recorded five tabs with the right rows and order — proof, with a timestamp, that a menu-grouping hook was live. The next morning an environment fault killed it: a Docker bind mount whose `rewinddir()` returned a single entry made the installer see one of forty-eight modules, so a routine install run inside the container poisoned the module cache and every autoloaded module — the nav hook included — went silently off, with the admin back to a flat, ungrouped list and no error anywhere. The walk's receipt was still sitting in the report, true when written and false by the time anyone read it again. **A receipt is evidence for the run that produced it, never a standing guarantee** — treat "proven live" as dated, not closed, and demand the detector live *in the product*: a badge or panel an operator sees every day they open the screen, not only a line in an audit's output that nobody re-runs until the next audit.
+
+**S20.6 — the CI run nobody read (2026-10-16).** CI is a detector, and a detector whose verdict
+lands in an inbox nobody opens is the dead watchdog in its most ordinary form. **A push is not done
+until the CI run for that commit has been read**: its id, its conclusion, and for a red, the first
+failing job and step. In the worked example two pushes went out with a red CI that nobody looked at,
+and the owner learned it from the hosting platform's failure e-mail — the outermost check fired, and
+reached the one person who could not act on it.
+
+**Audit check.** For the commit audited, report the latest CI run id and conclusion (for GitHub:
+`gh run list --commit <sha> --limit 1 --json databaseId,status,conclusion`). `not checked` is itself a
+finding — MEDIUM, HIGH on a green-light request — and so is a CI that is configured and has not run on
+the audited commit, and so is a red on any earlier commit of the branch that nothing has explained.
+The verdict has to reach an order screen, not only a mailbox.
+
+**And the budget rule.** CI minutes can be the scarcest resource a small project has (a free plan, no
+budget for more), and every push spends them. Reproduce the CI cell locally first — S19.3's other-engine
+container, restricted account and secrets-absent run — push rarely and in batches, and never re-run a red
+without a written hypothesis of why it would now pass. A speculative re-run spends the budget on a
+question a local reproduction answers for nothing; and a red that turns green on re-run is a flaky test,
+which is an S21 finding, not a pass.
 
 Report line format: `S20 — D detectors enumerated; C report coverage separately from findings; H have a liveness signal something reads; E escalate to an order screen; outermost check: <named, or NONE>.`
 
@@ -1752,9 +1880,38 @@ contract, and where did that test's fixture come from?**
 (a) on a path that writes state: MEDIUM. A fixture at (c) or (d) without version and citation:
 LOW, and the S18 cell it supports drops to `UNVERIFIED`.
 
+### S24.1 — The vendor's own bytes: the defect class only the sandbox can show (2026-10-16)
+
+A contract test of class (c) is transcribed from the manual; class (d) and (e) come from the vendor. The
+difference is not pedantry. Some defects exist only in the gap between what the manual says and what the
+vendor's servers actually send, and a suite of self-signed notices can be perfectly green over them:
+
+- **A cipher padding the manual does not pin.** A payment-notice decryptor checked that the ciphertext
+  length was a multiple of 16 bytes and the PKCS#7 pad no longer than 16. The vendor's real notices are
+  padded to **32-byte** blocks, so roughly half of all real notices — those whose plaintext length landed
+  on the wrong side of a boundary — were rejected as tampered. Every unit test encrypted its own notice
+  with the shop's own encrypter and passed.
+- **A return page that never reads the gateway's answer.** The customer's return page showed "thank you,
+  payment received" from the redirect alone, never decoding the result the gateway posted with it — so
+  a declined card and a paid order looked identical to the customer, and only a real payment in a real
+  browser showed it.
+
+**The rule.** Before a payment green light, **at least one real-browser sandbox payment per gateway ×
+payment method** the shop enables — card, ATM / virtual account, convenience-store code, barcode, each
+wallet — driven through the shop's own checkout, with the vendor's real notice captured (redacted,
+dated, version-stamped: a class (d) fixture for S24 from then on) and the customer's return page read for
+what it says. Methods the sandbox cannot complete (some cannot fire a store-code payment) are recorded
+as UNPROVEN with the vendor's own statement, never as covered by a sibling method. Unit tests with
+self-signed notices are class (b) for the vendor-format claim, however many there are.
+
+**Grading.** A payment method enabled for launch with no real-browser sandbox payment: HIGH, and the
+S18 cells it supports are UNVERIFIED. A notice decoder with no class (d) fixture from that vendor: HIGH.
+A return page whose text does not depend on the decoded gateway result: HIGH (the customer is told the
+wrong thing about their money).
+
 ### S24 report line
 
-Report line format: `S24 — B boundaries (I inbound, O outbound, N internal); per boundary the class a–e per side (table); external producer × consumer matrices: P, independent fixtures C/D/E, UNVERIFIED producers U; money boundaries below c: M (each HIGH); internal at a on a state-writing path: K; fixtures without version or citation: F`.
+Report line format: `S24 — B boundaries (I inbound, O outbound, N internal); per boundary the class a–e per side (table); external producer × consumer matrices: P, independent fixtures C/D/E, UNVERIFIED producers U; money boundaries below c: M (each HIGH); internal at a on a state-writing path: K; fixtures without version or citation: F; S24.1 real-browser sandbox payments: P of G×M gateway × method cells, vendor notices captured as (d) fixtures N`.
 
 ---
 

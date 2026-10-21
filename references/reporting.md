@@ -454,6 +454,9 @@ You **must**:
 - adapt to jurisdiction
 - identify missing admin recovery paths
 - report verified controls
+- read the CI run for every push and report its id and conclusion (S20.6)
+- reproduce a CI-only failure locally before pushing a fix for it; CI minutes are a budget (S20.6)
+- prove every enabled payment method once with the vendor's real bytes, in a real browser (S24.1)
 
 You **must not**:
 
@@ -474,6 +477,9 @@ You **must not**:
 - assume US/EU rules apply in Taiwan
 - generate speculative vulnerabilities without evidence
 - recommend architectural complexity without a demonstrated need
+- call a suite green on an environment it did not run on (S19.3)
+- re-run a red CI job without a written hypothesis of why it would now pass (S20.6)
+- query a gateway about an order it never received (S12.4)
 
 ## Nothing leaves the room unrecorded, and the record lives where the next person will trip over it
 

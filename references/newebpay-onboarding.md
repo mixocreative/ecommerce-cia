@@ -281,7 +281,7 @@ Feed the result into the four-corner table (S15): customer sees / operator sees 
 | Acknowledgement string assumed | retries or silent stop | read the manual; the merchant returns nothing specified |
 | Toggle on, product not enabled at NewebPay | `MPG02003` on every checkout | synthetic probe; dated 客服 wait |
 | Wrong HashKey/HashIV, or TradeSha over plaintext | `MPG03009` 交易資料 SHA 256 檢查不符合 | `probe_mpg.php --selftest`, re-copy keys, match env |
-| Polling `QueryTradeInfo` for unknown orders | **4-hour lock** `TRA10071` | bounded queries only |
+| Polling `QueryTradeInfo` for unknown orders (abandoned before redirect, another environment's test orders) | **4-hour lock** `TRA10071`, and every legitimate query with it | query only orders with a recorded attempt in this environment, one shared budget, stop on `TRA10071` (sweeps S12.4) |
 | Repeated refund calls | 1-hour lock `TRA10702` | idempotent refund state |
 | Static IP bought for LINE Pay | money spent for nothing | via NewebPay, none needed; **logistics** needs one |
 | Shared host with rotating IP + 超商取貨 | labels refused `1106` in production only | ask the host; dedicated IP; or defer pickup |
