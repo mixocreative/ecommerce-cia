@@ -101,7 +101,8 @@ Walk each action through the full loop:
 4. **Completion:** success, failure, cancellation and retry states are visible in the same journey.
 5. **Next action:** the screen says what to do next, especially after partial success or a requirement the user must satisfy.
 6. **Refresh/recheck:** if completion happens outside the page or process, a visible recheck path exists and changes the displayed requirement state.
-7. **Final state:** the screen proves the action changed the system, or explains why it did not.
+7. **Stale-output reset:** leave or seed a previous attempt's error/progress/success message, then refresh or recheck. The new result must clear or replace it; a ready row with an old failure log, old running text or a still-disabled control underneath is an S22 finding.
+8. **Final state:** the screen proves the action changed the system, or explains why it did not.
 
 A click whose handler ran but leaves the same display as a broken click is not closed. File it under
 S22 for the missing surface and S5 when the control has no consumer.
