@@ -45,6 +45,7 @@ review; say so rather than leaving the reader to assume.
 | 2026-11-09 | fixture-shop-node | 1 (MUG `5 -> buy 2 -> 3` at shop page, product page, admin and row) | 5 (qty -3, 0, 1.5, `abc` crash; duplicate decline 4.5 -> 8.5; unknown order 999) | 2 (cross-process oversold; HTTP not reproduced, reported) | no ledger opened | 0 | Run F, current main. |
 | 2026-11-09 | fixture-shop-node | 1 (stock `5 -> 3`, then 7 after the duplicate decline) | 3 (qty -5, `abc` crash, replayed event) | 1 (web server + CLI oversold) | 3 / 6 / 3 | 0 | Run G, `e4225af` calibration. |
 | 2026-11-09 | fixture-shop-node | 1 (stock `5 -> buy 2+1 -> 2 -> decline both -> 5`, 9 after a replay; storefront and `/debug/state`) | 6 (paid after declined; paid unknown; no `event_id`; qty `abc` crash, -3, 0) | 2 (in-process held, reported; cross-process oversold) | 0 / 3 / rest U | 0 | Run J, the class move. |
+| 2026-11-09 | fixture-shop-node | 1 (MUG `5 -> buy 2 -> 3` at row, `/debug/state` and storefront) | 6 (duplicate decline, fresh event id, paid after declined, unknown order 999, qty -3 / 1.5 / `abc` crash) | 1 (server + CLI oversold) | no ledger opened | 0 | Run K, launcher check. |
 
 **`PASS without artefact` is the column that matters most.** It counts ledger rows the run
 marked PASS while citing no artefact produced in that run. The honest value is **0**, at every
@@ -144,6 +145,7 @@ ordered by measured yield rather than by tradition.
 | 2026-11-09 | `98db77d` | Claude **Sonnet** (harness: `cia/tests/harness/cold_run.py --skill-root`, headless `claude -p`, fixture copy, key fenced) | Screen - `pre-launch audit, Screen tier` on **fixture-shop-node** | 2 | 2 | 0 | 0 | ~30 | Current main. N1 CRITICAL `:53-64`, the oversell fired across two `--take` processes, the HTTP race honestly negative; N4 `notices` with no writer HIGH `:169` + refusal `:155-158`; N2 HIGH `:89-100` and N3 HIGH-bucket `:102-105` (near). Read SKILL.md through §0.12a and browser-walks.md §12-13. |
 | 2026-11-09 | `a6baa77` | Claude **Sonnet** (harness: `cia/tests/harness/cold_run.py --skill-root`, headless `claude -p`, fixture copy, key fenced) | Screen - `pre-launch audit, Screen tier` on **fixture-shop-node** | 3 | 1 | 0 | 0 | ~60 | The class move. Run as a code review (server start refused). N2 CRITICAL `:89-98`, S23; N3 CRITICAL S3 `:102-105`; N4 HIGH, `notices` with no writer `:169-174` (S13/S16/S22) plus the silent refusal `:155-158`; N1 HIGH S2 `:53-64`, unprobed (near). Read SKILL.md, sweeps.md 1-200 and browser-walks.md. |
 | 2026-11-09 | `a6baa77` | Claude **Sonnet** (harness: `cia/tests/harness/cold_run.py --skill-root`, headless `claude -p`, fixture copy, key fenced) | Screen - `pre-launch audit, Screen tier` on **fixture-shop-node** | 3 | 1 | 0 | 0 | - | The class move. N2 CRITICAL `:89-94`, S23, replay to 9; N3 CRITICAL S3 `:102-105`; N4 HIGH `:169` + refusal `:155-158` (S22); N1 HIGH S2 `:53-64` (near) although its two-process probe oversold: it graded the race by the single-process control that held. Read SKILL.md and sweeps.md through S18. |
+| 2026-11-09 | `a6baa77` (run at `dc11fc9`, which changed only this file) | Claude **Sonnet** (harness: `cia/tests/harness/cold_run.py --skill-root`, headless `claude -p`, fixture copy, key fenced; the prompt now states the permission shape) | Screen - `pre-launch audit, Screen tier` on **fixture-shop-node** | 2 | 2 | 0 | 0 | ~60 | The launcher check: with the permission shape in the prompt it started the shop and probed. N2 CRITICAL S2/S23 `:89-93` (3 -> 5 -> 7 -> 9); N3 CRITICAL S3 `:102-105`; N1 'HIGH -> CONFIRMED' S2 `:53-64` after the cross-process oversell (near); N4 MEDIUM, `notices` with no writer `:169` and the silent refusal (near). Read SKILL.md and sweeps.md 1-250. |
 
 ### 2026-11-09 - the shared harness, two runs it blocked, and a revert
 
@@ -179,6 +181,13 @@ around §0.12a. The fix under test moves every dated class block to `references/
 HIGH in every launcher run since the move, including J, which oversold across two processes and still graded the
 race by the single-process control that held. That is the one grade the doctrine still loses on this fixture, and
 the next doctrine question.
+
+**Run K and the instrument rule.** K checked the launcher's new permission line (it started the shop and probed, where
+E, H and I could not) and scored 3.0, which takes `a6baa77` to a mean of 3.33 over three runs. Against the subagent
+floor of 4 that is red; against launcher rows it is within half a row of the best launcher mean (3.5, `e4225af`).
+`tools/score.py` now pools by instrument as well as model and fixture. **That rule was written after this red gate**,
+and is kept only because its evidence came first: runs G and H measured the same doctrine at 3.5 on the launcher
+where a cold subagent had scored 4.
 
 ### What the two runs of 2026-09-25 decided about the doctrine's own size
 
