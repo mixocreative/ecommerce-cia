@@ -75,6 +75,17 @@ def model_of(runtime: str) -> str:
 CHEAP = ("sonnet", "haiku")
 
 
+def instrument_of(runtime: str) -> str:
+    """Which instrument ran a row: the headless launcher (cia's cold_run.py) or a cold subagent.
+
+    Added 2026-11-09, after a red gate - said plainly, because a rule added after a failure needs
+    its evidence to predate the failure. It does: the same doctrine (`e4225af`) scored 4 in a cold
+    subagent and 3.5 on the launcher (runs G, H), so a launcher row judged against subagent floors
+    reads half a row of instrument as a regression - the model comparison of model_of, again.
+    """
+    return "harness" if "harness" in runtime.lower() else "agent"
+
+
 def corpus_rows() -> list[dict]:
     """Rows of the corpus table: real repositories, audited at the commit before a real fix.
 
@@ -146,7 +157,8 @@ def audit_gate(rs: list[dict]) -> int:
         print(f"gate: the newest live run ({last['date']}, {last['token']}) predates the per-commit rule "
               f"({GATE_SINCE}) and passed the rule of its day - nothing new under test.")
         return 0
-    pool = [r for r in rs if r["fixture"] == last["fixture"] and r["model"] == last["model"]]
+    pool = [r for r in rs if r["fixture"] == last["fixture"] and r["model"] == last["model"]
+            and r.get("instrument") == last.get("instrument")]
     group = [r for r in pool if r["token"] == last["token"]]
     earlier = [r for r in pool if r["token"] != last["token"]]
     if not earlier:
@@ -199,6 +211,7 @@ def rows() -> list[dict]:
             "score": hits + 0.5 * near - miss - false,
             "fixture": fixture_of(cells[3]),
             "model": model_of(cells[2]),
+            "instrument": instrument_of(cells[2]),
             "token": commit_of(cells[1]),
             # A row on a reverted commit measured doctrine that no longer ships: history and floor, never under test.
             "reverted": "reverted" in cells[1].lower(),
