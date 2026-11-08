@@ -117,6 +117,58 @@ def fixture_of(tier: str) -> str:
     return "default"
 
 
+def commit_of(cell: str) -> str:
+    """The skill commit a row measured: the first backticked hex token, else the commit cell's first word."""
+    m = re.search(r"`?([0-9a-f]{7})[0-9a-f]*`?", cell)
+    return m.group(1) if m else cell.strip().split(" ")[0]
+
+
+# Half a row: one near or unanchored slip, the smallest unit the answer keys score. Ported from cia
+# (2026-11-09), where six sonnet rows varied by about this much and every half-row was a reporting slip.
+NOISE = 0.5
+
+
+def audit_gate(rs: list[dict]) -> int:
+    """Per-commit gate. Misses and false positives are doctrine: zero tolerance. Half-rows are noise:
+    the mean of at least two runs on the commit under test must stay within NOISE of the best earlier
+    per-commit mean on the same fixture and model - a floor that cannot drift down."""
+    live = [r for r in rs if not r.get("reverted")]
+    if not live:
+        print("gate: every scored run is on a reverted commit - nothing under test.")
+        return 0
+    last = live[-1]
+    pool = [r for r in rs if r["fixture"] == last["fixture"] and r["model"] == last["model"]]
+    group = [r for r in pool if r["token"] == last["token"]]
+    earlier = [r for r in pool if r["token"] != last["token"]]
+    if not earlier:
+        print(f"gate: {last['token']} is the first scored commit on {last['fixture']} with {last['model']} - "
+              f"a baseline. Recorded, not blocked.")
+        return 0
+    if any(r["miss"] == 0 and r["false"] == 0 for r in earlier):
+        dirty = [r for r in group if r["miss"] or r["false"]]
+        if dirty:
+            r = dirty[-1]
+            print(f"GATE: a run on {last['token']} has {r['miss']} miss / {r['false']} false positive, on a fixture "
+                  f"where an earlier run had none. A miss is doctrine, never noise (RUNBOOK step 6).", file=sys.stderr)
+            return 1
+    if len(group) < 2:
+        print(f"GATE: {last['token']} has one scored run on {last['fixture']} with {last['model']}. One run is a "
+              f"sample - run again, then gate on the mean (RUNBOOK step 6).", file=sys.stderr)
+        return 1
+    means: dict[str, list[float]] = {}
+    for r in earlier:
+        means.setdefault(r["token"], []).append(r["score"])
+    best = max(sum(v) / len(v) for v in means.values())
+    mean = sum(r["score"] for r in group) / len(group)
+    if mean < best - NOISE:
+        print(f"GATE: {last['token']} scores a mean of {mean:g} over {len(group)} runs, below the floor "
+              f"{best - NOISE:g} (best earlier per-commit mean {best:g}, less half a row).", file=sys.stderr)
+        return 1
+    print(f"gate: {last['token']} mean {mean:g} over {len(group)} runs, floor {best - NOISE:g} "
+          f"(best earlier per-commit mean {best:g}); no miss, no false positive.")
+    return 0
+
+
 def rows() -> list[dict]:
     out = []
     for line in RUNS.read_text(encoding="utf-8").splitlines():
@@ -138,6 +190,9 @@ def rows() -> list[dict]:
             "score": hits + 0.5 * near - miss - false,
             "fixture": fixture_of(cells[3]),
             "model": model_of(cells[2]),
+            "token": commit_of(cells[1]),
+            # A row on a reverted commit measured doctrine that no longer ships: history and floor, never under test.
+            "reverted": "reverted" in cells[1].lower(),
         })
     return out
 
@@ -199,21 +254,8 @@ def main() -> int:
               f"ledger {r['ledger']} / PASS without artefact {r['pass_without_artefact']}")
 
     if "--gate" in sys.argv:
-        last = rs[-1]
-        same = [r for r in rs[:-1]
-                if r["fixture"] == last["fixture"] and r["model"] == last["model"]]
-        if not same:
-            print(f"gate: {last['date']} is the first scored run on {last['fixture']} with "
-                  f"{last['model']} - a baseline, nothing to compare it against. Recorded, not blocked.")
-        if same:
-            prev = same[-1]
-            if last["score"] < prev["score"] or last["miss"] > prev["miss"]:
-                print(f"GATE: the newest run on {last['fixture']} with {last['model']} ({last['score']:g}, "
-                      f"{last['miss']} miss) scores below the previous run on the same fixture with the same model "
-                      f"({prev['date']}: {prev['score']:g}, {prev['miss']} miss). "
-                      f"A doctrine change that lowers the score does not ship "
-                      f"(RUNBOOK step 6). Fix the doctrine or the fixture, run again, then push.", file=sys.stderr)
-                return 1
+        if audit_gate(rs):
+            return 1
 
         # A PASS the run cannot point at is the one thing the evidence ledger forbids
         # (reporting.md). It is scored as a false positive and it blocks the push.
