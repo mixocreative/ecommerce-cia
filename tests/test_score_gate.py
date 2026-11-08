@@ -54,6 +54,14 @@ class GateTests(unittest.TestCase):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-11-09", 3, commit="ccccccc"),
                                     row("2026-11-09", 3, commit="ccccccc")]), 1)
 
+    def test_single_runs_before_the_rule_are_history(self):
+        # 2026-10-21 had one run, which the old rule allowed; it is the floor, never a failing sample.
+        self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-10-21", 4, commit="bbbbbbb")]), 0)
+
+    def test_a_reverted_change_leaves_old_history_passing(self):
+        self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-10-21", 4, commit="bbbbbbb"),
+                                    row("2026-11-09", 1, miss=1, commit="ccccccc` (reverted in `ddddddd")]), 0)
+
     def test_reverted_rows_are_never_under_test(self):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-10-21", 4, commit="bbbbbbb"),
                                     row("2026-11-01", 4, commit="bbbbbbb"),

@@ -127,6 +127,11 @@ def commit_of(cell: str) -> str:
 # (2026-11-09), where six sonnet rows varied by about this much and every half-row was a reporting slip.
 NOISE = 0.5
 
+# The per-commit rule starts here. Every earlier commit was scored under the old newest-vs-previous rule,
+# one run each, and passed it; judging those rows by a rule written later would block every push on
+# history nobody can re-run. They still count as the floor.
+GATE_SINCE = "2026-11-09"
+
 
 def audit_gate(rs: list[dict]) -> int:
     """Per-commit gate. Misses and false positives are doctrine: zero tolerance. Half-rows are noise:
@@ -137,6 +142,10 @@ def audit_gate(rs: list[dict]) -> int:
         print("gate: every scored run is on a reverted commit - nothing under test.")
         return 0
     last = live[-1]
+    if last["date"] < GATE_SINCE:
+        print(f"gate: the newest live run ({last['date']}, {last['token']}) predates the per-commit rule "
+              f"({GATE_SINCE}) and passed the rule of its day - nothing new under test.")
+        return 0
     pool = [r for r in rs if r["fixture"] == last["fixture"] and r["model"] == last["model"]]
     group = [r for r in pool if r["token"] == last["token"]]
     earlier = [r for r in pool if r["token"] != last["token"]]
