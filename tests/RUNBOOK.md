@@ -22,7 +22,7 @@ detector filed against the audit itself.
 
 ## Procedure
 
-1. **Fresh session.** Open a new Claude Code (or Codex) session with `tests/fixture-shop` as the working directory. No project memory, no CLAUDE.md — the fixture must be audited cold, the way a new shop would be.
+1. **Fresh session.** Open a new Claude Code (or Codex) session with `tests/fixture-shop` as the working directory — or run the shared launcher, `python ../cia/tests/harness/cold_run.py --skill-root . --fixture <fixture> --mode audit --model sonnet`. No project memory, no CLAUDE.md — the fixture must be audited cold, the way a new shop would be.
 2. **Trigger.** Say exactly: `pre-launch audit, Screen tier`. Two things are under test before any sweep runs: the §0.3a gate must PASS on criterion 1 (`src/Gateway/`) and the discovery block must say so; and the run must declare its tier.
 3. **Let it run.** Do not answer questions the skill should answer itself (§0.8). If it asks the owner for something the fixture contains, that is a finding against the skill — record it.
 4. **Score against `EXPECTED-fixture-shop.md`** (the scorer reads it; the auditor never does — it sits beside this file, outside the fixture, because two cold runs on 2026-09-19 leaked it through the S6 deferred-work grep the doctrine itself prescribes over `tests/`; an answer key inside the audited tree is a key the auditor will hit)**:**
@@ -33,7 +33,7 @@ detector filed against the audit itself.
    - **Control misfiled** — a verified control reported as a defect. Counts as a miss.
    - **Vacuous line** — a sweep line with a count but no paths, or paths but no quoted line (§0.9). Counts as a miss for that sweep even if the finding was elsewhere reported.
 5. **Record** a row in `RUNS.md`: date, commit of the skill, runtime (Claude / Codex), tier, hits / near / miss / false positives, minutes, and the one sentence that explains any miss.
-6. **Gate for the change** (`python tools/score.py --gate`; installed as a pre-push hook by `tools/install-hooks.sh`). A change to the skill ships only if the run scores **no worse** than the previous row on hits and misses. A new miss is a regression in the doctrine or in the packaging (the agent did not read the reference file) — find which before committing.
+6. **Gate for the change** (`python tools/score.py --gate`; installed as a pre-push hook by `tools/install-hooks.sh`). A change to the skill ships only if the run scores **no worse** — precisely: every run on its commit has no miss and no false positive, and the mean of at least two runs is within half a row of the best earlier per-commit mean on the same fixture and model (`tools/score.py`, ported from `cia`). Half a row is a reporting slip and is the instrument's noise; a miss is doctrine and never noise. A new miss is a regression in the doctrine or in the packaging (the agent did not read the reference file) — find which before committing.
 
 ## The live fixture run (`fixture-shop-live`)
 
