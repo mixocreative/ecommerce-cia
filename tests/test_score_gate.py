@@ -39,6 +39,15 @@ class GateTests(unittest.TestCase):
             finally:
                 score.RUNS, sys.argv = old_runs, old_argv
 
+    def test_floor_is_the_recent_median_bounded_a_row_under_the_best(self):
+        hist = [row("2026-11-10", 4, commit="aaaaaaa"), row("2026-11-10", 3, commit="aaaaaaa")]
+        for i, c in enumerate("bcde"):
+            hist += [row(f"2026-11-1{i + 1}", 3, commit=c * 7), row(f"2026-11-1{i + 1}", 3, commit=c * 7)]
+        ok = hist + [row("2026-11-20", 3, commit="fffffff"), row("2026-11-20", 2, near=1, commit="fffffff")]
+        self.assertEqual(self.gate(ok), 0)     # 2.75 >= median 3 - 0.5 and best 3.5 - 1
+        low = hist + [row("2026-11-20", 2, commit="fffffff"), row("2026-11-20", 2, near=1, commit="fffffff")]
+        self.assertEqual(self.gate(low), 1)    # 2.25 < 2.5
+
     def test_two_runs_at_the_floor_pass(self):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-10-21", 4, commit="bbbbbbb"),
                                     row("2026-11-09", 4, commit="ccccccc"), row("2026-11-09", 3, near=1, commit="ccccccc")]), 0)

@@ -137,6 +137,11 @@ def commit_of(cell: str) -> str:
 # Half a row: one near or unanchored slip, the smallest unit the answer keys score. Ported from cia
 # (2026-11-09), where six sonnet rows varied by about this much and every half-row was a reporting slip.
 NOISE = 0.5
+# The floor's baseline: the MEDIAN of the last RECENT live per-commit means, bounded DRIFT under the best
+# ever. Ported from cia (2026-11-09), where the best-ever floor ratcheted up on one lucky pair and then
+# failed about half of neutral commits; the median does not chase luck, DRIFT stops it sliding down.
+RECENT = 5
+DRIFT = 1.0
 
 # The per-commit rule starts here. Every earlier commit was scored under the old newest-vs-previous rule,
 # one run each, and passed it; judging those rows by a rule written later would block every push on
@@ -146,8 +151,9 @@ GATE_SINCE = "2026-11-09"
 
 def audit_gate(rs: list[dict]) -> int:
     """Per-commit gate. Misses and false positives are doctrine: zero tolerance. Half-rows are noise:
-    the mean of at least two runs on the commit under test must stay within NOISE of the best earlier
-    per-commit mean on the same fixture and model - a floor that cannot drift down."""
+    the mean of at least two runs on the commit under test must stay within NOISE of the median of the
+    last RECENT live per-commit means on the same fixture, model and instrument, and never more than
+    DRIFT under the best ever."""
     live = [r for r in rs if not r.get("reverted")]
     if not live:
         print("gate: every scored run is on a reverted commit - nothing under test.")
@@ -161,33 +167,51 @@ def audit_gate(rs: list[dict]) -> int:
             and r.get("instrument") == last.get("instrument")]
     group = [r for r in pool if r["token"] == last["token"]]
     earlier = [r for r in pool if r["token"] != last["token"]]
-    if not earlier:
-        print(f"gate: {last['token']} is the first scored commit on {last['fixture']} with {last['model']} - "
-              f"a baseline. Recorded, not blocked.")
-        return 0
-    if any(r["miss"] == 0 and r["false"] == 0 for r in earlier):
+    # The miss rule asks whether the fixture's rows are findable at all, which any clean run proves on
+    # any model or instrument; so it is not pooled, and it runs before the first-commit exit (as in cia).
+    findable = [r for r in rs if r["fixture"] == last["fixture"] and r["token"] != last["token"]]
+    if any(r["miss"] == 0 and r["false"] == 0 for r in findable):
         dirty = [r for r in group if r["miss"] or r["false"]]
         if dirty:
             r = dirty[-1]
             print(f"GATE: a run on {last['token']} has {r['miss']} miss / {r['false']} false positive, on a fixture "
                   f"where an earlier run had none. A miss is doctrine, never noise (RUNBOOK step 6).", file=sys.stderr)
             return 1
+    if not earlier:
+        print(f"gate: {last['token']} is the first scored commit on {last['fixture']} with {last['model']} - "
+              f"a baseline. Recorded, not blocked.")
+        return 0
     if len(group) < 2:
         print(f"GATE: {last['token']} has one scored run on {last['fixture']} with {last['model']}. One run is a "
               f"sample - run again, then gate on the mean (RUNBOOK step 6).", file=sys.stderr)
         return 1
+    best, baseline = floor_parts(earlier)
+    floor = max(baseline - NOISE, best - DRIFT)
+    mean = sum(r["score"] for r in group) / len(group)
+    why = f"median of the last {RECENT} live per-commit means {baseline:g}, best ever {best:g}"
+    if mean < floor:
+        print(f"GATE: {last['token']} scores a mean of {mean:g} over {len(group)} runs, below the floor "
+              f"{floor:g} ({why}).", file=sys.stderr)
+        return 1
+    print(f"gate: {last['token']} mean {mean:g} over {len(group)} runs, floor {floor:g} ({why}); "
+          f"no miss, no false positive.")
+    return 0
+
+
+def floor_parts(earlier: list[dict]) -> tuple[float, float]:
+    """(best per-commit mean ever, median of the last RECENT live per-commit means), in row order.
+    Reverted commits bound drift through the best but do not set the baseline."""
     means: dict[str, list[float]] = {}
+    live: list[str] = []
     for r in earlier:
         means.setdefault(r["token"], []).append(r["score"])
-    best = max(sum(v) / len(v) for v in means.values())
-    mean = sum(r["score"] for r in group) / len(group)
-    if mean < best - NOISE:
-        print(f"GATE: {last['token']} scores a mean of {mean:g} over {len(group)} runs, below the floor "
-              f"{best - NOISE:g} (best earlier per-commit mean {best:g}, less half a row).", file=sys.stderr)
-        return 1
-    print(f"gate: {last['token']} mean {mean:g} over {len(group)} runs, floor {best - NOISE:g} "
-          f"(best earlier per-commit mean {best:g}); no miss, no false positive.")
-    return 0
+        if not r.get("reverted") and r["token"] not in live:
+            live.append(r["token"])
+    avg = {t: sum(v) / len(v) for t, v in means.items()}
+    best = max(avg.values())
+    recent = sorted(avg[t] for t in live[-RECENT:]) or [best]
+    mid = len(recent) // 2
+    return best, (recent[mid] if len(recent) % 2 else (recent[mid - 1] + recent[mid]) / 2)
 
 
 def rows() -> list[dict]:
