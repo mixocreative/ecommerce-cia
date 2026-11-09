@@ -52,6 +52,14 @@ class GateTests(unittest.TestCase):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-10-21", 4, commit="bbbbbbb"),
                                     row("2026-11-09", 4, commit="ccccccc"), row("2026-11-09", 3, near=1, commit="ccccccc")]), 0)
 
+    def test_a_later_clean_run_on_reverted_doctrine_does_not_block_the_shipped_commit(self):
+        hist = [row("2026-11-10", 3, miss=1, commit="aaaaaaa"), row("2026-11-10", 3, miss=1, commit="aaaaaaa"),
+                row("2026-11-11", 4, commit="bbbbbbb` (reverted in `ccccccc"),
+                row("2026-11-11", 4, commit="bbbbbbb` (reverted in `ccccccc")]
+        self.assertEqual(self.gate(hist), 0)
+        later = hist + [row("2026-11-12", 4, commit="ddddddd"), row("2026-11-12", 4, miss=1, commit="ddddddd")]
+        self.assertEqual(self.gate(later), 1)   # after a clean run, a miss blocks
+
     def test_one_run_is_a_sample(self):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-11-09", 4, commit="ccccccc")]), 1)
 

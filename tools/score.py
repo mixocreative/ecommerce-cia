@@ -166,10 +166,16 @@ def audit_gate(rs: list[dict]) -> int:
     pool = [r for r in rs if r["fixture"] == last["fixture"] and r["model"] == last["model"]
             and r.get("instrument") == last.get("instrument")]
     group = [r for r in pool if r["token"] == last["token"]]
-    earlier = [r for r in pool if r["token"] != last["token"]]
+    # A commit is judged only against what was measured before it. After a revert the shipped commit is
+    # the newest live one, and later reverted experiments must not raise its floor or its miss bar.
+    first = next(i for i, r in enumerate(rs) if r["token"] == last["token"])
+    earlier = [r for r in rs[:first] if r in pool]
     # The miss rule asks whether the fixture's rows are findable at all, which any clean run proves on
     # any model or instrument; so it is not pooled, and it runs before the first-commit exit (as in cia).
-    findable = [r for r in rs if r["fixture"] == last["fixture"] and r["token"] != last["token"]]
+    # Only a clean run recorded BEFORE the commit under test makes its misses a regression (as in cia,
+    # 2026-11-09): a clean run on a later, reverted commit would otherwise hold the still-shipped commit
+    # to a standard it was never measured against and block every push.
+    findable = [r for r in rs[:first] if r["fixture"] == last["fixture"]]
     if any(r["miss"] == 0 and r["false"] == 0 for r in findable):
         dirty = [r for r in group if r["miss"] or r["false"]]
         if dirty:
