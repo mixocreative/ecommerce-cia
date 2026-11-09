@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # untested.py reads the doctrine history
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: shivammathur/setup-php@v2
@@ -19,6 +20,12 @@ jobs:
         run: python tests/test_linepay_tools.py
       - name: PAYUNi + TapPay tools (offline)
         run: python tests/test_payuni_tappay_tools.py
+      - name: Gate and doctrine-tested guard (score.py --gate, untested.py, their tests)
+        run: |
+          python tools/score.py --gate
+          python tools/untested.py
+          python -m unittest discover -s tests -p 'test_score_gate.py'
+          python -m unittest discover -s tests -p 'test_untested.py'
       - name: Skill frontmatter sanity
         run: |
           python - <<'PY'

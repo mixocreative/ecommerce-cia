@@ -3,6 +3,8 @@
 # than the one before it ON THE SAME FIXTURE AND MODEL, no ledger PASS was filed without an
 # artefact, and a run scored since 2026-09-24 says what it executed. Install: tools/install-hooks.sh.
 python tools/score.py --gate || exit 1
+# The gate judges the newest commit WITH rows; this refuses the newest SKILL/references commit with none.
+python tools/untested.py || exit 1
 
 # Every reference file carries a unique reading receipt. A file without one cannot be told apart
 # from a file nobody opened, which is the confusion receipts exist to remove.
