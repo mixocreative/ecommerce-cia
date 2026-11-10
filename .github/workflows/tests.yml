@@ -26,6 +26,11 @@ jobs:
           python tools/untested.py
           python -m unittest discover -s tests -p 'test_score_gate.py'
           python -m unittest discover -s tests -p 'test_untested.py'
+      - name: Structure, size and receipts (check_structure.py and its tests, receipts.py --gate)
+        run: |
+          python tools/check_structure.py
+          python -m unittest discover -s tests -p 'test_check_structure.py'
+          python tools/receipts.py --gate
       - name: Skill frontmatter sanity
         run: |
           python - <<'PY'
