@@ -133,8 +133,12 @@ def main() -> int:
     except ValueError:
         return 0                                     # not a hook payload: allow, never break a session
     sys.path.insert(0, str(HERE))
+    def checks(text):
+        # Imported only when a report written this turn needs checking: a broken install then speaks in the
+        # sessions that wrote a report, not on every Stop of every project (Fable, 2026-11-10).
+        from audit_report import checks as check_report
+        return check_report(text)
     try:
-        from audit_report import checks              # this skill's own checker
         answer = decide(payload, checks)
     except Exception as e:                           # noqa: BLE001  never block on our own bug, but say so:
         # the command ends `exit 0`, so a crash here would otherwise leave the guard off with nobody told.

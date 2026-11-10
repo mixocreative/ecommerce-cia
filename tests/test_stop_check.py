@@ -186,6 +186,19 @@ class StopCheckTests(unittest.TestCase):
         self.assertNotIn("decision", message)                 # never a block on our own bug
         self.assertIn("boom", message["systemMessage"])
 
+    def test_a_broken_checker_speaks_only_where_a_report_was_written(self):
+        import io
+        from unittest import mock
+
+        def run():
+            out = io.StringIO()
+            with mock.patch.dict(sys.modules, {"audit_report": None}),                     mock.patch.object(sys, "stdin", io.StringIO(json.dumps(self.payload()))),                     mock.patch.object(sys, "stdout", out):
+                self.assertEqual(stop_check.main(), 0)
+            return out.getvalue()
+        self.assertEqual(run(), "")                            # no report this turn: silent, whatever is broken
+        self.write_report()
+        self.assertIn("could not run", json.loads(run())["systemMessage"])
+
     def test_a_report_from_before_this_turn_is_allowed(self):
         # An earlier turn, a resumed session, or another session in the same project: not this turn's report.
         self.write_report(at=self.prompt_at - 5)
