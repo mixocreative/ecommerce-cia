@@ -32,16 +32,10 @@ DEBT_LIMIT = 600    # over this, the file is named as debt below, with its next 
 
 # file (relative to HERE) -> the next cut, written down. Each cut that moves SKILL.md or references/
 # text is a doctrine change: it ships with scored runs (tools/untested.py), so it is named, not taken.
-DEBT: dict[str, str] = {
-    "references/domains.md": "split at §17: §8-§16 (money, goods, entitlements, tax) stay; §17-§25 "
-                             "(admin security and operations, UI states, observability, stop-the-line, "
-                             "data model, security) move to references/domains-operations.md",
-    "references/doctrine.md": "§5-§7 (state machines, the transition audit, status symmetry) move to "
-                              "references/state-machines.md, leaving §1-§4 and a pointer",
-    "SKILL.md": "§0.15 Setup Mode moves to references/setup-mode.md, leaving its trigger and a pointer",
-    "README.md": "The theory through Which channel each sweep walks (five sections) move to docs/theory.md "
-                 "behind one link, as the paired sections in cia's README would",
-}
+DEBT: dict[str, str] = {}
+# The four entries named on 2026-11-10 were cut the same day: domains.md at §17 (domains-operations.md),
+# doctrine.md at §5 (state-machines.md), SKILL.md §0.15 (references/setup-mode.md), README's theory
+# sections (docs/theory.md). Next cut when one nears 600 again: none named; measure first.
 
 failures: list[str] = []
 

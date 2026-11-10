@@ -22,7 +22,8 @@ class StructureTests(unittest.TestCase):
         self.assertTrue(any("the cut is taken" in f for f in cs.failures), cs.failures)
 
     def test_unnamed_debt_fails(self):
-        with mock.patch.object(cs, "DEBT", {}):
+        # Nothing is over 600 since the 2026-11-10 cuts, so lower the line to prove the rule still bites.
+        with mock.patch.object(cs, "DEBT", {}), mock.patch.object(cs, "DEBT_LIMIT", 100):
             cs.main()
         self.assertTrue(any("must be named in DEBT" in f for f in cs.failures), cs.failures)
 
