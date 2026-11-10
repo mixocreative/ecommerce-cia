@@ -472,11 +472,13 @@ observed an execution; the reply never implies it did.
 
 ### 0.12c Icons in a shop
 
-Functional icons (cart, checkout steps, order, payment and shipping status, pickup, refund) go to the companion `kubai-icons`, named in cia's `references/companion-skills.md` §2. This skill adds only the commerce consequences:
+Functional icons (cart, checkout steps, order, payment and shipping status, pickup, refund) go to the companion `kubai-icons`, named in cia's companion table (`../cia/references/companion-skills.md` §2). This skill adds only the commerce consequences:
 
 - **Brand marks are never drawn.** Card networks, wallets, payment providers, carriers and trust or security badges use the official assets each provider publishes, under its brand terms. A drawn lookalike breaks those terms and can show a buyer a method the shop does not accept.
 - **One icon per state a buyer sees.** Every order, payment, shipment and refund status that renders gets its own icon; two statuses sharing one icon hide the difference the way an unrendered state does (S22).
 - **The icon adds to the words, never replaces them.** Price, total, payment method and status stay as text; an icon-only control at checkout fails the walkthrough until it has a visible or accessible name.
+
+Announce the handoff in one line, and put it in the Step 7 report under line 3 as `COMPANIONS — kubai-icons: <the screens or states handed over>; result re-walked, graded as a deliverable`, the line cia's report uses. The icons are a deliverable, never a closed finding: the S22 row they serve is re-walked with them in place.
 
 ### 0.13 Reference Index — what to load, and when
 
