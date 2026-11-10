@@ -26,7 +26,10 @@ RUNS = ROOT / "tests" / "RUNS.md"
 
 
 def git(*args: str) -> str:
-    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    # encoding pinned: text=True alone decodes with the locale (cp950 on a Traditional Chinese Windows),
+    # and one em dash in a commit message then crashed the gate instead of answering it.
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace").stdout.strip()
 
 
 def live_tokens(runs_text: str) -> set[str]:
