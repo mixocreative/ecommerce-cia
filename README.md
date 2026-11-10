@@ -662,6 +662,10 @@ Setup mode starts from plain words — 「我想用藍新金流收款，怎麼�
 
 > **檔案大小，現在有檢查（2026-11-10）。** 原本的 `sweeps.md`（1,919 行）已拆成 `references/sweeps/` 資料夾，拆法與 `cia` 在 2026-11-09 的做法相同：每組掃描一個檔案，整個資料夾共用一個閱讀收據，內文不變。`tools/check_structure.py` 現在會擋下超過 1,000 行的檔案，以及超過 600 行卻沒有記名、沒寫下一步怎麼拆的檔案。目前記名的有四個：`references/domains.md`（967 行）、`references/doctrine.md`（719 行）、`README.md` 與 `SKILL.md`。
 
+**Debt, named (2026-11-10): runs that do not read their references.** On Sonnet, most cold runs of this skill quote 0 to 6 of its 22 reading receipts, and a fixture's score swings with it (`fixture-shop-live`: 4.5 to 9 on two commits whose doctrine did not touch it). `cia` had the same collapse and fixed it with a checked report file (`cia/tools/audit_report.py`: the run writes its report to a file and a checker names each reference it did not read). Next step: port that checker to this skill's Step 7 lines, run all three fixtures on it, then re-land the S15 Grading paragraph (`06b06d8`, reverted in `d183c15` because its runs failed the gate on the live fixture). Until then the gate compares noisy pairs, and it says so by blocking.
+
+> **已記名的債務（2026-11-10）：沒有讀參考文件的稽核。** 在 Sonnet 上，這個 Skill 的冷啟動稽核大多只引用 22 個閱讀收據中的 0 到 6 個，分數也跟著大幅擺盪（`fixture-shop-live` 在兩個與它無關的準則 commit 上，從 4.5 分到 9 分）。`cia` 遇過同樣的問題，用一份經檢查的報告檔解決（`cia/tools/audit_report.py`：稽核把報告寫成檔案，檢查器點名每一份沒讀的參考文件）。下一步：把這個檢查器移植到本 Skill 的 Step 7 報告行，三個測試專案都跑過之後，再重新加入 S15 的評級段落（`06b06d8`，因在 live 測試專案上沒通過閘門，已在 `d183c15` 還原）。在那之前，閘門比較的是雜訊很大的兩次結果，而它會用擋下推送來告訴你。
+
 ## More skills by MixoCreative｜更多 MixoCreative 的 Skill
 
 - **[cia](https://github.com/mixocreative/cia)**: Code Integrity Auditor for any codebase. Finds the bugs that live between two correct functions.
