@@ -12,6 +12,10 @@ trap a session in a loop.
 It acts only on this skill's own report (`<skill>-audit-report.md` in the session's working directory),
 and only when that file was written during this session (newer than the session's transcript file), so
 an old report in a project never blocks an unrelated session.
+
+The trap the reason names (2026-11-10, RUNS second stage on 9f8f9b0): a blocked run backfills the sweep
+lines the checker asks for, and it wrote defects onto them as prose without filing them; every miss of
+that stage had this shape. So the reason says a defect on a sweep line is a finding, before the lines go in.
 """
 from __future__ import annotations
 
@@ -47,7 +51,9 @@ def decide(payload: dict, checks) -> dict | None:
         return None
     return {"decision": "block",
             "reason": (f"{REPORT} fails the skill's report checker. Do what each line says, update the report, "
-                       f"run tools/audit_report.py check on it again, and only then reply:\n" + "\n".join(missing))}
+                       f"run tools/audit_report.py check on it again, and only then reply. A sweep line you add names "
+                       f"finding IDs: anything wrong you write on it is filed as a numbered finding first:\n"
+                       + "\n".join(missing))}
 
 
 def main() -> int:

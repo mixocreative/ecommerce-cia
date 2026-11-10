@@ -45,6 +45,7 @@ class StopCheckTests(unittest.TestCase):
         answer = stop_check.decide(self.payload(), failing)
         self.assertEqual(answer["decision"], "block")
         self.assertIn("the receipt of theory.md", answer["reason"])
+        self.assertIn("filed as a numbered finding", answer["reason"])   # backfilled sweep lines carry no prose defects
 
     def test_a_retry_is_never_blocked(self):
         self.write_report()
