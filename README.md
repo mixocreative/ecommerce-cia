@@ -658,6 +658,10 @@ Setup mode starts from plain words — 「我想用藍新金流收款，怎麼�
 | `tools/` | detectors, doc fetchers, probes, callback verifiers, readiness card, error translator｜偵測器、文件抓取工具、探針、Callback 驗證器、準備就緒卡、錯誤碼轉譯器 |
 | `tests/` | the fixture shop with its answer key, the run book and the run ledger｜附帶解答的測試商店、測試手冊與測試執行帳本 |
 
+**Size debt, named (2026-11-10).** `references/sweeps.md` is 1,919 lines, past the point where a file is cut rather than named. The cut is the one `cia` took on 2026-11-09: a `references/sweeps/` folder, one file per sweep group, one reading receipt for the folder, with `tools/receipts.py` and both repos' `tools/sweep-diff.py` reading the folder. It is not taken here because it moves doctrine, so it needs its own commit and scored runs on all three fixtures before a push. `references/domains.md` (967), `references/doctrine.md` (719) and `SKILL.md` (642) are over 600 and follow it: `domains.md` by chapter group, `SKILL.md` by moving §0.15 setup mode to a reference. Nothing checks these sizes in this repo yet; `cia/tools/check_structure.py` check 6 is the guard to port with the cut.
+
+> **已具名的檔案大小債務（2026-11-10）。** `references/sweeps.md` 有 1,919 行，已超過「該拆就拆、不能只記名」的界線。拆法與 `cia` 在 2026-11-09 的做法相同：改成 `references/sweeps/` 資料夾，每組掃描一個檔案，整個資料夾共用一個閱讀收據，`tools/receipts.py` 與兩個專案的 `tools/sweep-diff.py` 改讀資料夾。這次沒有拆，因為這是搬動準則，必須獨立成一個 commit，並在三個測試專案都完成評分執行後才能推送。`references/domains.md`（967 行）、`references/doctrine.md`（719 行）與 `SKILL.md`（642 行）也超過 600 行，排在其後。這個專案目前沒有檢查檔案大小的工具；拆檔時應一併移植 `cia/tools/check_structure.py` 的第 6 項檢查。
+
 ## More skills by MixoCreative｜更多 MixoCreative 的 Skill
 
 - **[cia](https://github.com/mixocreative/cia)**: Code Integrity Auditor for any codebase. Finds the bugs that live between two correct functions.
