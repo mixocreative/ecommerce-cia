@@ -26,6 +26,9 @@ class StructureTests(unittest.TestCase):
         with mock.patch.object(cs, "DEBT", {}), mock.patch.object(cs, "DEBT_LIMIT", 100):
             cs.main()
         self.assertTrue(any("must be named in DEBT" in f for f in cs.failures), cs.failures)
+        # docs/ and the provider folders are read too: a cut must not land where the rule does not look
+        for moved_to in ("docs/theory.md", "tools/newebpay/"):
+            self.assertTrue(any(f.startswith(moved_to) for f in cs.failures), moved_to)
 
     def test_paid_off_debt_fails(self):
         with mock.patch.object(cs, "DEBT", {**cs.DEBT, "references/theory.md": "a cut"}):
@@ -37,17 +40,15 @@ class StructureTests(unittest.TestCase):
         cs.check_sweeps()
         self.assertEqual(cs.failures, [])
 
-
     def test_a_line_the_read_tool_would_cut_fails(self):
-        import check_structure as cs_mod
-        from unittest import mock as _mock
-        with _mock.patch.object(cs_mod, "READ_LIMIT", 50):
-            cs_mod.failures.clear()
-            cs_mod.check_line_length()
-        self.assertTrue(any("the Read tool cuts it" in m for m in cs_mod.failures), cs_mod.failures)
-        cs_mod.failures.clear()
-        cs_mod.check_line_length()
-        self.assertEqual(cs_mod.failures, [])
+        with mock.patch.object(cs, "READ_LIMIT", 50):
+            cs.failures.clear()
+            cs.check_line_length()
+        self.assertTrue(any("the Read tool cuts it" in m for m in cs.failures), cs.failures)
+        cs.failures.clear()
+        cs.check_line_length()
+        self.assertEqual(cs.failures, [])
+
 
 if __name__ == "__main__":
     unittest.main()

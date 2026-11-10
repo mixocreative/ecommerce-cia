@@ -15,6 +15,8 @@ Checks:
   5. No stale path: no `references/sweeps.md` left in a live doc (historical wording is allowed).
   6. Size: no file over HARD_LIMIT lines (the cut is taken); a file over DEBT_LIMIT lines needs an
      entry in DEBT with its next cut written down. An entry for a file now under the limit fails too.
+     Read: SKILL, README, references/, docs/, tools/ (every folder), the test scripts and the RUNBOOK;
+     not the fixtures (their defects are planted) and not RUNS.md (a log that only grows).
   7. Line length: no line of SKILL.md or a reference over READ_LIMIT characters. The trap: the Read tool
      cuts a longer line, and on 2026-11-10 ecommerce-cia's Step 3 lost half its reading list that way.
 
@@ -112,8 +114,11 @@ def check_stale_paths() -> None:
 
 
 def check_size() -> None:
-    files = [SKILL, HERE / "README.md", *REFS.glob("*.md"), *SWEEPS.glob("*.md"),
-             *(HERE / "tools").glob("*.py"), *(HERE / "tests").glob("*.py")]
+    # docs/ and the provider folders under tools/ count too: text cut out of a checked file must not
+    # land where no check reads (README's theory moved to docs/ on 2026-11-10). Fixtures are not ours to cut.
+    files = [SKILL, HERE / "README.md", *REFS.glob("*.md"), *SWEEPS.glob("*.md"), *(HERE / "docs").glob("*.md"),
+             *(HERE / "tools").rglob("*.py"), *(HERE / "tools").rglob("*.php"), *(HERE / "tests").glob("*.py"),
+             *(HERE / "tests").glob("*.js"), HERE / "tests" / "RUNBOOK.md"]
     over_debt = set()
     for f in files:
         n = len(read(f).splitlines())
