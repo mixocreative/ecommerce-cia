@@ -1,7 +1,8 @@
 #!/bin/sh
-# The RUNBOOK's gate: a doctrine change ships only if the newest scored fixture run is no worse
-# than the one before it ON THE SAME FIXTURE AND MODEL, no ledger PASS was filed without an
-# artefact, and a run scored since 2026-09-24 says what it executed. Install: tools/install-hooks.sh.
+# The RUNBOOK's gate (step 6): no run on the commit under test has a miss or a false positive, its
+# two-run mean is within half a row of the median of the last five shipped means ON THE SAME FIXTURE,
+# MODEL AND INSTRUMENT, no ledger PASS was filed without an artefact, and a run scored since
+# 2026-09-24 says what it executed. Install: tools/install-hooks.sh.
 python tools/score.py --gate || exit 1
 # The gate judges the newest commit WITH rows; this refuses the newest SKILL/references commit with none.
 python tools/untested.py || exit 1
