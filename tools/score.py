@@ -150,6 +150,7 @@ GATE_SINCE = "2026-11-09"
 
 
 MISSED = re.compile(r"missed:\s*([^.;|*]+)", re.I)
+ROW_ID = re.compile(r"row\s+\d+|#?\w+")   # `row 10`, `E8`, `#15`: what a key calls a row
 
 
 def missed_of(note: str):
@@ -157,7 +158,11 @@ def missed_of(note: str):
     m = MISSED.search(note)
     if not m:
         return None
-    return {" ".join(x.split()).lower() for x in m.group(1).split(",") if x.strip()}
+    # The id alone: `E8 (the overlap is noted, not filed)` and `E8` are one row. Compared as whole
+    # strings, two runs that both missed it shared nothing, and the gate passed a row every run lost.
+    # shortcut: a comma inside a parenthesis leaves a stray word as an id, which can only add a block.
+    ids = (ROW_ID.match(x.strip().lower()) for x in m.group(1).split(","))
+    return {" ".join(i.group().split()) for i in ids if i}
 
 
 def doctrine_misses(group: list[dict]) -> str:
@@ -174,15 +179,15 @@ def doctrine_misses(group: list[dict]) -> str:
     dirty = [r for r in group if r["miss"]]
     if not dirty:
         return ""
-    if any(r.get("missed") is None for r in dirty):
+    if any(not r.get("missed") for r in dirty):   # no tag, or a tag naming no row: both are unreadable
         return f"a run has {dirty[-1]['miss']} miss with no `missed:` tag naming the rows"
     common = set.intersection(*[(r.get("missed") or set()) for r in group])
     return f"every run missed {', '.join(sorted(common))}" if common else ""
 
 
 def audit_gate(rs: list[dict]) -> int:
-    """Per-commit gate, once per fixture the commit under test was run on. Misses and false positives
-    are doctrine: zero tolerance. Half-rows are noise: the mean of at least two runs on the commit under
+    """Per-commit gate, once per fixture the commit under test was run on. A false positive, an untagged
+    miss and a row every run missed are doctrine: zero tolerance (doctrine_misses). Half-rows are noise: the mean of at least two runs on the commit under
     test must stay within NOISE of the median of the last RECENT live per-commit means on the same
     fixture, model and instrument, and never more than DRIFT under the best ever.
 
@@ -241,8 +246,11 @@ def _gate_one(rs: list[dict], last: dict) -> int:
         print(f"GATE: {last['token']} scores a mean of {mean:g} over {len(group)} runs, below the floor "
               f"{floor:g} ({why}).", file=sys.stderr)
         return 1
-    print(f"gate: {last['token']} mean {mean:g} over {len(group)} runs, floor {floor:g} ({why}); "
-          f"no miss, no false positive.")
+    # Say what was checked, and where: a row one run missed and its pair found passes (doctrine_misses),
+    # so "no miss" over such a pair claimed more than the gate knows (cia's wording, same reason).
+    misses = "no row missed by every run" if any(r["miss"] for r in group) else "no miss"
+    print(f"gate: {last['token']} on {last['fixture']}: mean {mean:g} over {len(group)} runs, floor {floor:g} "
+          f"({why}); {misses}, no false positive.")
     return 0
 
 
@@ -376,4 +384,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if {"-h", "--help"} & set(sys.argv[1:]):   # answered here, before main(): --help must never run the job
+        sys.stdout.reconfigure(encoding="utf-8")
+        print(__doc__)
+        sys.exit(0)
     sys.exit(main())

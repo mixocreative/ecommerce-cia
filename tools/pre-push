@@ -1,5 +1,6 @@
 #!/bin/sh
-# The RUNBOOK's gate (step 6): no run on the commit under test has a miss or a false positive, its
+# The RUNBOOK's gate (step 6): on every fixture the commit under test was run on, no row was missed by
+# every run, no miss is untagged, no control was filed, its
 # two-run mean is within half a row of the median of the last five shipped means ON THE SAME FIXTURE,
 # MODEL AND INSTRUMENT, no ledger PASS was filed without an artefact, and a run scored since
 # 2026-09-24 says what it executed. Install: tools/install-hooks.sh.

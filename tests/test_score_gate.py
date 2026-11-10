@@ -83,6 +83,19 @@ class GateTests(unittest.TestCase):
                 row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="missed: N3, N4.")]
         self.assertEqual(self.gate(base + both), 1)
 
+    def test_a_shared_miss_blocks_however_each_note_words_it(self):
+        # Compared as whole strings, `N3 (not probed)` and `N3)` shared nothing and the pair passed.
+        base = [row("2026-11-09", 4), row("2026-11-09", 4)]
+        both = [row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="missed: N3 (the catch was read, not probed). x"),
+                row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="(tracked: N5; missed: N3). y")]
+        self.assertEqual(self.gate(base + both), 1)
+        self.assertEqual(score.missed_of("missed: row 10, #15), E8 (noted but not filed)."), {"row 10", "#15", "e8"})
+
+    def test_a_tag_that_names_no_row_blocks_like_no_tag(self):
+        base = [row("2026-11-09", 4), row("2026-11-09", 4)]
+        self.assertEqual(self.gate(base + [row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="missed: ."),
+                                           row("2026-11-11", 4, commit="bbbbbbb")]), 1)
+
     def test_an_untagged_miss_blocks(self):
         base = [row("2026-11-09", 4), row("2026-11-09", 4)]
         self.assertEqual(self.gate(base + [row("2026-11-11", 4, miss=1, commit="bbbbbbb"),
