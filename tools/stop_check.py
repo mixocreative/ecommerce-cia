@@ -135,9 +135,11 @@ def main() -> int:
     sys.path.insert(0, str(HERE))
     try:
         from audit_report import checks              # this skill's own checker
-    except Exception:                                # noqa: BLE001  a broken install must not error on every Stop
-        return 0
-    answer = decide(payload, checks)
+        answer = decide(payload, checks)
+    except Exception as e:                           # noqa: BLE001  never block on our own bug, but say so:
+        # the command ends `exit 0`, so a crash here would otherwise leave the guard off with nobody told.
+        answer = {"systemMessage": f"{REPORT}'s Stop hook could not run ({type(e).__name__}: {e}); "
+                                   f"the report was not checked."}
     if answer:
         print(json.dumps(answer))
     return 0

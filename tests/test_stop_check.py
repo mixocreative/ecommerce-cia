@@ -175,6 +175,17 @@ class StopCheckTests(unittest.TestCase):
             {"type": "tool_use", "name": "Write", "input": {"file_path": str(report), "content": "draft"}}]}}, append=True)
         self.assertIsNone(stop_check.decide(self.payload(), failing))
 
+    def test_a_crash_inside_the_hook_is_said_not_swallowed(self):
+        # The command ends `exit 0`, so a crash would otherwise turn the guard off silently.
+        import io
+        from unittest import mock
+        out = io.StringIO()
+        with mock.patch.object(stop_check, "decide", side_effect=RuntimeError("boom")),                 mock.patch.object(sys, "stdin", io.StringIO(json.dumps(self.payload()))),                 mock.patch.object(sys, "stdout", out):
+            self.assertEqual(stop_check.main(), 0)
+        message = json.loads(out.getvalue())
+        self.assertNotIn("decision", message)                 # never a block on our own bug
+        self.assertIn("boom", message["systemMessage"])
+
     def test_a_report_from_before_this_turn_is_allowed(self):
         # An earlier turn, a resumed session, or another session in the same project: not this turn's report.
         self.write_report(at=self.prompt_at - 5)
