@@ -36,8 +36,9 @@ REPORT = "ecommerce-cia-audit-report.md"
 def turn_started(transcript_path) -> float | None:
     """Epoch seconds of the newest prompt in a Claude Code transcript (JSONL): the start of the turn now ending.
 
-    A prompt is a `user` entry that is not a tool result; tool results are `user` entries too, and taking
-    one as the turn start would hide a report written earlier in the same turn. None when unreadable."""
+    A prompt is a `user` entry that is neither a tool result nor meta; tool results and injected entries (hook
+    feedback, notifications: `isMeta`) are `user` entries too, and taking one as the turn start would hide a
+    report written earlier in the same turn, so the hook would silently not fire. None when unreadable."""
     try:
         lines = Path(transcript_path).read_text(encoding="utf-8", errors="replace").splitlines()
     except (OSError, TypeError):
@@ -47,7 +48,7 @@ def turn_started(transcript_path) -> float | None:
             d = json.loads(line)
         except ValueError:
             continue
-        if not isinstance(d, dict) or d.get("type") != "user" or d.get("isSidechain") or not d.get("timestamp"):
+        if not isinstance(d, dict) or d.get("type") != "user" or d.get("isSidechain") or d.get("isMeta") or not d.get("timestamp"):
             continue
         content = (d.get("message") or {}).get("content")
         if isinstance(content, list) and any(isinstance(c, dict) and c.get("type") == "tool_result" for c in content):

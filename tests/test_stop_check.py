@@ -72,6 +72,14 @@ class StopCheckTests(unittest.TestCase):
                                 "message": {"content": [{"type": "tool_result", "content": "ok"}]}}, append=True)
         self.assertIsNotNone(stop_check.decide(self.payload(), failing))
 
+    def test_an_injected_meta_entry_is_not_a_new_turn(self):
+        # Hook feedback and notifications are logged as user entries with isMeta; one landing after the report
+        # must not move the turn start past it.
+        self.write_report(at=time.time() - 30)
+        self.write_transcript({"type": "user", "isMeta": True, "timestamp": stamp(time.time() - 10),
+                               "message": {"content": "a background task finished"}}, append=True)
+        self.assertIsNotNone(stop_check.decide(self.payload(), failing))
+
     def test_a_report_from_before_this_turn_is_allowed(self):
         # An earlier turn, a resumed session, or another session in the same project: not this turn's report.
         self.write_report(at=self.prompt_at - 5)
