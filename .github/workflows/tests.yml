@@ -30,9 +30,12 @@ jobs:
         run: |
           python tools/check_structure.py
           python -m unittest discover -s tests -p 'test_check_structure.py'
+          python -m unittest discover -s tests -p 'test_audit_report.py'
           python tools/receipts.py --gate
       - name: First contact (every tool answers --help without running its job)
         run: python tests/test_cli_help.py
+      - name: Lint (ruff over tools/ and the test scripts, as cia lints its own)
+        run: pip install ruff==0.11.9 && ruff check tools/ tests/*.py
       - name: Skill frontmatter sanity
         run: |
           python - <<'PY'

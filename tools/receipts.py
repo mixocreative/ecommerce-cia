@@ -46,6 +46,11 @@ def scan() -> tuple[dict[str, str], list[str]]:
     return found, missing
 
 
+def leaked(found: dict[str, str], text: str) -> list[tuple[str, str]]:
+    """Receipts that appear in `text` (SKILL.md): each is quotable without reading its file."""
+    return [(name, phrase) for name, phrase in found.items() if phrase in text]
+
+
 def main() -> int:
     if not REFERENCES.is_dir():
         print(f"no references directory at {REFERENCES}", file=sys.stderr)
@@ -67,10 +72,17 @@ def main() -> int:
             problems += 1
         seen[phrase] = name
 
+    # A phrase quoted in SKILL.md can be copied by a run that never opened the reference, and
+    # audit_report.py would then pass it. The trap: SKILL's example line quoted five real receipts until
+    # 2026-11-10, against its own rule that a phrase appears nowhere else in the skill (cia had the same).
+    for name, phrase in leaked(found, (HERE / "SKILL.md").read_text(encoding="utf-8")):
+        print(f"  LEAKED INTO SKILL.md: {name} {phrase!r}")
+        problems += 1
+
     print(f"\n{len(found)} reference files with a receipt, {len(missing)} without.")
     if problems and "--gate" in sys.argv:
         print("GATE: a reference file with no receipt cannot be told apart from one nobody opened, "
-              "and a shared phrase lets a run quote a file it never read. Fix before pushing.",
+              "and a shared or leaked phrase lets a run quote a file it never read. Fix before pushing.",
               file=sys.stderr)
         return 1
     return 0
