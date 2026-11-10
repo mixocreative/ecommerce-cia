@@ -6,6 +6,8 @@
 
 Loaded by `ecommerce-cia` at Step 3, read in full, every run. Sweeps S1–S24 each end in one report line; a sweep with no line in the report was not done. Each sweep line names its sites, not a count: a path list (`path:line` or `path` per site) that the reader can open. `swept, 0 findings, 14 sites` is a claim; the fourteen paths are the evidence, and a line without them is the vacuous pass this skill exists to catch (S8), filed by the auditor. **Add one quoted line from one of those sites** — the predicate, the catch, the setting read, verbatim with its `path:line` — as proof the site was read and not merely listed by a grep.
 
+**A sweep line is an index, never a place to report.** When the line says something is wrong at a site (two readers of one value disagree, a check is missing, a write has no predicate), that site is a numbered finding and the line names its ID (`S1 - sites: ... - F7`). A defect written only on a sweep line is unreported: the owner acts on findings, and the answer keys count it as missed (2026-11-10, RUNS: a cold run described a defect on its sweep line, filed nothing, and lost the row).
+
 Every item below was a real commerce gap that sat under a green fast suite, a clean static analyser and a clean linter, and was found only by a second auditor tracing the code by hand. None is optional. Each sweep produces either a numbered finding or an explicit "swept, 0 findings, N sites inspected" line in the Step 7 report. A sweep with no line in the report was not done.
 
 ## Step 0 — Map the codebase onto the Viable System Model before sweeping
