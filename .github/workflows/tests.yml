@@ -33,6 +33,9 @@ jobs:
           python -m unittest discover -s tests -p 'test_audit_report.py'
           python tools/receipts.py --gate
           python tools/check_key_lines.py
+      # In tools/pre-push too, but a hook is per clone and optional.
+      - name: Taiwanese Chinese, not mainland usage
+        run: python tools/zh_check.py --gate
       - name: First contact (every tool answers --help without running its job)
         run: python tests/test_cli_help.py
       - name: Lint (ruff over tools/ and the test scripts, as cia lints its own)

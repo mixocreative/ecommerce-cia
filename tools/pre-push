@@ -12,6 +12,11 @@ python tools/untested.py || exit 1
 # from a file nobody opened, which is the confusion receipts exist to remove.
 python tools/receipts.py --gate || exit 1
 
+# The skill's files still agree with each other (nothing loose, sizes, no line the Read tool cuts), and
+# the answer keys still point at their fixtures. CI runs both; here they fail before the push, not after.
+python tools/check_structure.py || exit 1
+python tools/check_key_lines.py || exit 1
+
 # The build standard's reference implementation must still satisfy the four properties it claims.
 # A reference that rots into an aspiration is the S21 defect committed by this skill's own docs.
 if [ -f tools/reference/prove_stock_reduction.php ]; then
