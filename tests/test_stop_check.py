@@ -7,6 +7,8 @@ fires (an install folder named by version, a POSIX st_ctime) is a guard nobody s
 import datetime
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -79,6 +81,49 @@ class StopCheckTests(unittest.TestCase):
         self.write_transcript({"type": "user", "isMeta": True, "timestamp": stamp(time.time() - 10),
                                "message": {"content": "a background task finished"}}, append=True)
         self.assertIsNotNone(stop_check.decide(self.payload(), failing))
+
+    def test_a_report_written_outside_the_working_directory_this_turn_blocks(self):
+        # SKILL lets the owner put the report elsewhere; the turn's own Write names where.
+        other = self.dir / "elsewhere"
+        other.mkdir()
+        report = other / stop_check.REPORT
+        report.write_text("draft", encoding="utf-8")
+        self.write_transcript({"type": "assistant", "timestamp": stamp(time.time()), "message": {"content": [
+            {"type": "tool_use", "name": "Write", "input": {"file_path": str(report), "content": "draft"}}]}}, append=True)
+        answer = stop_check.decide(self.payload(), failing)
+        self.assertIn(str(report), answer["reason"])
+
+    def test_a_write_from_an_earlier_turn_is_not_this_turns(self):
+        other = self.dir / "elsewhere"
+        other.mkdir()
+        report = other / stop_check.REPORT
+        report.write_text("draft", encoding="utf-8")
+        earlier = {"type": "assistant", "timestamp": stamp(self.prompt_at - 30), "message": {"content": [
+            {"type": "tool_use", "name": "Write", "input": {"file_path": str(report), "content": "draft"}}]}}
+        prompt = {"type": "user", "timestamp": stamp(self.prompt_at), "message": {"content": "thanks"}}
+        self.write_transcript(earlier, prompt)
+        self.assertIsNone(stop_check.decide(self.payload(), failing))   # only this turn's writes are looked up
+
+    @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell, as Claude Code runs hook commands")
+    def test_the_shipped_command_survives_a_python3_stub_that_eats_stdin(self):
+        # The Windows Store "python3" stub may read stdin and print to stdout; the command probes python3
+        # with stdin closed, so the payload only ever reaches a Python that runs.
+        stub_dir = self.dir / "bin"
+        stub_dir.mkdir()
+        stub = stub_dir / "python3"
+        stub.write_text("#!/bin/sh" + chr(10) + "cat >/dev/null; echo not found; exit 9009" + chr(10), encoding="utf-8")
+        stub.chmod(0o755)
+        self.write_report()
+        hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        command = hooks["hooks"]["Stop"][0]["hooks"][0]["command"]
+        real = Path(sys.executable).parent.as_posix()   # this Python, found as `python` behind the stub
+        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": ROOT.as_posix(),
+               "PATH": os.pathsep.join([stub_dir.as_posix(), real, os.environ.get("PATH", "")])}
+        if not (Path(real) / "python").exists() and not (Path(real) / "python.exe").exists():
+            self.skipTest("no `python` beside this interpreter")
+        out = subprocess.run(["sh", "-c", command], input=json.dumps(self.payload()), capture_output=True,
+                             text=True, env=env, timeout=60).stdout
+        self.assertEqual(json.loads(out)["decision"], "block")
 
     def test_a_report_from_before_this_turn_is_allowed(self):
         # An earlier turn, a resumed session, or another session in the same project: not this turn's report.

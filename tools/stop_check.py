@@ -9,8 +9,8 @@ had not read. A rule a hook can run is a rule that holds (S8). This blocks the s
 checker's MISSING lines back as the reason; `stop_hook_active` is true on the retry, so it can never
 trap a session in a loop.
 
-It acts only on this skill's own report (`ecommerce-cia-audit-report.md` in the session's working directory;
-a report the owner asked for elsewhere is not guarded), and only when that file was written during the
+It acts only on this skill's own report (`ecommerce-cia-audit-report.md` in the session's working directory, or
+wherever a Write or Edit in this turn put a file of that name), and only when that file was written during the
 turn now ending: newer than the turn's prompt, read from the transcript's timestamps. So an old report,
 a resumed session, or a later turn that did not touch the report is never blocked. The trap this
 replaced: the transcript file's st_ctime is its creation time only on Windows; on macOS and Linux it
@@ -33,44 +33,64 @@ HERE = Path(__file__).resolve().parent
 REPORT = "ecommerce-cia-audit-report.md"
 
 
-def turn_started(transcript_path) -> float | None:
-    """Epoch seconds of the newest prompt in a Claude Code transcript (JSONL): the start of the turn now ending.
+def this_turn(transcript_path) -> tuple[float | None, list[Path]]:
+    """The turn now ending, from a Claude Code transcript (JSONL): its prompt's epoch seconds, and every path
+    named this skill's report that a Write or Edit in that turn touched (newest first). (None, []) when unreadable.
 
     A prompt is a `user` entry that is neither a tool result nor meta; tool results and injected entries (hook
     feedback, notifications: `isMeta`) are `user` entries too, and taking one as the turn start would hide a
-    report written earlier in the same turn, so the hook would silently not fire. None when unreadable."""
+    report written earlier in the same turn, so the hook would silently not fire. The paths are why a report
+    the owner asked for outside the working directory is guarded too."""
     try:
         lines = Path(transcript_path).read_text(encoding="utf-8", errors="replace").splitlines()
     except (OSError, TypeError):
-        return None
+        return None, []
+    written: list[Path] = []
     for line in reversed(lines):
         try:
             d = json.loads(line)
         except ValueError:
             continue
-        if not isinstance(d, dict) or d.get("type") != "user" or d.get("isSidechain") or d.get("isMeta") or not d.get("timestamp"):
+        if not isinstance(d, dict) or d.get("isSidechain"):
             continue
         content = (d.get("message") or {}).get("content")
+        if d.get("type") == "assistant" and isinstance(content, list):
+            for c in content:
+                path = ((c.get("input") or {}).get("file_path") or "") if isinstance(c, dict) and c.get("type") == "tool_use" else ""
+                if path and Path(path).name == REPORT:
+                    written.append(Path(path))
+            continue
+        if d.get("type") != "user" or d.get("isMeta") or not d.get("timestamp"):
+            continue
         if isinstance(content, list) and any(isinstance(c, dict) and c.get("type") == "tool_result" for c in content):
             continue
         try:
-            return datetime.fromisoformat(d["timestamp"].replace("Z", "+00:00")).timestamp()
+            return datetime.fromisoformat(d["timestamp"].replace("Z", "+00:00")).timestamp(), written
         except ValueError:
-            return None
-    return None
+            return None, []
+    return None, []
 
 
 def decide(payload: dict, checks) -> dict | None:
     """The hook's answer for one Stop payload: a block with the checker's MISSING lines, or None to allow."""
     if payload.get("stop_hook_active"):
         return None                                  # already blocked once on this stop: never loop
-    cwd = payload.get("cwd")
-    report = Path(cwd) / REPORT if cwd else None
-    if report is None or not report.is_file():
-        return None
-    started = turn_started(payload.get("transcript_path"))
-    if started is None or report.stat().st_mtime < started:
-        return None                                  # no turn to place it in, or written before this turn
+    started, written = this_turn(payload.get("transcript_path"))
+    if started is None:
+        return None                                  # no turn to place a report in: never guess
+    cwd = Path(payload.get("cwd") or ".")
+    candidates = list(dict.fromkeys([cwd / REPORT] + [p if p.is_absolute() else cwd / p for p in written]))
+    for report in candidates:
+        if report.is_file() and report.stat().st_mtime >= started:   # written this turn, not an older report
+            answer = _check(report, cwd, checks)
+            if answer:
+                return answer
+    return None
+
+
+def _check(report: Path, cwd: Path, checks) -> dict | None:
+    """A block naming one report's MISSING lines, or None when its checker passes or it cannot be read."""
+    label = REPORT if report.parent == cwd else str(report)   # the full path only when it is not the usual one
     try:
         results = checks(report.read_text(encoding="utf-8"))
     except (OSError, UnicodeError):
@@ -79,7 +99,7 @@ def decide(payload: dict, checks) -> dict | None:
     if not missing:
         return None
     return {"decision": "block",
-            "reason": (f"{REPORT} fails the skill's report checker. Do what each line says, update the report, "
+            "reason": (f"{label} fails the skill's report checker. Do what each line says, update the report, "
                        f"run tools/audit_report.py check on it again, and only then reply. A sweep line you add names "
                        f"finding IDs: anything wrong you write on it is filed as a numbered finding first:\n"
                        + "\n".join(missing))}
