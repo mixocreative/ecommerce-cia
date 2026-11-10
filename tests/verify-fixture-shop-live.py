@@ -19,6 +19,10 @@ import json
 import subprocess
 import sys
 import time
+# All three at module level. The trap: an `import urllib.error` inside main() made `urllib` a local name
+# for the whole function, so the 'is something already serving?' probe raised UnboundLocalError, the bare
+# except swallowed it, and the guard never fired (ruff F823, 2026-11-10).
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -86,9 +90,12 @@ def main() -> int:
         # reported as a planted row that stopped reproducing.
         try:
             urllib.request.urlopen(BASE + "/debug/state", timeout=1.5)
+            serving = True
+        except urllib.error.HTTPError:
+            serving = True     # it answered, with an error status: something IS listening
         except Exception:
-            pass
-        else:
+            serving = False    # refused or timed out: the port is free
+        if serving:
             print(f"REFUSED: something is already serving {BASE}.\n"
                   "This script starts its own server and reseeds the shop; testing a stranger's\n"
                   "process against a store it just wiped reports live defects as GONE.\n"
@@ -169,7 +176,6 @@ def main() -> int:
               f"answered {body.strip()!r}; notices written: {len(st['notices'])}")
 
         # L7 — the page links a stylesheet the documented run command cannot serve
-        import urllib.error
         try:
             get("/shop.css")
             css = 200
