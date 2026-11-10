@@ -1,6 +1,6 @@
 # fixture-shop — answer key
 
-Sixteen defects (eleven planted, five found by cold runs) and two verified controls. A Screen-tier `/ecommerce-cia` run on this directory must report every row below, with the sweep, a `path:line` inside the cited range, and a grade no lower than shown. Extra findings are scored separately (see `../RUNBOOK.md`); a planted row the run did not report is a **miss** and blocks the skill change that caused it.
+Sixteen defects (eleven planted, five found by cold runs), three of them tracked rather than scored (see below), and two verified controls. A Screen-tier `/ecommerce-cia` run on this directory must report every row below, with the sweep, a `path:line` inside the cited range, and a grade no lower than shown. Extra findings are scored separately (see `../RUNBOOK.md`); a planted row the run did not report is a **miss** and blocks the skill change that caused it.
 
 ## Planted defects
 
@@ -22,6 +22,18 @@ Sixteen defects (eleven planted, five found by cold runs) and two verified contr
 | 14 | **S1 / S12** (found by the first cold run) | `src/Jobs/ReminderJob.php:16-18, 27-29` | `PT{$hours - 12}H` throws when the window is under 12 h; the job marks `reminder_sent_at` without sending anything. | A job that records an effect it did not produce (§0.11) | MEDIUM |
 | 15 | **S15 / S16** corner disagreement (found by the paired cold run) | `src/Checkout.php:30-34`; `src/Jobs/ExpireUnpaid.php:15` | Every order gets a `payment_deadline`, including `cvs_pickup_cod`, whose money arrives at the counter days later. The expiry cron then marks a COD order `expired` while the parcel may be at the store and cash may already be collected. | A pickup-with-payment order waits on collection with a ceiling and a desk, never on a payment clock (TW-7, §3 fulfilment rule 9) | CRITICAL |
 | 16 | **S22.6** invisible mode (found by the paired cold run) | `src/Shipping/StorePicker.php:31` | Return URL hardcoded to a fixed host; no sandbox-vs-production switch exists anywhere, so test and live are indistinguishable on every screen. | An environment switch is read in one place and shown in the admin header | MEDIUM |
+
+### #11, #15 and #16 — tracked, not scored (re-decided 2026-11-10)
+
+These three rows stay in the table and a run is **credited** for each it files, but a run that misses one
+is not charged a miss, and the gate does not block on them. The reason is the rate, measured on every
+Sonnet run since the key last changed (2026-09-20, two on `2ed3b23`, two on `06b06d8`): **#11 found 1 in 5,
+#15 1 in 5 (and the one find came after S15 gained its Grading paragraph), #16 1 in 5.** All three were added
+from Opus and paired runs; a row the zero-tolerance rule guards must be one a sound run finds every time, or
+the gate is a coin flip on a sound commit (`cia`'s E12, re-decided the same way on 2026-11-09). Re-decided
+at the moment a reader should be most suspicious of it: these rows blocked a push of `06b06d8`. The rate is
+the reason, and it is printed here so the next scorer can re-check it; move a row back to scored once Sonnet
+finds it in four runs of five.
 
 Also expected, not separately scored: **S18** — the NT$20,000 `Amt` cap (manual §7 p.41) is asserted nowhere in `src/` (§3 fulfilment rule 8); **S19 / S20** report lines exist even though the fixture has no host to reconcile ("no sites on the map" is acceptable for S19).
 
