@@ -66,17 +66,23 @@ async function portIsBusy() {
   try {
     console.log('fixture-shop-node — planted rows and the control\n');
 
-    // N1 — two processes, one unit, both win
-    reset();
-    spawnSync(process.execPath, ['-e',
-      `const {DatabaseSync}=require('node:sqlite');`
-      + `new DatabaseSync('var/shop.sqlite').prepare('UPDATE products SET stock=1 WHERE sku=?').run('PLATE-01');`],
-      { cwd: SHOP, stdio: 'ignore' });
-    const env = { FIXTURE_SLOW_MS: '400' };
-    const racers = [1, 2].map(() => spawn(process.execPath, ['server.js', '--take', 'PLATE-01', '1'],
-      { cwd: SHOP, env: { ...process.env, ...env }, stdio: 'ignore' }));
-    await Promise.all(racers.map((r) => new Promise((res) => r.on('exit', res))));
-    let st = await state();
+    // N1 — two processes, one unit, both win. Up to five attempts: the racers' writes sometimes collide
+    // (SQLITE_BUSY, one order or none), and a race that shows once is there; one attempt printed GONE
+    // about one run in eight (2026-11-10). A wider FIXTURE_SLOW_MS makes the collision more likely, not less.
+    let st;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      reset();
+      spawnSync(process.execPath, ['-e',
+        `const {DatabaseSync}=require('node:sqlite');`
+        + `new DatabaseSync('var/shop.sqlite').prepare('UPDATE products SET stock=1 WHERE sku=?').run('PLATE-01');`],
+        { cwd: SHOP, stdio: 'ignore' });
+      const env = { FIXTURE_SLOW_MS: '400' };
+      const racers = [1, 2].map(() => spawn(process.execPath, ['server.js', '--take', 'PLATE-01', '1'],
+        { cwd: SHOP, env: { ...process.env, ...env }, stdio: 'ignore' }));
+      await Promise.all(racers.map((r) => new Promise((res) => r.on('exit', res))));
+      st = await state();
+      if (st.orders.length === 2) break;
+    }
     check('N1 oversell race', st.orders.length === 2 && stock(st, 'PLATE-01') <= 0,
       `${st.orders.length} orders for 1 unit; stock ${stock(st, 'PLATE-01')}`);
 
