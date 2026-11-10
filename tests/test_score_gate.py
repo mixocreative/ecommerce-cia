@@ -15,8 +15,8 @@ import score  # noqa: E402
 HDR = "| Date | Skill commit | Runtime | Tier | Hits | Near | Miss | False+ | Minutes | Note |"
 
 
-def row(date, hits, near=0, miss=0, commit="aaaaaaa"):
-    return f"| {date} | `{commit}` | Claude Sonnet | Screen on fixture-shop-node | {hits} | {near} | {miss} | 0 | 5 | n |"
+def row(date, hits, near=0, miss=0, commit="aaaaaaa", note="n"):
+    return f"| {date} | `{commit}` | Claude Sonnet | Screen on fixture-shop-node | {hits} | {near} | {miss} | 0 | 5 | {note} |"
 
 
 class GateTests(unittest.TestCase):
@@ -71,6 +71,22 @@ class GateTests(unittest.TestCase):
         new = [shop("2026-11-11", 14, miss=1, c="bbbbbbb"), shop("2026-11-11", 14, c="bbbbbbb"),
                row("2026-11-11", 4, commit="bbbbbbb"), row("2026-11-11", 4, commit="bbbbbbb")]
         self.assertEqual(self.gate(hist + new), 1)
+
+    def test_a_row_one_run_missed_and_its_pair_found_does_not_block(self):
+        base = [row("2026-11-09", 4), row("2026-11-09", 4)]
+        pair = [row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="missed: N3."), row("2026-11-11", 4, commit="bbbbbbb")]
+        self.assertEqual(self.gate(base + pair), 0)    # mean 3.5, the floor holds, the pair found N3
+
+    def test_a_row_every_run_missed_blocks(self):
+        base = [row("2026-11-09", 4), row("2026-11-09", 4)]
+        both = [row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="missed: N3."),
+                row("2026-11-11", 4, miss=1, commit="bbbbbbb", note="missed: N3, N4.")]
+        self.assertEqual(self.gate(base + both), 1)
+
+    def test_an_untagged_miss_blocks(self):
+        base = [row("2026-11-09", 4), row("2026-11-09", 4)]
+        self.assertEqual(self.gate(base + [row("2026-11-11", 4, miss=1, commit="bbbbbbb"),
+                                           row("2026-11-11", 4, commit="bbbbbbb")]), 1)
 
     def test_a_miss_fails_even_with_a_good_mean(self):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-11-09", 4, commit="ccccccc"),

@@ -149,6 +149,37 @@ DRIFT = 1.0
 GATE_SINCE = "2026-11-09"
 
 
+MISSED = re.compile(r"missed:\s*([^.;|*]+)", re.I)
+
+
+def missed_of(note: str):
+    """Row ids from a `missed: L9, #15` tag in the note, as a set; None when there is no tag."""
+    m = MISSED.search(note)
+    if not m:
+        return None
+    return {" ".join(x.split()).lower() for x in m.group(1).split(",") if x.strip()}
+
+
+def doctrine_misses(group: list[dict]) -> str:
+    """What blocks a commit: any false positive, an untagged miss, or a row EVERY run on it missed.
+
+    Ported from cia (its rule since 2026-11-09) on 2026-11-10. Before this, one run's miss blocked here,
+    so a row a sound run finds most of the time made the gate a coin flip on a sound commit. A row one run
+    missed and its paired run found still costs a row in the mean; a row lost by every run is doctrine and
+    blocks. Recorded honestly: ported while a live-fixture pair (L9 missed by one run, found by the other)
+    was the open case, and before the runs on the next commit."""
+    false = [r for r in group if r["false"]]
+    if false:
+        return f"a run has {false[-1]['false']} false positive"
+    dirty = [r for r in group if r["miss"]]
+    if not dirty:
+        return ""
+    if any(r.get("missed") is None for r in dirty):
+        return f"a run has {dirty[-1]['miss']} miss with no `missed:` tag naming the rows"
+    common = set.intersection(*[(r.get("missed") or set()) for r in group])
+    return f"every run missed {', '.join(sorted(common))}" if common else ""
+
+
 def audit_gate(rs: list[dict]) -> int:
     """Per-commit gate, once per fixture the commit under test was run on. Misses and false positives
     are doctrine: zero tolerance. Half-rows are noise: the mean of at least two runs on the commit under
@@ -188,11 +219,11 @@ def _gate_one(rs: list[dict], last: dict) -> int:
     # to a standard it was never measured against and block every push.
     findable = [r for r in rs[:first] if r["fixture"] == last["fixture"]]
     if any(r["miss"] == 0 and r["false"] == 0 for r in findable):
-        dirty = [r for r in group if r["miss"] or r["false"]]
-        if dirty:
-            r = dirty[-1]
-            print(f"GATE: a run on {last['token']} has {r['miss']} miss / {r['false']} false positive, on a fixture "
-                  f"where an earlier run had none. A miss is doctrine, never noise (RUNBOOK step 6).", file=sys.stderr)
+        why = doctrine_misses(group)
+        if why:
+            print(f"GATE: on {last['token']}, {why}, on {last['fixture']}, where an earlier run had none. "
+                  f"A miss the paired run did not make up for is doctrine, never noise (RUNBOOK step 6).",
+                  file=sys.stderr)
             return 1
     if not earlier:
         print(f"gate: {last['token']} is the first scored commit on {last['fixture']} with {last['model']} - "
@@ -256,6 +287,9 @@ def rows() -> list[dict]:
             "token": commit_of(cells[1]),
             # A row on a reverted commit measured doctrine that no longer ships: history and floor, never under test.
             "reverted": "reverted" in cells[1].lower(),
+            # The rows a run missed, when the scorer tags them in the note (`missed: N3, #15`). None when
+            # untagged: the paired-miss rule then cannot tell variance from doctrine and blocks.
+            "missed": missed_of(cells[9]) if len(cells) > 9 else None,
         })
     return out
 

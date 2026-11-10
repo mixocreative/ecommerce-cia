@@ -263,7 +263,10 @@ def main() -> int:
         print(f"FAIL: {len(gone)} row(s) no longer reproduce: {', '.join(gone)}")
         print("The fixture changed, or the shop was not freshly seeded. The answer key is wrong until this passes.")
         return 1
-    print(f"OK: {len(results)} rows reproduce (9 defects + 7 controls).")
+    # Counted, not typed: the hard-coded "(9 defects + 7 controls)" summed to 16 beside a count of 14.
+    # C6 and C7 (integer cents, the escaper) are read, not run, so the key has two rows this cannot check.
+    defects = sum(r.startswith("L") for r, _, _ in results)
+    print(f"OK: {len(results)} rows reproduce ({defects} defects + {len(results) - defects} controls; the key's other controls are scored by reading).")
     return 0
 
 

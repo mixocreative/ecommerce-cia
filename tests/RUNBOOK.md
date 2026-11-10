@@ -33,7 +33,7 @@ detector filed against the audit itself.
    - **Control misfiled** — a verified control reported as a defect. Counts as a miss.
    - **Vacuous line** — a sweep line with a count but no paths, or paths but no quoted line (§0.9). Counts as a miss for that sweep even if the finding was elsewhere reported.
 5. **Record** a row in `RUNS.md`: date, commit of the skill, runtime (Claude / Codex), tier, hits / near / miss / false positives, minutes, and the one sentence that explains any miss.
-6. **Gate for the change** (`python tools/score.py --gate`; installed as a pre-push hook by `tools/install-hooks.sh`). A change to the skill ships only if the run scores **no worse** — precisely: every run on its commit has no miss and no false positive, and the mean of at least two runs is within half a row of the median of the last five shipped per-commit means on the same fixture, model and instrument, and never more than one row under the best ever, all counted from rows recorded before the commit (launcher rows against launcher rows; `tools/score.py`, ported from `cia`). Half a row is a reporting slip and is the instrument's noise; a miss is doctrine and never noise. A new miss is a regression in the doctrine or in the packaging (the agent did not read the reference file) — find which before committing.
+6. **Gate for the change** (`python tools/score.py --gate`; installed as a pre-push hook by `tools/install-hooks.sh`). A change to the skill ships only if the run scores **no worse** — precisely: on **every fixture the commit was run on**, no run files a control, no row is missed by every run on the commit, and every miss is tagged in the Note (`missed: L9`) so the gate can tell a row one run missed and its pair found (attention variance: it costs the row in the mean and does not block) from a row the doctrine lost (since 2026-11-10, ported from `cia`); and the mean of at least two runs is within half a row of the median of the last five shipped per-commit means on the same fixture, model and instrument, and never more than one row under the best ever, all counted from rows recorded before the commit (launcher rows against launcher rows; `tools/score.py`, ported from `cia`). Half a row is a reporting slip and is the instrument's noise; a miss is doctrine and never noise. A new miss is a regression in the doctrine or in the packaging (the agent did not read the reference file) — find which before committing.
 
 ## The live fixture run (`fixture-shop-live`)
 
@@ -43,13 +43,13 @@ correctly. Every one of them is visible in under a minute to somebody who actual
 something.
 
 1. **Prove the fixture first.** `python tests/verify-fixture-shop-live.py --serve` must print
-   `OK: 10 rows reproduce`. A key that no longer matches the fixture scores the auditor against
+   `OK: 14 rows reproduce (9 defects + 5 controls; ...)`: every row the key can check by running. A key that no longer matches the fixture scores the auditor against
    fiction (§0.11 applied to the harness).
-2. **Fresh session** with `tests/fixture-shop-live` as the working directory. The shop is not
+2. **Fresh session** with `tests/fixture-shop-live` as the working directory. **One live run at a time:** the shop's documented run command binds port 8123, so two runs started together share one shop and one database (2026-11-10: one run noticed the other's orders and moved to a private port). The shop is not
    running; starting it is rung 1 of §0.8 and **the agent is expected to start it itself**. An
    auditor that asks the owner to run `php -S` has already failed one of the things under test.
 3. **Trigger.** `pre-launch audit, Screen tier`.
-4. **Score the eight planted rows and two controls** against `EXPECTED-fixture-shop-live.md`,
+4. **Score the nine planted rows and seven controls** against `EXPECTED-fixture-shop-live.md`,
    by the same hit / near / miss / false-positive rules as above.
 5. **Score the three runtime columns, which are what this fixture exists for:**
    - **Ladders** — how many state-delta ladders ran (`browser-walks.md` §12), out of the flows
