@@ -77,3 +77,13 @@ Then score the part that is new here, in the RUNS runtime columns:
 - **Ladders and probes.** How many state-delta ladders ran, how many of §12's nine adversarial
   rows, and whether the S2 probe was fired. A run that graded L1 CRITICAL without firing it gets
   the finding but not the runtime credit.
+
+<!-- site-pins (tools/check_key_lines.py) -->
+
+## Site pins
+
+Every file this key cites, with the sha256 it had when a person last read the ranges against it. A changed digest fails `tools/check_key_lines.py` — re-read, then re-pin.
+
+- `public/index.php` 382fc021709f070980550d6a6967992285fd9582a81415aa8e6dc81b11386cb3
+- `src/Availability.php` 2509cad92bf29b5bbc0983d989a3cde913164b20012ed4569bf24d33f221a65e
+- `src/StockDesk.php` c4658a3ee6918856b9fecafdf7698536bb215bfb329517d19e3d9cb81b56a7d0

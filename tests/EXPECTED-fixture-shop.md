@@ -49,3 +49,18 @@ Also expected, not separately scored: **S18** — the NT$20,000 `Amt` cap (manua
 ## Gate
 
 `§0.3a` commerce gate must PASS — criterion 1 (`src/Gateway/`). The discovery block must name the matched criterion.
+
+<!-- site-pins (tools/check_key_lines.py) -->
+
+## Site pins
+
+Every file this key cites, with the sha256 it had when a person last read the ranges against it. A changed digest fails `tools/check_key_lines.py` — re-read, then re-pin.
+
+- `src/Admin/OrderPage.php` 03b6fb73ef90d12c3170ac17240c7873650074a62b7690644e4cad4f2c52f58b
+- `src/Checkout.php` 76af547c9b1edb68fb19fd69d6e8252c2e20e08798cbea7fb6b5d5cf7d3d824e
+- `src/Gateway/Callback.php` 6afb97cdfa1e217f47099f22286a79e5f574eb1b84645dd569e528eae3afd810
+- `src/Jobs/ExpireUnpaid.php` d50ee037968f5de134fb50ab8a4b878ad0664aafd68cecd1f8ffc2fb681796d4
+- `src/Jobs/ReminderJob.php` f3ec4da3c7aaa02cf0ba4ae6db0c4f7ccb89932fcf72e6d9264ca5e044500e74
+- `src/Jobs/SettlementReconcile.php` 1f295d4d511fb983e8d28ec5178d798916ac7f205be1bbfaaa2b3ff5bb1ce3ea
+- `src/Shipping/StorePicker.php` 51facdac8be4c454bc3d02dfebae8edfe2d505bf9013257e7d47cd27d25e910d
+- `tests/ExpireUnpaidTest.php` 452cf7ef72bfe55650616e38806e2cb0de3cb22928c822f7d9828bfe523b2ad9
