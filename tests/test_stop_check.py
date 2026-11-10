@@ -125,6 +125,21 @@ class StopCheckTests(unittest.TestCase):
                              text=True, env=env, timeout=60).stdout
         self.assertEqual(json.loads(out)["decision"], "block")
 
+    def test_a_report_a_bash_command_wrote_outside_the_working_directory_blocks(self):
+        other = self.dir / "out"
+        other.mkdir()
+        report = other / stop_check.REPORT
+        report.write_text("draft", encoding="utf-8")
+        self.write_transcript({"type": "assistant", "timestamp": stamp(time.time()), "message": {"content": [
+            {"type": "tool_use", "name": "Bash", "input": {"command": f"cat draft.md > {report.as_posix()}"}}]}}, append=True)
+        self.assertIn(report.as_posix(), stop_check.decide(self.payload(), failing)["reason"].replace(chr(92), "/"))
+
+    def test_a_malformed_tool_input_never_raises(self):
+        self.write_report()
+        self.write_transcript({"type": "assistant", "timestamp": stamp(time.time()), "message": {"content": [
+            {"type": "tool_use", "name": "Write", "input": ["not", {"file_path": 7}]}, "junk"]}}, append=True)
+        self.assertIsNotNone(stop_check.decide(self.payload(), failing))   # still finds the cwd report
+
     def test_a_report_from_before_this_turn_is_allowed(self):
         # An earlier turn, a resumed session, or another session in the same project: not this turn's report.
         self.write_report(at=self.prompt_at - 5)

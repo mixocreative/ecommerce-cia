@@ -10,11 +10,14 @@ checker's MISSING lines back as the reason; `stop_hook_active` is true on the re
 trap a session in a loop.
 
 It acts only on this skill's own report (`ecommerce-cia-audit-report.md` in the session's working directory, or
-wherever a Write or Edit in this turn put a file of that name), and only when that file was written during the
+wherever a tool call in this turn named a file of that name, a Bash redirect included), and only when that file was written during the
 turn now ending: newer than the turn's prompt, read from the transcript's timestamps. So an old report,
 a resumed session, or a later turn that did not touch the report is never blocked. The trap this
 replaced: the transcript file's st_ctime is its creation time only on Windows; on macOS and Linux it
 moves on every append, so every report looked older than the session and the hook never fired.
+
+hooks/hooks.json's command is POSIX shell (probe python3, else python): Claude Code ran it through bash on
+Windows with PowerShell as the primary shell (debug log, 2026-11-10 plugin smoke), and through sh in the test.
 
 The trap the reason names (2026-11-10, RUNS second stage on 9f8f9b0): a blocked run backfills the sweep
 lines the checker asks for, and it wrote defects onto them as prose without filing them; every miss of
@@ -23,6 +26,7 @@ that stage had this shape. So the reason says a defect on a sweep line is a find
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -32,10 +36,25 @@ HERE = Path(__file__).resolve().parent
 # from the folder was "2.5.0-audit-report.md" and the hook never fired outside a repo checkout (Fable, 2026-11-10).
 REPORT = "ecommerce-cia-audit-report.md"
 
+# Any path ending in the report's name, in any tool's input: a Write's file_path, an Edit's, or a Bash redirect.
+NAMED = re.compile(r"[^\s\"'<>|;&()`]*" + re.escape(REPORT))
+
+
+def _strings(value):
+    """Every string inside a tool input, however nested; a malformed input yields nothing instead of raising."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from _strings(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _strings(v)
+
 
 def this_turn(transcript_path) -> tuple[float | None, list[Path]]:
     """The turn now ending, from a Claude Code transcript (JSONL): its prompt's epoch seconds, and every path
-    named this skill's report that a Write or Edit in that turn touched (newest first). (None, []) when unreadable.
+    named this skill's report that a tool in that turn touched (newest first). (None, []) when unreadable.
 
     A prompt is a `user` entry that is neither a tool result nor meta; tool results and injected entries (hook
     feedback, notifications: `isMeta`) are `user` entries too, and taking one as the turn start would hide a
@@ -56,9 +75,8 @@ def this_turn(transcript_path) -> tuple[float | None, list[Path]]:
         content = (d.get("message") or {}).get("content")
         if d.get("type") == "assistant" and isinstance(content, list):
             for c in content:
-                path = ((c.get("input") or {}).get("file_path") or "") if isinstance(c, dict) and c.get("type") == "tool_use" else ""
-                if path and Path(path).name == REPORT:
-                    written.append(Path(path))
+                if isinstance(c, dict) and c.get("type") == "tool_use":
+                    written += [Path(m) for s in _strings(c.get("input")) for m in NAMED.findall(s)]
             continue
         if d.get("type") != "user" or d.get("isMeta") or not d.get("timestamp"):
             continue
