@@ -142,6 +142,10 @@ NOISE = 0.5
 # failed about half of neutral commits; the median does not chase luck, DRIFT stops it sliding down.
 RECENT = 5
 DRIFT = 1.0
+# Two runs within one row under the floor earn ONE second stage of two more runs, gated on the four-run mean.
+# Ported from cia (2026-11-10): one seat's attention can cost a row on a neutral commit; any further stage
+# would be sampling until it passes.
+SECOND_STAGE = 1.0
 
 # The per-commit rule starts here. Every earlier commit was scored under the old newest-vs-previous rule,
 # one run each, and passed it; judging those rows by a rule written later would block every push on
@@ -238,13 +242,21 @@ def _gate_one(rs: list[dict], last: dict) -> int:
         print(f"GATE: {last['token']} has one scored run on {last['fixture']} with {last['model']}. One run is a "
               f"sample - run again, then gate on the mean (RUNBOOK step 6).", file=sys.stderr)
         return 1
+    if len(group) not in (2, 4):
+        # Two runs, or four after one second stage: a commit is never sampled until it passes (optional stopping).
+        print(f"GATE: {last['token']} has {len(group)} scored runs on {last['fixture']}. The gate reads two, or four "
+              f"after one second stage (RUNBOOK step 6); a third stage is optional stopping.", file=sys.stderr)
+        return 1
     best, baseline = floor_parts(earlier)
     floor = max(baseline - NOISE, best - DRIFT)
     mean = sum(r["score"] for r in group) / len(group)
     why = f"median of the last {RECENT} live per-commit means {baseline:g}, best ever {best:g}"
     if mean < floor:
+        second = len(group) == 2 and floor - mean <= SECOND_STAGE
         print(f"GATE: {last['token']} scores a mean of {mean:g} over {len(group)} runs, below the floor "
-              f"{floor:g} ({why}).", file=sys.stderr)
+              f"{floor:g} ({why}). "
+              + ("Within one row: run it twice more, once, and gate on the four-run mean (RUNBOOK step 6)."
+                 if second else "Fix the doctrine or the fixture, run again, then push."), file=sys.stderr)
         return 1
     # Say what was checked, and where: a row one run missed and its pair found passes (doctrine_misses),
     # so "no miss" over such a pair claimed more than the gate knows (cia's wording, same reason).

@@ -110,14 +110,22 @@ class GateTests(unittest.TestCase):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-11-09", 3, commit="ccccccc"),
                                     row("2026-11-09", 3, commit="ccccccc")]), 1)
 
+    def test_within_one_row_a_second_stage_of_four_runs_decides(self):
+        hist = [row("2026-09-25", 4), row("2026-11-09", 4, commit="bbbbbbb"), row("2026-11-09", 4, commit="bbbbbbb")]
+        two = hist + [row("2026-11-10", 3, commit="ccccccc"), row("2026-11-10", 3, near=1, commit="ccccccc")]
+        self.assertEqual(self.gate(two), 1)                       # 3.25 < floor 3.5, within one row
+        four = two + [row("2026-11-11", 4, commit="ccccccc"), row("2026-11-11", 4, commit="ccccccc")]
+        self.assertEqual(self.gate(four), 0)                      # 3.625 over four runs
+        self.assertEqual(self.gate(two + [row("2026-11-11", 4, commit="ccccccc")]), 1)   # three: never read
+        self.assertEqual(self.gate(four + [row("2026-11-12", 4, commit="ccccccc")] * 2), 1)  # six: a third stage
+
     def test_launcher_rows_are_judged_against_launcher_rows(self):
         # Subagent floor 4; the launcher measures half a row lower on the same doctrine.
         def h(d, hits, near, c):
             return row(d, hits, near, commit=c).replace("Claude Sonnet", "Claude Sonnet (harness)")
         self.assertEqual(self.gate([row("2026-10-21", 4, commit="bbbbbbb"),
                                     h("2026-11-09", 3, 1, "ccccccc"), h("2026-11-09", 3, 1, "ccccccc"),
-                                    h("2026-11-09", 3, 0, "ddddddd"), h("2026-11-09", 2, 2, "ddddddd"),
-                                    h("2026-11-09", 3, 0, "ddddddd")]), 0)
+                                    h("2026-11-09", 3, 0, "ddddddd"), h("2026-11-09", 2, 2, "ddddddd")]), 0)
 
     def test_single_runs_before_the_rule_are_history(self):
         # 2026-10-21 had one run, which the old rule allowed; it is the floor, never a failing sample.
