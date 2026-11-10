@@ -10,7 +10,9 @@ fixture-shop-live/         a runnable PHP+sqlite shop, 9 defects and 7 controls 
 fixture-shop-node/         the same defect classes in Node 22 + node:sqlite — audited by RUNNING, on another stack
 EXPECTED-fixture-shop.md      the answer key for the read fixture — kept OUTSIDE the fixture on purpose
 EXPECTED-fixture-shop-live.md the answer key for the live fixture, same rule
+EXPECTED-fixture-shop-node.md the answer key for the Node fixture, same rule
 verify-fixture-shop-live.py   proves every planted live row still reproduces; run it before scoring
+verify-fixture-shop-node.js   the same proof for the Node fixture
 RUNS.md                    one row per run (append; never rewrite history)
 ```
 
@@ -32,7 +34,8 @@ detector filed against the audit itself.
    - **False positive** — a finding at a site with no planted defect. List each; decide whether the fixture is wrong (fix the fixture and re-run) or the doctrine is (fix the doctrine).
    - **Control misfiled** — a verified control reported as a defect. Counts as a miss.
    - **Vacuous line** — a sweep line with a count but no paths, or paths but no quoted line (§0.9). Counts as a miss for that sweep even if the finding was elsewhere reported.
-5. **Record** a row in `RUNS.md`: date, commit of the skill, runtime (Claude / Codex), tier, hits / near / miss / false positives, minutes, and the one sentence that explains any miss.
+   Before scoring, `python tools/check_key_lines.py` must pass: every `path:line` the three keys cite resolves and every cited file matches its sha256 pin. A file that changed fails until a person re-reads its ranges and runs `--repin --only <key>` (2026-11-10: the Node key was four lines off its code and nothing said so).
+5. **Record** a row in `RUNS.md`: date, commit of the skill, runtime (Claude / Codex), tier, hits / near / miss / false positives, minutes, and the one sentence that explains any miss. A launcher run writes its Step 7 report to `ecommerce-cia-audit-report.md` in the fixture copy; the launcher collects that file and its header counts `report-file N/4` (the parts `tools/audit_report.py` finds) and `receipts N/25`. Both go in the Note. A run whose header is under 4/4 replied past a failing checker: score its findings as usual and say so in the Note.
 6. **Gate for the change** (`python tools/score.py --gate`; installed as a pre-push hook by `tools/install-hooks.sh`). A change to the skill ships only if the run scores **no worse** — precisely: on **every fixture the commit was run on**, no run files a control, no row is missed by every run on the commit, and every miss is tagged in the Note (`missed: L9`) so the gate can tell a row one run missed and its pair found (attention variance: it costs the row in the mean and does not block) from a row the doctrine lost (since 2026-11-10, ported from `cia`); and the mean of at least two runs is within half a row of the median of the last five shipped per-commit means on the same fixture, model and instrument, and never more than one row under the best ever, all counted from rows recorded before the commit (launcher rows against launcher rows; `tools/score.py`, ported from `cia`). Half a row is a reporting slip and is the instrument's noise; a miss is doctrine and never noise. A new miss is a regression in the doctrine or in the packaging (the agent did not read the reference file) — find which before committing.
 
 ## The live fixture run (`fixture-shop-live`)
@@ -62,7 +65,7 @@ something.
 6. **Record** a row in `RUNS.md`'s runtime table, then gate with
    `python tools/score.py --gate` as usual.
 
-A run that files all eight defects and produces no ledger, no ladder and no probe is recorded as
+A run that files all nine defects and produces no ledger, no ladder and no probe is recorded as
 what it is: a good code review of a running system nobody ran.
 
 ## The second-stack run (`fixture-shop-node`)
