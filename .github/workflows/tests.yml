@@ -31,6 +31,7 @@ jobs:
           python tools/check_structure.py
           python -m unittest discover -s tests -p 'test_check_structure.py'
           python -m unittest discover -s tests -p 'test_audit_report.py'
+          python -m unittest discover -s tests -p 'test_stop_check.py'
           python tools/receipts.py --gate
           python tools/check_key_lines.py
       # In tools/pre-push too, but a hook is per clone and optional.
