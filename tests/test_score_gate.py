@@ -118,6 +118,9 @@ class GateTests(unittest.TestCase):
         self.assertEqual(self.gate(four), 0)                      # 3.625 over four runs
         self.assertEqual(self.gate(two + [row("2026-11-11", 4, commit="ccccccc")]), 1)   # three: never read
         self.assertEqual(self.gate(four + [row("2026-11-12", 4, commit="ccccccc")] * 2), 1)  # six: a third stage
+        far = hist + [row("2026-11-10", 2, commit="ccccccc"), row("2026-11-10", 2, commit="ccccccc"),
+                      row("2026-11-11", 5, commit="ccccccc"), row("2026-11-11", 5, commit="ccccccc")]
+        self.assertEqual(self.gate(far), 1)   # 3.5 over four, but the first pair (2) was over a row under: no stage due
 
     def test_launcher_rows_are_judged_against_launcher_rows(self):
         # Subagent floor 4; the launcher measures half a row lower on the same doctrine.
