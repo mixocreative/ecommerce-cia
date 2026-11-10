@@ -104,15 +104,18 @@ class StopCheckTests(unittest.TestCase):
         self.write_transcript(earlier, prompt)
         self.assertIsNone(stop_check.decide(self.payload(), failing))   # only this turn's writes are looked up
 
-    def run_shipped(self, shell, path_dirs):
+    def run_shipped(self, shell, path_dirs, only=False):
         """The shipped hooks.json command, with ${CLAUDE_PLUGIN_ROOT} filled in the way Claude Code does
         (textually, a native path), run through `shell` with this payload; returns its stdout."""
         self.write_report()
         hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
         command = hooks["hooks"]["Stop"][0]["hooks"][0]["command"].replace("${CLAUDE_PLUGIN_ROOT}", str(ROOT))
-        env = {**os.environ, "PATH": os.pathsep.join([*path_dirs, os.environ.get("PATH", "")])}
-        return subprocess.run([*shell, command], input=json.dumps(self.payload()), capture_output=True,
-                              text=True, env=env, timeout=60).stdout
+        env = {**os.environ, "PATH": os.pathsep.join([*path_dirs, *([] if only else [os.environ.get("PATH", "")])])}
+        done = subprocess.run([*shell, command], input=json.dumps(self.payload()), capture_output=True,
+                              text=True, env=env, timeout=60)
+        # Exit 0 or Claude Code discards the JSON: `python` missing after a working python3 left 127 (Fable).
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout
 
     @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell, as Claude Code uses when bash is there")
     def test_the_shipped_command_survives_a_python3_that_is_not_python(self):
@@ -125,6 +128,17 @@ class StopCheckTests(unittest.TestCase):
         stub.write_text("#!/bin/sh" + chr(10) + "echo not found >&2; exit 9009" + chr(10), encoding="utf-8")
         stub.chmod(0o755)
         out = self.run_shipped(["sh", "-c"], [stub_dir.as_posix(), Path(sys.executable).parent.as_posix()])
+        self.assertEqual(json.loads(out)["decision"], "block")
+
+    @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell")
+    def test_the_shipped_command_exits_0_with_python3_and_no_python(self):
+        # Stock macOS and many Linux installs: a working python3, no `python`. PATH holds nothing else.
+        bin_dir = self.dir / "only"
+        bin_dir.mkdir()
+        shim = bin_dir / "python3"
+        shim.write_text("#!/bin/sh" + chr(10) + f'exec "{Path(sys.executable).as_posix()}" "$@"' + chr(10), encoding="utf-8")
+        shim.chmod(0o755)
+        out = self.run_shipped([shutil.which("sh"), "-c"], [bin_dir.as_posix()], only=True)
         self.assertEqual(json.loads(out)["decision"], "block")
 
     @unittest.skipUnless(shutil.which("pwsh") or shutil.which("powershell"), "needs PowerShell")
