@@ -26,16 +26,31 @@ if hasattr(sys.stdout, "reconfigure"):  # Windows consoles default to cp950/cp12
 
 HERE = Path(__file__).resolve().parent.parent
 SKILLS = HERE.parent
-CIA = SKILLS / "cia" / "references" / "sweeps.md"
-ECOM = SKILLS / "ecommerce-cia" / "references" / "sweeps.md"
+CIA = SKILLS / "cia" / "references"
+ECOM = SKILLS / "ecommerce-cia" / "references"
 
 
-def sections(path: Path) -> dict[str, str]:
-    text = path.read_text(encoding="utf-8")
-    parts = re.split(r"^## (S\d+) ", text, flags=re.M)
+def ref_text(refs: Path, name: str) -> "str | None":
+    """One side's copy of a shared reference file. sweeps.md is a folder on both sides now (cia split it
+    on 2026-11-09, ecommerce-cia on 2026-11-10): its files are joined in name order, so the section parser
+    sees one document. The trap: a hard-coded path to one side's old sweeps.md made this report print
+    "missing" for a month on the side that had already split, and nobody read the line."""
+    if name == "sweeps.md" and (refs / "sweeps").is_dir():
+        return "\n".join(f.read_text(encoding="utf-8") for f in sorted((refs / "sweeps").glob("*.md")))
+    f = refs / name
+    return f.read_text(encoding="utf-8") if f.exists() else None
+
+
+def sections(source) -> dict[str, str]:
+    text = source.read_text(encoding="utf-8") if isinstance(source, Path) else source
+    # Split on every level-1 and level-2 heading, then keep the sweeps: a non-sweep section after S24 (cia's
+    # "Audit-derived classes", 2026-10-22) must end S24 rather than be counted as part of it. The level-1
+    # "# Sweeps ..." header that opens each split-out file must end the previous sweep too.
+    parts = re.split(r"^#{1,2} (\S+)", text, flags=re.M)
     out = {}
     for i in range(1, len(parts), 2):
-        out[parts[i]] = parts[i + 1]
+        if re.fullmatch(r"S\d+", parts[i]):
+            out[parts[i]] = parts[i + 1]
     return out
 
 
@@ -49,7 +64,7 @@ def subheads(s: str) -> set[str]:
 
 
 
-SHARED = ["sweeps.md", "doctrine.md", "reporting.md", "theory.md", "browser-walks.md"]
+SHARED = ["sweeps.md", "doctrine.md", "reporting.md", "theory.md", "browser-walks.md", "evidence.md"]
 
 
 def file_table() -> None:
@@ -57,13 +72,11 @@ def file_table() -> None:
     print(f"{'file':22} {'cia':>7} {'ecom':>7}  state")
     print("-" * 100)
     for name in SHARED:
-        c = SKILLS / "cia" / "references" / name
-        e = SKILLS / "ecommerce-cia" / "references" / name
-        if not c.exists() or not e.exists():
+        ct, et = ref_text(CIA, name), ref_text(ECOM, name)
+        if ct is None or et is None:
             print(f"{name:22} {'-':>7} {'-':>7}  MISSING ON ONE SIDE "
-                  f"({'cia' if not c.exists() else 'ecommerce-cia'})")
+                  f"({'cia' if ct is None else 'ecommerce-cia'})")
             continue
-        ct, et = c.read_text(encoding="utf-8"), e.read_text(encoding="utf-8")
         cw, ew = len(ct.split()), len(et.split())
         if ct == et:
             state = ("identical - a duplicate, so an edit to one is a silent drift in the other; "
@@ -78,11 +91,11 @@ def main() -> None:
     file_table()
     if "--files" in sys.argv:
         return
-    for p in (CIA, ECOM):
-        if not p.exists():
-            print(f"missing: {p}")
-            sys.exit(0)
-    c, e = sections(CIA), sections(ECOM)
+    ct, et = ref_text(CIA, "sweeps.md"), ref_text(ECOM, "sweeps.md")
+    if ct is None or et is None:
+        print(f"missing: the sweeps of {'cia' if ct is None else 'ecommerce-cia'}")
+        sys.exit(0)
+    c, e = sections(ct), sections(et)
     keys = sorted(set(c) | set(e), key=lambda k: int(k[1:]))
 
     if len(sys.argv) == 3 and sys.argv[1] == "--full":
@@ -117,4 +130,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    if {"-h", "--help"} & set(sys.argv[1:]):   # answered here, before main(): --help must never run the job
+        sys.stdout.reconfigure(encoding="utf-8")
+        print(__doc__)
+        sys.exit(0)
     main()
