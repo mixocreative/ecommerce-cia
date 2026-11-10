@@ -25,13 +25,15 @@ Sixteen defects (eleven planted, five found by cold runs), three of them tracked
 
 ### #11, #15 and #16 — tracked, not scored (re-decided 2026-11-10)
 
-These three rows stay in the table and a run is **credited** for each it files, but a run that misses one
-is not charged a miss, and the gate does not block on them. The reason is the rate, measured on every
-Sonnet run since the key last changed (2026-09-20, two on `2ed3b23`, two on `06b06d8`): **#11 found 1 in 5,
-#15 1 in 5 (and the one find came after S15 gained its Grading paragraph), #16 1 in 5.** All three were added
+These three rows stay in the table and the RUNS note records each one a run files, but they are outside the
+score: a find adds no hit, a run that misses one is not charged a miss, and the gate does not block on them. The reason is the rate, measured on every
+Sonnet run since the key last changed (2026-09-20, two on `2ed3b23`, two on `06b06d8`): **#11 filed at grade 1 in 5
+(near in two more: under the wrong sweep on 2026-09-20, inside another finding on `2ed3b23`; missed by both runs
+on `06b06d8`), #15 1 in 5 (and the one find came after S15 gained its Grading paragraph), #16 1 in 5.** All three were added
 from Opus and paired runs; a row the zero-tolerance rule guards must be one a sound run finds every time, or
 the gate is a coin flip on a sound commit (`cia`'s E12, re-decided the same way on 2026-11-09). Re-decided
-at the moment a reader should be most suspicious of it: these rows blocked a push of `06b06d8`. The rate is
+at the moment a reader should be most suspicious of it: these rows had just failed the gate, on `2ed3b23` (#15,
+missed by both runs) and on `06b06d8` (#11 and #16, missed by both). The rate is
 the reason, and it is printed here so the next scorer can re-check it; move a row back to scored once Sonnet
 finds it in four runs of five.
 
