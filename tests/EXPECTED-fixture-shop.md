@@ -35,7 +35,7 @@ the gate is a coin flip on a sound commit (`cia`'s E12, re-decided the same way 
 at the moment a reader should be most suspicious of it: these rows had just failed the gate, on `2ed3b23` (#15,
 missed by both runs) and on `06b06d8` (#11 and #16, missed by both). The rate is
 the reason, and it is printed here so the next scorer can re-check it; move a row back to scored once Sonnet
-finds it in four runs of five.
+finds it in four runs of five. **#15 is the exception while S15's Grading paragraph stands:** that paragraph names #15's class (one payment family's clock acting on another family's orders) in general words, so a scored #15 would let the gate reward the doctrine for describing the answer; it stays tracked however often it is found (Fable's final review, 2026-11-10).
 
 Also expected, not separately scored: **S18** — the NT$20,000 `Amt` cap (manual §7 p.41) is asserted nowhere in `src/` (§3 fulfilment rule 8); **S19 / S20** report lines exist even though the fixture has no host to reconcile ("no sites on the map" is acceptable for S19).
 
