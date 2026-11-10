@@ -10,6 +10,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# Before the Pillow import, so --help works on a machine without it; and before the job, which once
+# took "--help" as the out-dir and rendered both PNGs into a folder of that name.
+if __name__ == "__main__" and {"-h", "--help"} & set(sys.argv[1:]):
+    print(__doc__)
+    sys.exit(0)
+
 from PIL import Image, ImageDraw, ImageFont
 
 FONT_DIR = Path(r"C:\Windows\Fonts")

@@ -31,6 +31,8 @@ jobs:
           python tools/check_structure.py
           python -m unittest discover -s tests -p 'test_check_structure.py'
           python tools/receipts.py --gate
+      - name: First contact (every tool answers --help without running its job)
+        run: python tests/test_cli_help.py
       - name: Skill frontmatter sanity
         run: |
           python - <<'PY'

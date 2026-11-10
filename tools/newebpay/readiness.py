@@ -202,4 +202,8 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    if {"-h", "--help"} & set(sys.argv[1:]):   # answered here, before main(): --help must never run the job
+        sys.stdout.reconfigure(encoding="utf-8")
+        print(__doc__)
+        sys.exit(0)
     sys.exit(main(sys.argv[1:]))

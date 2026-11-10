@@ -95,5 +95,9 @@ def scan(root: Path) -> dict:
 
 
 if __name__ == "__main__":
+    if {"-h", "--help"} & set(sys.argv[1:]):   # answered here, before main(): --help must never run the job
+        sys.stdout.reconfigure(encoding="utf-8")
+        print(__doc__)
+        sys.exit(0)
     root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
     print(json.dumps(scan(root), ensure_ascii=False, indent=2))
