@@ -15,6 +15,8 @@ Checks:
   5. No stale path: no `references/sweeps.md` left in a live doc (historical wording is allowed).
   6. Size: no file over HARD_LIMIT lines (the cut is taken); a file over DEBT_LIMIT lines needs an
      entry in DEBT with its next cut written down. An entry for a file now under the limit fails too.
+  7. Line length: no line of SKILL.md or a reference over READ_LIMIT characters. The trap: the Read tool
+     cuts a longer line, and on 2026-11-10 ecommerce-cia's Step 3 lost half its reading list that way.
 
 Usage: python tools/check_structure.py
 """
@@ -127,6 +129,16 @@ def check_size() -> None:
             fail(f"DEBT entry {key} is no longer over {DEBT_LIMIT} lines: remove the entry")
 
 
+READ_LIMIT = 2000   # characters per line the Read tool shows; past it, a run never sees the rest
+
+
+def check_line_length() -> None:
+    for f in [SKILL, *REFS.glob("*.md"), *SWEEPS.glob("*.md")]:
+        for i, line in enumerate(read(f).splitlines(), 1):
+            if len(line) > READ_LIMIT:
+                fail(f"{rel(f)}:{i} is {len(line)} characters; the Read tool cuts it at {READ_LIMIT}: wrap it")
+
+
 def main() -> int:
     failures.clear()
     skill_text = read(SKILL)
@@ -135,6 +147,7 @@ def main() -> int:
     check_sweeps()
     check_stale_paths()
     check_size()
+    check_line_length()
     if failures:
         print(f"check_structure: {len(failures)} failure(s)")
         for msg in failures:

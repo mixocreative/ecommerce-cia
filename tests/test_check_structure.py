@@ -38,5 +38,16 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(cs.failures, [])
 
 
+    def test_a_line_the_read_tool_would_cut_fails(self):
+        import check_structure as cs_mod
+        from unittest import mock as _mock
+        with _mock.patch.object(cs_mod, "READ_LIMIT", 50):
+            cs_mod.failures.clear()
+            cs_mod.check_line_length()
+        self.assertTrue(any("the Read tool cuts it" in m for m in cs_mod.failures), cs_mod.failures)
+        cs_mod.failures.clear()
+        cs_mod.check_line_length()
+        self.assertEqual(cs_mod.failures, [])
+
 if __name__ == "__main__":
     unittest.main()
