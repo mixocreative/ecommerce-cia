@@ -104,25 +104,35 @@ class StopCheckTests(unittest.TestCase):
         self.write_transcript(earlier, prompt)
         self.assertIsNone(stop_check.decide(self.payload(), failing))   # only this turn's writes are looked up
 
-    @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell, as Claude Code runs hook commands")
-    def test_the_shipped_command_survives_a_python3_stub_that_eats_stdin(self):
-        # The Windows Store "python3" stub may read stdin and print to stdout; the command probes python3
-        # with stdin closed, so the payload only ever reaches a Python that runs.
+    def run_shipped(self, shell, path_dirs):
+        """The shipped hooks.json command, with ${CLAUDE_PLUGIN_ROOT} filled in the way Claude Code does
+        (textually, a native path), run through `shell` with this payload; returns its stdout."""
+        self.write_report()
+        hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        command = hooks["hooks"]["Stop"][0]["hooks"][0]["command"].replace("${CLAUDE_PLUGIN_ROOT}", str(ROOT))
+        env = {**os.environ, "PATH": os.pathsep.join([*path_dirs, os.environ.get("PATH", "")])}
+        return subprocess.run([*shell, command], input=json.dumps(self.payload()), capture_output=True,
+                              text=True, env=env, timeout=60).stdout
+
+    @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell, as Claude Code uses when bash is there")
+    def test_the_shipped_command_survives_a_python3_that_is_not_python(self):
+        # Windows' "python3" can be the Store stub: it prints to stderr and exits 9009. The command then runs
+        # `python`, and whichever interpreter runs first reads the payload; the second reads nothing and is silent.
+        # Not covered: a stub that READ stdin would leave `python` an empty payload, and the hook would allow.
         stub_dir = self.dir / "bin"
         stub_dir.mkdir()
         stub = stub_dir / "python3"
-        stub.write_text("#!/bin/sh" + chr(10) + "cat >/dev/null; echo not found; exit 9009" + chr(10), encoding="utf-8")
+        stub.write_text("#!/bin/sh" + chr(10) + "echo not found >&2; exit 9009" + chr(10), encoding="utf-8")
         stub.chmod(0o755)
-        self.write_report()
-        hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
-        command = hooks["hooks"]["Stop"][0]["hooks"][0]["command"]
-        real = Path(sys.executable).parent.as_posix()   # this Python, found as `python` behind the stub
-        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": ROOT.as_posix(),
-               "PATH": os.pathsep.join([stub_dir.as_posix(), real, os.environ.get("PATH", "")])}
-        if not (Path(real) / "python").exists() and not (Path(real) / "python.exe").exists():
-            self.skipTest("no `python` beside this interpreter")
-        out = subprocess.run(["sh", "-c", command], input=json.dumps(self.payload()), capture_output=True,
-                             text=True, env=env, timeout=60).stdout
+        out = self.run_shipped(["sh", "-c"], [stub_dir.as_posix(), Path(sys.executable).parent.as_posix()])
+        self.assertEqual(json.loads(out)["decision"], "block")
+
+    @unittest.skipUnless(shutil.which("pwsh") or shutil.which("powershell"), "needs PowerShell")
+    def test_the_shipped_command_parses_in_powershell(self):
+        # Claude Code runs hook commands in PowerShell on Windows without Git Bash (hooks docs, `shell` field);
+        # an `if ...; then ...; fi` command was a syntax error there on every Stop.
+        shell = [shutil.which("pwsh") or shutil.which("powershell"), "-NoProfile", "-Command"]
+        out = self.run_shipped(shell, [str(Path(sys.executable).parent)])
         self.assertEqual(json.loads(out)["decision"], "block")
 
     def test_a_report_a_bash_command_wrote_outside_the_working_directory_blocks(self):
