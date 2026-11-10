@@ -2,7 +2,7 @@
 """The skill's own score, read from tests/RUNS.md - and the gate the RUNBOOK states in prose.
 
     python tools/score.py            # print the newest scored row as one line
-    python tools/score.py --gate     # exit 1 when the newest row scores below the row before it
+    python tools/score.py --gate     # exit 1 when the commit under test fails on any fixture it was run on
     python tools/score.py --badge    # a Markdown badge line for the README
     python tools/score.py --runtime  # print the newest runtime row (what the run RAN, not found)
     python tools/score.py --corpus   # the corpus table: ground truth nobody planted
@@ -150,15 +150,26 @@ GATE_SINCE = "2026-11-09"
 
 
 def audit_gate(rs: list[dict]) -> int:
-    """Per-commit gate. Misses and false positives are doctrine: zero tolerance. Half-rows are noise:
-    the mean of at least two runs on the commit under test must stay within NOISE of the median of the
-    last RECENT live per-commit means on the same fixture, model and instrument, and never more than
-    DRIFT under the best ever."""
+    """Per-commit gate, once per fixture the commit under test was run on. Misses and false positives
+    are doctrine: zero tolerance. Half-rows are noise: the mean of at least two runs on the commit under
+    test must stay within NOISE of the median of the last RECENT live per-commit means on the same
+    fixture, model and instrument, and never more than DRIFT under the best ever.
+
+    The trap this loop closes (2026-11-10): the gate judged only the fixture of the newest row, so the
+    order rows were written in decided which fixture was checked, and a fixture recorded first was
+    never examined at all. cia's gate has run per fixture since 2026-11-09."""
     live = [r for r in rs if not r.get("reverted")]
     if not live:
         print("gate: every scored run is on a reverted commit - nothing under test.")
         return 0
-    last = live[-1]
+    token = live[-1]["token"]
+    fixtures = list(dict.fromkeys(r["fixture"] for r in live if r["token"] == token))
+    return max(_gate_one(rs, [r for r in live if r["token"] == token and r["fixture"] == f][-1])
+               for f in fixtures)
+
+
+def _gate_one(rs: list[dict], last: dict) -> int:
+    """The gate for one fixture: `last` is the newest live row of the commit under test on it."""
     if last["date"] < GATE_SINCE:
         print(f"gate: the newest live run ({last['date']}, {last['token']}) predates the per-commit rule "
               f"({GATE_SINCE}) and passed the rule of its day - nothing new under test.")

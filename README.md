@@ -187,7 +187,7 @@ Recommended. `cia` owns universal integrity, this skill owns commerce doctrine; 
 
 > **本版新增：從逆向工程借來的證據紀律。** 每一條結論都標記「實測 / 推論 / 未知」；老闆說過的每一個承諾都變成一條**義務（Obligation）**，在程式裡必須剛好有一個負責者、一個點名它的驗證；測試只能證明與自己同等強度的事（用假金流的測試，永遠證明不了真的 Callback）；「沒有程式在讀」必須說清楚找過哪裡；被截斷的輸出不算數；手冊、測試環境與程式碼互相矛盾時，記錄下來而不是挑方便的那邊相信；新增**反向追蹤模式**：從系統看得見的行為出發，一路追到程式碼裡。詳見 `references/evidence.md`。概念改編自 [REA](https://github.com/morluto/rea)。
 
-**Last scored fixture run:** see `tests/RUNS.md` — `python tools/score.py` prints it, `--gate` refuses a push that scores below the run before (RUNBOOK step 6).
+**Last scored fixture run:** see `tests/RUNS.md` — `python tools/score.py` prints it, `--gate` refuses a push when, on any fixture the commit was run on, a run misses a planted defect or files a control, or the two-run mean falls under that fixture's floor (RUNBOOK step 6).
 
 A skill for Claude Code and OpenAI Codex that audits a transactional e-commerce system as a **viable system** in Stafford Beer's sense, and hunts the defect class that only such a view can see: **cross-boundary invariant violations**, also called **integration-level** or **emergent defects**, in the paths money and stock actually take.
 

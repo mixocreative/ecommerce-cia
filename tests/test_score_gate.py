@@ -63,6 +63,15 @@ class GateTests(unittest.TestCase):
     def test_one_run_is_a_sample(self):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-11-09", 4, commit="ccccccc")]), 1)
 
+    def test_every_fixture_of_the_commit_is_gated_not_only_the_last_written(self):
+        # Rows on the commit for two fixtures: a miss on the one written FIRST must still block.
+        shop = lambda d, h, miss=0, c="aaaaaaa": row(d, h, miss=miss, commit=c).replace("fixture-shop-node", "fixture-shop")
+        hist = [shop("2026-11-09", 14), shop("2026-11-09", 14),
+                row("2026-11-09", 4), row("2026-11-09", 4)]
+        new = [shop("2026-11-11", 14, miss=1, c="bbbbbbb"), shop("2026-11-11", 14, c="bbbbbbb"),
+               row("2026-11-11", 4, commit="bbbbbbb"), row("2026-11-11", 4, commit="bbbbbbb")]
+        self.assertEqual(self.gate(hist + new), 1)
+
     def test_a_miss_fails_even_with_a_good_mean(self):
         self.assertEqual(self.gate([row("2026-09-25", 4), row("2026-11-09", 4, commit="ccccccc"),
                                     row("2026-11-09", 4, miss=1, commit="ccccccc")]), 1)
