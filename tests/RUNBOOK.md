@@ -192,3 +192,5 @@ that, the prompt is the finding.
 Once per release of either skill, run the fixture with `run /cia and /ecommerce-cia, Screen tier`. Expected: one discovery block naming both, one map, **one** line per sweep tagged `[cia + ecommerce-cia]`, no duplicated finding, and the cia-only additions (§3 profile, §7 matrix, §8 checklist) present. Record it as a separate row with runtime `paired`.
 
 **Plugin smoke, before every release:** load this plugin the way an install does and watch the Stop hook block a failing report; the command and the pass line are in `cia`'s `tests/RUNBOOK.md`, 'Plugin smoke'. It is how the 2026-11-10 hook was shown to fire from an install folder named by version.
+
+**Versions ship from `main`.** The marketplace entry's source is `./`, so an install or update takes `main` at the version in `.claude-plugin/plugin.json`; a GitHub release is optional and most versions have none.

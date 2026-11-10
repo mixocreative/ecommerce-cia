@@ -119,9 +119,8 @@ class StopCheckTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("sh"), "needs a POSIX shell, as Claude Code uses when bash is there")
     def test_the_shipped_command_survives_a_python3_that_is_not_python(self):
-        # Windows' "python3" can be the Store stub: it prints to stderr and exits 9009. The command then runs
-        # `python`, and whichever interpreter runs first reads the payload; the second reads nothing and is silent.
-        # Not covered: a stub that READ stdin would leave `python` an empty payload, and the hook would allow.
+        # Windows' "python3" can be App Installer's placeholder. Measured on the real one (2026-11-10): message on
+        # stderr only, stdin left unread, non-zero exit. This stub does the same; `python` then reads the payload.
         stub_dir = self.dir / "bin"
         stub_dir.mkdir()
         stub = stub_dir / "python3"

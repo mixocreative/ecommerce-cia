@@ -21,6 +21,8 @@ Claude Code runs hooks in bash where it can and in PowerShell on Windows without
 interpreter runs first reads the payload; the second reads an empty stdin, and main() then allows silently.
 The trailing `exit 0` matters: Claude Code reads the JSON only on exit 0, and where `python` is missing
 (stock macOS) the last statement's 127 would have discarded the block.
+Windows' `python3` placeholder writes to stderr only and leaves stdin unread (measured 2026-11-10), which
+is what keeps it harmless here: any text on stdout beside the JSON and Claude Code reads it as plain text.
 
 The trap the reason names (2026-11-10, RUNS second stage on 9f8f9b0): a blocked run backfills the sweep
 lines the checker asks for, and it wrote defects onto them as prose without filing them; every miss of
