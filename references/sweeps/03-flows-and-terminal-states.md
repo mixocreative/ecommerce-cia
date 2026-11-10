@@ -39,6 +39,8 @@ Every ladder fills rows of the evidence ledger (`reporting.md`); every cell the 
 execute stays UNVERIFIED there. That is how a reader tells the table that was read from the
 table that was walked, and it is the one distinction this sweep could not previously make.
 
+**Grading.** A disagreement between corners on a money path is graded by what the person who loses it sees. **CRITICAL** when money or goods move under an order the shop's own record contradicts: the gateway holds a payment the order does not show, or a parcel leaves for an order the shop has cancelled. Walk each payment family's clocks against every other family's orders: a deadline, expiry job or reminder written for one family (pay online within N hours) and applied to an order whose money arrives another way (paid at collection, by a later transfer, on invoice) cancels a live order under real money and real goods, and is **CRITICAL** on the same rule. A reachability finding under the shipped configuration: **CRITICAL** (method item 5). An unanswerable state on a money or goods path: **HIGH**. Any other corner disagreement: **HIGH**, unless it touches neither money nor goods. (Until 2026-11-10 this sweep had no Grading paragraph, and Sonnet runs left the cross-family clock unfiled: the gap a run named on 2026-09-20.)
+
 Report line format: `S15 — walked N flows × M states across customer/admin/logistics/gateway; four-corner table in the report; K disagreements, J unanswerable states, R reachability findings; E2E matrix: W written / U unwritten. · runtime: L ladders run, A of 9 adversarial rows (`browser-walks.md` §12); C corner cells proved by artefact of N.`
 
 **S15.3 — inventory has three verbs, and each has an event (2026-09-17, from Sylius and Medusa).**
