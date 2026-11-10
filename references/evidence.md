@@ -15,7 +15,7 @@ registry and fail-closed aggregation) and restated for an audit that *does* have
 still cannot trust it.
 
 The direction of travel: **intent → obligation → owner → verifier → artefact.** The map in
-`sweeps.md` step 0 walks the system from the code outward; this file walks it from the promise
+`sweeps/` step 0 walks the system from the code outward; this file walks it from the promise
 inward. A run does both, and the two meet in the ledger.
 
 ---
@@ -60,7 +60,7 @@ Rules, each one a way a green check closed a claim it could not see:
    goes negative under concurrent checkout" requires A2 at least, A3 for the PASS that launches.
 2. **A verifier closes a claim only at or above its required authority.** A unit test with a mocked
    gateway (A1) cannot close "the callback works" (A5): it proves the handler agrees with the mock,
-   which is `sweeps.md` S21's self-consistent codec at a different height. A green unit suite cannot
+   which is `sweeps/` S21's self-consistent codec at a different height. A green unit suite cannot
    close a process claim; a sandbox walk cannot close a production-only claim (live keys, real
    settlement) and records it UNVERIFIED with that reason.
 3. **Lower-authority evidence is still evidence — for a lower claim.** Write it on the row as what it
@@ -153,7 +153,7 @@ ABSENT within: roots <src/, app/, bin/> · patterns <guest_checkout, 'guest_chec
 
 **If any item outside the boundary could hold what was not found, the claim is UNKNOWN, not
 ABSENT.** Missing coverage is unknown, not absence. A database trigger is a writer; a crontab line is
-a scheduler; a workflow tool calling a webhook is a reader. `sweeps.md` S13 learned the narrow form —
+a scheduler; a workflow tool calling a webhook is a reader. `sweeps/` S13 learned the narrow form —
 a multi-line `UPDATE … SET` hid a live writer from a too-clever grep — and this is the general form:
 **a false absence costs exactly what a missed presence does**, because both send the next session the
 wrong way.
@@ -191,7 +191,7 @@ of unrelated channels. A contradiction the owner must decide goes to the owner-d
 ## §E8 — Order is a set of constraints, not a sequence
 
 For anything concurrent or asynchronous — callbacks, webhooks, queues, two workers, a browser return
-racing a server notify (`sweeps.md` S23) — write the expected behaviour as **partial-order
+racing a server notify (`sweeps/` S23) — write the expected behaviour as **partial-order
 constraints**, not one exact sequence:
 
 ```

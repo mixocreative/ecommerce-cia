@@ -74,7 +74,7 @@ SKILL §0.10 item 6; a log line, an exit code or a table nobody renders is "invi
 
 ## §5 — Seven questions for every connection
 
-From the §4 map and the `sweeps.md` step-0 map, list every connection between services: checkout → stock,
+From the §4 map and the `sweeps/` step-0 map, list every connection between services: checkout → stock,
 callback → order, order → invoice obligation, settlement → fulfilment, refund → stock / invoice / entitlement,
 carrier → order, worker → admin, and so on. Each connection gets one row and **seven answers**, each with its
 evidence (`path:line`, test name, artefact) or `UNVERIFIED`:

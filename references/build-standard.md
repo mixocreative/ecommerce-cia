@@ -90,7 +90,7 @@ it did not make.**
   (`browser-walks.md` §12) at the function boundary, and two independent audit runs missed it in
   a shop that accepted it.
 - **The log level is part of the posture.** `log.debug` on a failure path is silence with a
-  receipt, because production runs at INFO (`sweeps.md`, S3). If the catch exists to record
+  receipt, because production runs at INFO (`sweeps/`, S3). If the catch exists to record
   something, record it where a person will see it.
 - **One documented exception**: Adyen instructs merchants to acknowledge *before* processing.
   Read `adyen-onboarding.md` §1 before grading any `catch` on an Adyen notify path.

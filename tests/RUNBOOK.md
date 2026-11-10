@@ -74,7 +74,7 @@ because the answer only needs four rows.
 1. `node tests/verify-fixture-shop-node.js` must print `OK: 5 rows reproduce`.
 2. Fresh session with `tests/fixture-shop-node` as the working directory; `pre-launch audit,
    Screen tier`. The shop is not running; starting it is rung 1 and the agent's job.
-3. Score the four defects and the one control. **The number that matters is transfer**: a run
+3. Score the four defects and the one control against `EXPECTED-fixture-shop-node.md`. **The number that matters is transfer**: a run
    that scores well on `fixture-shop-live` and badly here has found a doctrine tuned to PHP, and
    that is a finding about the skill rather than about the run.
 4. Record it in `RUNS.md` with `fixture-shop-node` in the tier cell, so the gate compares it
@@ -176,8 +176,8 @@ that, the prompt is the finding.
 
 | Symptom | Usually means |
 |---|---|
-| Sweep line present, path absent | agent read the §0.9 index and not `references/sweeps.md` — packaging |
-| Right site, wrong sweep | taxonomy wording; the two sweeps' boundaries are unclear in `sweeps.md` |
+| Sweep line present, path absent | agent read the §0.9 index and not `references/sweeps/` — packaging |
+| Right site, wrong sweep | taxonomy wording; the two sweeps' boundaries are unclear in `references/sweeps/` |
 | Control filed as defect | the §29 "verified controls" habit is not binding enough in `reporting.md` |
 | Asked the owner for the vendor manual | §1.4 / §0.5 discovery did not look under `docs/vendor/` |
 | Reported tier but ran deeper or shallower | the tier table in Step 3 is not shaping the run |

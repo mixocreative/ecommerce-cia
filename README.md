@@ -647,7 +647,7 @@ Setup mode starts from plain words — 「我想用藍新金流收款，怎麼�
 | File｜檔案 | Purpose｜主要用途 |
 |---|---|
 | `SKILL.md` | the runbook: routing, discovery, seven-step protocol, autonomy contract, sweep index, escalation, setup mode, plain-language contract, start menu｜操作手冊：包含路由、探索、七步驟協定、自主權合約、掃描索引、通報機制、新手引導模式、白話報告條約、啟動選單 |
-| `references/sweeps.md` | S1–S24 with methods, gradings and report-line formats｜S1–S24 包含檢驗方法、評分標準與報告單行格式 |
+| `references/sweeps/` | S1–S24 with methods, gradings and report-line formats, one file per sweep group; `README.md` there maps which file holds which sweep｜S1–S24 包含檢驗方法、評分標準與報告單行格式，每組掃描一個檔案；資料夾內的 `README.md` 列出每個掃描項目在哪個檔案 |
 | `references/classes.md` | the dated classes from real audits, each filed under the sweep it extends (moved out of SKILL.md §0.9)｜歷次實際稽核留下的缺陷類型，依所屬掃描歸檔（自 SKILL.md §0.9 移出） |
 | `references/doctrine.md`, `domains.md`, `theory.md`, `reporting.md` | audit doctrine, the domain chapters §8–§25, the VSM, finding format and severity｜Audit 原則、領域章節 §8–§25、Viable System Model (VSM)、缺失格式與嚴重程度定義 |
 | `references/evidence.md` | claim tags, authority ladder, the obligation ledger (intent → owner → verifier), unknowns, bounded negatives, contradictions, reverse trace｜結論標記、證據強度階梯、義務帳冊（意圖 → 負責程式 → 驗證）、未知清單、有邊界的「找不到」、矛盾紀錄、反向追蹤 |

@@ -1,6 +1,6 @@
 # Dated classes — the sites each sweep gained from real audits
 
-Moved out of `SKILL.md` §0.9 on 2026-11-09, unchanged. Every entry is a gap that survived a green suite and a clean analyser in a real shop, written as a site to enumerate under the sweep it names (`S2`, `S20 / S3`). The sweeps themselves, with their methods and gradings, are in `sweeps.md`; this file only adds sites to them. New classes are appended here under a dated heading, never to SKILL.md.
+Moved out of `SKILL.md` §0.9 on 2026-11-09, unchanged. Every entry is a gap that survived a green suite and a clean analyser in a real shop, written as a site to enumerate under the sweep it names (`S2`, `S20 / S3`). The sweeps themselves, with their methods and gradings, are in `sweeps/`; this file only adds sites to them. New classes are appended here under a dated heading, never to SKILL.md.
 
 **Classes added 2026-10-07 (the mixoweb audit fix: each one survived a green fast suite and a clean analyser, and each is now a site to enumerate under the sweep named).**
 
