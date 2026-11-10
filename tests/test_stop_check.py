@@ -140,6 +140,17 @@ class StopCheckTests(unittest.TestCase):
             {"type": "tool_use", "name": "Write", "input": ["not", {"file_path": 7}]}, "junk"]}}, append=True)
         self.assertIsNotNone(stop_check.decide(self.payload(), failing))   # still finds the cwd report
 
+    def test_a_file_whose_name_only_ends_in_the_report_name_is_not_this_skills(self):
+        # "ecommerce-cia-audit-report.md" ends in "cia-audit-report.md"; with both plugins installed, cia's hook
+        # graded the other skill's report against its own checker (Fable, 2026-11-10).
+        other = self.dir / "shop"
+        other.mkdir()
+        report = other / ("ecommerce-" + stop_check.REPORT)
+        report.write_text("draft", encoding="utf-8")
+        self.write_transcript({"type": "assistant", "timestamp": stamp(time.time()), "message": {"content": [
+            {"type": "tool_use", "name": "Write", "input": {"file_path": str(report), "content": "draft"}}]}}, append=True)
+        self.assertIsNone(stop_check.decide(self.payload(), failing))
+
     def test_a_report_from_before_this_turn_is_allowed(self):
         # An earlier turn, a resumed session, or another session in the same project: not this turn's report.
         self.write_report(at=self.prompt_at - 5)

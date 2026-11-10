@@ -76,7 +76,8 @@ def this_turn(transcript_path) -> tuple[float | None, list[Path]]:
         if d.get("type") == "assistant" and isinstance(content, list):
             for c in content:
                 if isinstance(c, dict) and c.get("type") == "tool_use":
-                    written += [Path(m) for s in _strings(c.get("input")) for m in NAMED.findall(s)]
+                    written += [Path(m) for s in _strings(c.get("input")) for m in NAMED.findall(s)
+                                if re.split(r"[\\/]", m)[-1] == REPORT]   # whole name: "ecommerce-cia-audit-report.md" ends in cia's
             continue
         if d.get("type") != "user" or d.get("isMeta") or not d.get("timestamp"):
             continue
