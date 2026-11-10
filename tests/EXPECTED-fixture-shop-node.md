@@ -17,7 +17,18 @@ Seed: `MUG-01` 5 · `PLATE-01` 2.
 
 | # | Control | Why it is correct |
 |---|---|---|
-| **NC1** | The signature check (`server.js:80-86`) | HMAC-SHA256 over the sorted fields, length-checked before `crypto.timingSafeEqual` — the length guard matters, because `timingSafeEqual` **throws** on unequal lengths and a naive implementation crashes the handler on a malformed signature. A tampered body is refused `0|signature` and changes nothing. |
+| **NC1** | The signature check (`server.js:80-86`) | HMAC-SHA256 over the sorted fields, length-checked before `crypto.timingSafeEqual` (in characters, not bytes: see N5) — the length guard matters, because `timingSafeEqual` **throws** on unequal lengths and a naive implementation crashes the handler on a malformed signature. A tampered body is refused `0|signature` and changes nothing. |
+
+### N5 — tracked, not scored (found 2026-11-10, not planted)
+
+| # | Defect | Sweep | Grade | How a run finds it |
+|---|---|---|---|---|
+| **N5 (tracked)** | The length guard at `server.js:82` compares **characters** (`given.length`), and `timingSafeEqual` compares **bytes**. A 64-character `sig` with any non-ASCII character passes the guard, `Buffer.from(given)` is longer than 64 bytes, `timingSafeEqual` throws `RangeError` outside the handler's `try`, and the process exits: one unauthenticated request stops the shop. | S3 / S11 | CRITICAL | send a 64-character non-ASCII `sig` → server exits code 1 |
+
+NC1's verdict stands for what it was planted to test: a wrong signature is refused, never accepted, and filing the HMAC
+check as forgeable or timing-unsafe is still a false positive. N5 is a true extra a run is credited for, never charged
+for missing, and never counted against NC1: the first run that probed it (2026-11-10, commit `e35acff`) found it by
+running, before the author knew it was there. Kept for the reason fixture-service keeps row 11.
 
 
 Also expected from 2026-10-16, not separately scored: the **S19.3** parity line names the one environment the run used (Node 22 + `node:sqlite` on this machine) and reports every other cell `NOT RUN`; the **S20.6** CI line reads `no CI configured`; **S12.4** finds no gateway query caller (`0 callers`, with that reason); **S24.1** records that the notification verifier has only self-signed bodies and no real vendor exists here, so the real-browser cell is `NOT RUN` / UNPROVEN with that reason. None of this is grounds to file NC1: a correct verifier with no vendor fixture is an UNPROVEN cell, not a defect.
