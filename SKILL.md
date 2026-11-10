@@ -470,6 +470,14 @@ turning each confirmed behaviour into an obligation row (§E3). The answer disti
 from what was inferred and lists what is still unknown with its next evidence (§E4). A static read never
 observed an execution; the reply never implies it did.
 
+### 0.12c Icons in a shop
+
+Functional icons (cart, checkout steps, order, payment and shipping status, pickup, refund) go to the companion `kubai-icons`, named in cia's `references/companion-skills.md` §2. This skill adds only the commerce consequences:
+
+- **Brand marks are never drawn.** Card networks, wallets, payment providers, carriers and trust or security badges use the official assets each provider publishes, under its brand terms. A drawn lookalike breaks those terms and can show a buyer a method the shop does not accept.
+- **One icon per state a buyer sees.** Every order, payment, shipment and refund status that renders gets its own icon; two statuses sharing one icon hide the difference the way an unrendered state does (S22).
+- **The icon adds to the words, never replaces them.** Price, total, payment method and status stay as text; an icon-only control at checkout fails the walkthrough until it has a visible or accessible name.
+
 ### 0.13 Reference Index — what to load, and when
 
 Paths are relative to this skill's directory. "Read" means read the whole file; skimming a doctrine file and reporting its chapters as done is S14 scope shadow applied to the audit itself.
