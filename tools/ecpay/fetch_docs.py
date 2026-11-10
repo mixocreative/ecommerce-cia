@@ -91,12 +91,14 @@ def main(argv: list[str]) -> int:
                 try:
                     text = get(url).decode("utf-8", "replace")
                 except Exception as e:  # noqa: BLE001
-                    out.append({"id": pid, "family": f, "url": url, "saved": f"ERROR {e}"}); continue
+                    out.append({"id": pid, "family": f, "url": url, "saved": f"ERROR {e}"})
+                    continue
                 if not is_markdown(text):
-                    out.append({"id": pid, "family": f, "url": url, "saved": "NOT MARKDOWN - page id moved; open the site and update PAGES"}); continue
+                    out.append({"id": pid, "family": f, "url": url, "saved": "NOT MARKDOWN - page id moved; open the site and update PAGES"})
+                    continue
                 dest = target / f"{pid}-{slug(desc)}.md"
                 dest.write_text(f"<!-- {url} read {today} -->\n\n{text}", encoding="utf-8")
-                title = next((l.strip('# ').strip() for l in text.splitlines() if l.startswith('#')), "")
+                title = next((ln.strip('# ').strip() for ln in text.splitlines() if ln.startswith('#')), "")
                 out.append({"id": pid, "family": f, "url": url, "title": title[:80], "saved": str(dest), "bytes": len(text)})
         print(json.dumps({"read_on": today, "pages": out}, ensure_ascii=False, indent=2))
         return 0 if all("ERROR" not in p["saved"] and "NOT MARKDOWN" not in p["saved"] for p in out) else 1

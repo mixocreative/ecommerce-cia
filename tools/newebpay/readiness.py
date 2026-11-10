@@ -155,7 +155,8 @@ def render(path: Path) -> int:
         status = status.strip().lower() or "missing"
         rows.append((key.strip(), status, note.strip()))
     if not rows:
-        print("empty readiness file"); return 1
+        print("empty readiness file")
+        return 1
     width = max(len(k) for k, _, _ in rows)
     title = next((n for k, _, n in rows if k == "shop"), "")
     first = path.read_text(encoding="utf-8").lstrip().splitlines()[0] if path.stat().st_size else ""
@@ -187,17 +188,21 @@ def main(argv: list[str]) -> int:
         provider = "newebpay"
         if rest and rest[0] == "--provider":
             if len(rest) < 2 or rest[1] not in TEMPLATES:
-                print("--provider must be one of: " + ", ".join(TEMPLATES)); return 1
+                print("--provider must be one of: " + ", ".join(TEMPLATES))
+                return 1
             provider, rest = rest[1], rest[2:]
         p = Path(rest[0]) if rest else Path(f"docs/integrations/{provider}-readiness.yaml")
         if p.exists():
-            print(f"exists: {p}"); return 1
+            print(f"exists: {p}")
+            return 1
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(TEMPLATES[provider], encoding="utf-8")
-        print(f"wrote {p}"); return 0
+        print(f"wrote {p}")
+        return 0
     p = Path(argv[0]) if argv else DEFAULT
     if not p.exists():
-        print(f"no readiness file at {p}; run --init"); return 1
+        print(f"no readiness file at {p}; run --init")
+        return 1
     return render(p)
 
 

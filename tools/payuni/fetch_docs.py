@@ -81,7 +81,8 @@ def main(argv: list[str]) -> int:
             try:
                 title, body = page(pid)
             except Exception as e:  # noqa: BLE001
-                out.append({"id": pid, "saved": f"ERROR {e}"}); continue
+                out.append({"id": pid, "saved": f"ERROR {e}"})
+                continue
             dest = target / f"{pid}-{slug or 'page'}.md"
             dest.write_text(f"<!-- {BASE}/web/#/{ITEM}/{pid} read {today} -->\n\n# {title}\n\n{body}", encoding="utf-8")
             out.append({"id": pid, "title": title[:60], "saved": str(dest), "bytes": len(body)})

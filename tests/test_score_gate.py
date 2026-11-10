@@ -65,7 +65,8 @@ class GateTests(unittest.TestCase):
 
     def test_every_fixture_of_the_commit_is_gated_not_only_the_last_written(self):
         # Rows on the commit for two fixtures: a miss on the one written FIRST must still block.
-        shop = lambda d, h, miss=0, c="aaaaaaa": row(d, h, miss=miss, commit=c).replace("fixture-shop-node", "fixture-shop")
+        def shop(d, h, miss=0, c="aaaaaaa"):
+            return row(d, h, miss=miss, commit=c).replace("fixture-shop-node", "fixture-shop")
         hist = [shop("2026-11-09", 14), shop("2026-11-09", 14),
                 row("2026-11-09", 4), row("2026-11-09", 4)]
         new = [shop("2026-11-11", 14, miss=1, c="bbbbbbb"), shop("2026-11-11", 14, c="bbbbbbb"),
@@ -111,7 +112,8 @@ class GateTests(unittest.TestCase):
 
     def test_launcher_rows_are_judged_against_launcher_rows(self):
         # Subagent floor 4; the launcher measures half a row lower on the same doctrine.
-        h = lambda d, hits, near, c: row(d, hits, near, commit=c).replace("Claude Sonnet", "Claude Sonnet (harness)")
+        def h(d, hits, near, c):
+            return row(d, hits, near, commit=c).replace("Claude Sonnet", "Claude Sonnet (harness)")
         self.assertEqual(self.gate([row("2026-10-21", 4, commit="bbbbbbb"),
                                     h("2026-11-09", 3, 1, "ccccccc"), h("2026-11-09", 3, 1, "ccccccc"),
                                     h("2026-11-09", 3, 0, "ddddddd"), h("2026-11-09", 2, 2, "ddddddd"),

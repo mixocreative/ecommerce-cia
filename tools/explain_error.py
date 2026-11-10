@@ -204,7 +204,8 @@ def explain(code: str, hint: str = "") -> str:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print(__doc__); return 1
+        print(__doc__)
+        return 1
     if argv == ["-"]:
         text = sys.stdin.read()
         if re.search(r'"returnCode"\s*:\s*"(\d{4})"', text):
@@ -212,7 +213,8 @@ def main(argv: list[str]) -> int:
         else:
             found = sorted({m for m in re.findall(r"\b(?:MPG\d{5}|TRA\d{5}|CHK\d{5}|DEF\d{5}|API\d{5}|UPP\d{5}|10\d{6}|1[01]\d{2}|2105|2106)\b", text)})
             if not found:
-                print("no known code pattern in the text"); return 1
+                print("no known code pattern in the text")
+                return 1
             argv = found
     for c in argv:
         print(explain(c))

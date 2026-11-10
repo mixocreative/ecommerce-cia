@@ -103,7 +103,7 @@ class SignerTests(unittest.TestCase):
         r = run([PHP, str(TOOLS / "sign.php"), "selftest"])
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("SELFTEST PASS", r.stdout)
-        kat = [l.split(" ", 1)[1] for l in r.stdout.splitlines() if l.startswith("KAT ")][0]
+        kat = [ln.split(" ", 1)[1] for ln in r.stdout.splitlines() if ln.startswith("KAT ")][0]
         self.assertEqual(kat, self.expected(b"/v3/payments/request", b'{"amount":1,"currency":"TWD"}', b"nonce-1"))
 
     @unittest.skipUnless(PHP, "php not on PATH")
@@ -112,7 +112,7 @@ class SignerTests(unittest.TestCase):
         env = {**os.environ, "LINEPAY_CHANNEL_ID": "123", "LINEPAY_CHANNEL_SECRET": self.SECRET.decode()}
         r = run([PHP, str(TOOLS / "sign.php"), "headers", "POST", "/v3/payments/request", body], env=env)
         self.assertEqual(r.returncode, 0, r.stderr)
-        h = dict(l.split(": ", 1) for l in r.stdout.strip().splitlines())
+        h = dict(ln.split(": ", 1) for ln in r.stdout.strip().splitlines())
         self.assertEqual(h["X-LINE-ChannelId"], "123")
         self.assertNotIn(self.SECRET.decode(), r.stdout)
         nonce = h["X-LINE-Authorization-Nonce"]
@@ -120,7 +120,7 @@ class SignerTests(unittest.TestCase):
         self.assertEqual(h["X-LINE-Authorization"], self.expected(b"/v3/payments/request", body.encode(), nonce.encode()))
         # GET signs the query string
         r = run([PHP, str(TOOLS / "sign.php"), "headers", "GET", "/v3/payments", "orderId=X"], env=env)
-        h = dict(l.split(": ", 1) for l in r.stdout.strip().splitlines())
+        h = dict(ln.split(": ", 1) for ln in r.stdout.strip().splitlines())
         self.assertEqual(h["X-LINE-Authorization"], self.expected(b"/v3/payments", b"orderId=X", h["X-LINE-Authorization-Nonce"].encode()))
 
     @unittest.skipUnless(PHP, "php not on PATH")
@@ -140,7 +140,7 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("DRY RUN", r.stdout)
         self.assertIn("sandbox-api-pay.line.me/v3/payments/request", r.stdout)
-        body = json.loads([l for l in r.stdout.splitlines() if "bytes: {" in l][0].split("bytes: ", 1)[1])
+        body = json.loads([ln for ln in r.stdout.splitlines() if "bytes: {" in ln][0].split("bytes: ", 1)[1])
         self.assertEqual(body["currency"], "TWD")
         self.assertEqual(body["amount"], sum(p["amount"] for p in body["packages"]))
         self.assertTrue(body["redirectUrls"]["confirmUrl"].startswith("https://example.test/"))
