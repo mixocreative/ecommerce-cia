@@ -4,6 +4,7 @@ Why: the checker is what makes a run read its references; a checker that passes 
 receipts, or a SKILL.md that quotes a receipt, puts the reading collapse back.
 """
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -43,6 +44,12 @@ class AuditReportTests(unittest.TestCase):
 
     def test_an_unreadable_path_is_exit_2(self):
         self.assertEqual(audit_report.main(["check", "no/such/report.md"]), 2)
+
+    def test_an_undecodable_report_is_exit_2(self):
+        with tempfile.TemporaryDirectory() as d:
+            report = Path(d) / "report.md"
+            report.write_text(full_report(), encoding="utf-16")   # what PowerShell's `>` writes
+            self.assertEqual(audit_report.main(["check", str(report)]), 2)
 
     def test_skill_quotes_no_real_receipt(self):
         found, _ = receipts.scan()

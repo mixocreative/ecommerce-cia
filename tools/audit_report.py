@@ -67,8 +67,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         text = sys.stdin.read() if argv[1] == "-" else Path(argv[1]).read_text(encoding="utf-8")
-    except OSError as e:
-        print(f"audit_report: cannot read {argv[1]}: {e.strerror or e}", file=sys.stderr)
+    except (OSError, UnicodeError) as e:
+        # exit 2, never 1: 1 means "parts missing". The trap: PowerShell's `>` writes UTF-16, and a report
+        # that cannot be decoded must not read as a report that failed (cia's checker had this; the port lost it).
+        print(f"audit_report: cannot read {argv[1]}: {getattr(e, 'strerror', None) or e}", file=sys.stderr)
         return 2
     results = checks(text)
     for name, ok, hint in results:
